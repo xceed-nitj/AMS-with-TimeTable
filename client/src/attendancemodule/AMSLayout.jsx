@@ -32,12 +32,12 @@ const NAV = [
   { id: 'cameras', route: '/cameras', label: 'Camera Registry', exact: true },
   { id: 'embeddings', route: '/attendance/embeddings', label: 'Subject Embeddings' },
   { id: 'preview', route: '/cameras/preview', label: 'Live Preview' },
+  { id: 'record', route: '/attendance/record-stream', label: 'Record Stream' },
   {
     id: 'confidence',
     route: '/attendance/confidence',
     label: 'Confidence Monitor',
   },
-
   { id: 'manual', route: '/ams-manual', label: 'Help & Manual', newTab: true },
 ];
 
@@ -52,6 +52,7 @@ const COLORS = {
   embeddings: '#f59e0b',
   preview: '#8b5cf6',
   confidence: '#ef4444',
+  record: '#ef4444',
   manual: '#64748b',
 };
 

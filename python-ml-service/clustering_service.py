@@ -377,6 +377,10 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
                 zx1, zy1, zx2, zy2,
                 pass_lap_threshold,
                 pass_min_face_px,
+                # buffalo_l includes the genderage head, so these are populated
+                # for free on every detection — no extra inference cost.
+                getattr(face, "age", None),
+                getattr(face, "gender", None),  # 0 = Female, 1 = Male (insightface convention)
             ))
  
     if not raw:
@@ -421,6 +425,7 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
          zx1, zy1, zx2, zy2,
          pass_lap_threshold,
          pass_min_face_px,
+         face_age, face_gender,
         ) = raw[i]
  
         # ┌─────────────────────────────────────────────────────────────────┐
@@ -518,6 +523,11 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
             "det_score": det_score,
             "quality":   quality,
             "crop":      crop,
+            # Issue: persist demographics so they can be cross-checked before
+            # marking present. genderage head already ran as part of buffalo_l
+            # detection — this is just reading values already computed.
+            "age":       int(face_age) if face_age is not None else None,
+            "gender":    ("M" if face_gender == 1 else "F") if face_gender is not None else None,
         })
  
     if _debug:

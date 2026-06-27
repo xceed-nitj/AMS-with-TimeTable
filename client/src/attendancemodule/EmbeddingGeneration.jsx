@@ -79,7 +79,7 @@ function FilterBlock({
     dept, setDept, sem, setSem, subject, setSubject,
     subjectCode, setSubjectCode, setSubjectId,
     departments, deptLoading, deptError,
-    prefillSem, prefillSubject,
+    prefillSem, prefillSubject,fixedDepartment
 }) {
     const [sems,            setSems]            = useState([]);
     const [subjects,        setSubjects]        = useState([]);
@@ -163,10 +163,16 @@ function FilterBlock({
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 2fr', gap: 16, alignItems: 'end' }} className="r-grid-3">
                 <div>
                     <label style={styles.label}>Department</label>
-                    <select value={dept} onChange={e => setDept(e.target.value)} style={styles.select} disabled={deptLoading}>
-                        <option value="">{deptLoading ? 'Loading...' : deptError ? 'Error' : 'Select department...'}</option>
-                        {departments.map(d => <option key={d} value={d}>{d.replace(/_/g, ' ')}</option>)}
-                    </select>
+                    {fixedDepartment ? (
+                        <div style={{ ...styles.select, display: 'flex', alignItems: 'center', background: theme.surfaceAlt, color: theme.textMuted, cursor: 'not-allowed' }}>
+                            {fixedDepartment.replace(/_/g, ' ')}
+                        </div>
+                    ) : (
+                        <select value={dept} onChange={e => setDept(e.target.value)} style={styles.select} disabled={deptLoading}>
+                            <option value="">{deptLoading ? 'Loading...' : deptError ? 'Error' : 'Select department...'}</option>
+                            {departments.map(d => <option key={d} value={d}>{d.replace(/_/g, ' ')}</option>)}
+                        </select>
+                    )}
                 </div>
                 <div>
                     <label style={styles.label}>Semester</label>
@@ -203,8 +209,8 @@ function FilterBlock({
 // ===============================================================================
 // TAB 1 - Generate Subject Embeddings
 // ===============================================================================
-function GenerateTab({ departments, deptLoading, deptError, prefill, onPrefillConsumed }) {
-    const [dept,        setDept]        = useState('');
+function GenerateTab({ departments, deptLoading, deptError, prefill, onPrefillConsumed, fixedDepartment = '' }) {
+    const [dept,        setDept]        = useState(fixedDepartment);
     const [sem,         setSem]         = useState('');
     const [subject,     setSubject]     = useState('');
     const [subjectCode, setSubjectCode] = useState('');
@@ -212,6 +218,8 @@ function GenerateTab({ departments, deptLoading, deptError, prefill, onPrefillCo
 
     const [rollInput,  setRollInput]  = useState('');
     const [rollNos,    setRollNos]    = useState([]);
+    const [instituteWise, setInstituteWise] = useState(false);
+
 
     const [rows,    setRows]    = useState([]);
     const [running, setRunning] = useState(false);
@@ -240,7 +248,10 @@ function GenerateTab({ departments, deptLoading, deptError, prefill, onPrefillCo
     // Apply prefill when it arrives from ViewTab
     useEffect(() => {
         if (!prefill) return;
-        setDept(prefill.dept || '');
+        // For dept-locked admins, ignore any prefill dept that doesn't match —
+        // they should never be able to jump into another department's batch.
+        if (fixedDepartment && prefill.dept && prefill.dept !== fixedDepartment) return;
+        setDept(fixedDepartment || prefill.dept || '');
         setRollInput((prefill.rollNos || []).join('\n'));
         setSummary(null);
         setRows([]);
@@ -313,7 +324,7 @@ function GenerateTab({ departments, deptLoading, deptError, prefill, onPrefillCo
             const res = await fetch(`${EMB_BASE}/generate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sem: sem.trim(), subject: subject.trim(), dept: dept.trim(), subjectCode: subjectCode.trim(), rollNos }),
+                body: JSON.stringify({ sem: sem.trim(), subject: subject.trim(), dept: dept.trim(), subjectCode: subjectCode.trim(), rollNos, instituteWise }),
             });
 
             if (!res.ok) {
@@ -351,6 +362,7 @@ function GenerateTab({ departments, deptLoading, deptError, prefill, onPrefillCo
                                 dept:          dept.trim(),
                                 sem:           sem.trim(),
                                 subject:       subject.trim(),
+                                instituteWise,
                             });
                             showToast(`Done - ${msg.success} succeeded, ${msg.failed} failed`);
                         }
@@ -380,6 +392,7 @@ function GenerateTab({ departments, deptLoading, deptError, prefill, onPrefillCo
 
             <FilterBlock
                 dept={dept} setDept={handleSetDept}
+                fixedDepartment = {fixedDepartment}
                 sem={sem} setSem={setSem}
                 subject={subject} setSubject={setSubject}
                 subjectCode={subjectCode} setSubjectCode={setSubjectCode}
@@ -437,6 +450,27 @@ function GenerateTab({ departments, deptLoading, deptError, prefill, onPrefillCo
                                     style={{ display: 'none' }} onChange={handleXlsxUpload} disabled={running} />
                             </label>
                         </div>
+                        <div style={{ marginBottom: 8 }}>
+                            <label style={{
+                                display: 'inline-flex', alignItems: 'center', gap: 7,
+                                cursor: running ? 'not-allowed' : 'pointer',
+                                fontSize: '12px', fontWeight: 600,
+                                color: theme.accent,
+                                padding: '5px 12px', borderRadius: 6,
+                                border: `1px solid ${theme.accent}44`,
+                                background: theme.accentDim,
+                                transition: 'all 0.15s',
+                            }}>
+                                <input
+                                    type="checkbox"
+                                    checked={instituteWise}
+                                    onChange={e => setInstituteWise(e.target.checked)}
+                                    disabled={running}
+                                    style={{ width: 14, height: 14, accentColor: theme.accent, cursor: running ? 'not-allowed' : 'pointer' }}
+                                />
+                                Search Institute Wise
+                            </label>
+                        </div>
                         <textarea
                             value={rollInput}
                             onChange={e => setRollInput(e.target.value)}
@@ -444,18 +478,20 @@ function GenerateTab({ departments, deptLoading, deptError, prefill, onPrefillCo
                             placeholder="Enter roll numbers - separated by newlines, commas, or spaces"
                             style={{ ...styles.input, height: 160, resize: 'vertical', fontFamily: theme.fontMono, fontSize: '13px' }}
                         />
-                        <div style={{ marginTop: 8, fontSize: '12px', color: theme.textMuted }}>
-                            {rollNos.length} roll number{rollNos.length !== 1 ? 's' : ''} detected
+                        <div style={{ marginTop: 8 }}>
+                            <span style={{ fontSize: '12px', color: theme.textMuted }}>
+                                {rollNos.length} roll number{rollNos.length !== 1 ? 's' : ''} detected
+                            </span>
                         </div>
                     </div>
 
                     {/* Generate / Update button */}
-                    <div style={{ marginBottom: 28 }}>
+                    <div style={{ marginBottom: 28, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                         <button
                             onClick={startGeneration}
                             disabled={!canGenerate}
                             style={{
-                                width: '100%', padding: '13px 0', borderRadius: 8, border: 'none',
+                                width: 260, padding: '13px 0', borderRadius: 8, border: 'none',
                                 background: canGenerate ? theme.accent : theme.border,
                                 color: canGenerate ? '#fff' : theme.textMuted,
                                 fontSize: '14px', fontWeight: 700, cursor: canGenerate ? 'pointer' : 'not-allowed',
@@ -484,10 +520,12 @@ function GenerateTab({ departments, deptLoading, deptError, prefill, onPrefillCo
 
                     {/* Summary */}
                     {summary && (
-                        <div style={{ ...styles.card, marginBottom: 20, borderLeft: `3px solid ${theme.success}` }}>
+                        <div style={{ ...styles.card, marginBottom: 20, borderLeft: `3px solid ${summary.failed > 0 && summary.success === 0 ? theme.danger : theme.success}` }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
                                 <span style={{ fontSize: '13px', fontWeight: 700, color: theme.text }}>Generation Summary</span>
-                                <span style={{ fontSize: '11px', fontWeight: 700, padding: '1px 8px', borderRadius: 99, background: theme.successDim, color: theme.success }}>Done</span>
+                                <span style={{ fontSize: '11px', fontWeight: 700, padding: '1px 8px', borderRadius: 99, background: summary.failed > 0 && summary.success === 0 ? theme.dangerDim : theme.successDim, color: summary.failed > 0 && summary.success === 0 ? theme.danger : theme.success }}>
+                                    {summary.failed > 0 && summary.success === 0 ? 'Failed' : 'Done'}
+                                </span>
                             </div>
                             <div className="emb-summary-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 16 }}>
                                 {[
@@ -502,9 +540,29 @@ function GenerateTab({ departments, deptLoading, deptError, prefill, onPrefillCo
                                     </div>
                                 ))}
                             </div>
-                            {summary.embeddingFile && (
+                            {summary.embeddingFile && summary.success > 0 && (
                                 <div style={{ padding: '8px 12px', borderRadius: 6, background: theme.bg, border: `1px solid ${theme.border}`, fontSize: '12px', color: theme.textMuted }}>
                                     Saved to: <span style={{ fontFamily: theme.fontMono, color: theme.accent }}>{summary.embeddingFile}</span>
+                                </div>
+                            )}
+                            {summary.failed > 0 && (
+                                <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 7, background: theme.dangerDim, border: `1px solid ${theme.danger}44`, fontSize: '12px', color: theme.danger, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, marginTop: 1 }}>
+                                        <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.5"/>
+                                        <line x1="8" y1="5" x2="8" y2="8.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                                        <circle cx="8" cy="10.5" r="0.75" fill="currentColor"/>
+                                    </svg>
+                                    {summary.instituteWise ? (
+                                        <span>
+                                            <strong>{summary.failed} student{summary.failed !== 1 ? 's' : ''} not found in any department.</strong>{' '}
+                                            Check that the roll numbers are correct and that ground truth photos exist for these students.
+                                        </span>
+                                    ) : (
+                                        <span>
+                                            <strong>{summary.failed} student{summary.failed !== 1 ? 's' : ''} not found in the selected department.</strong>{' '}
+                                            Try enabling <strong>Search Institute Wise</strong> to search across all departments.
+                                        </span>
+                                    )}
                                 </div>
                             )}
                             {summary.missedRollNos.length > 0 && (
@@ -559,8 +617,8 @@ function GenerateTab({ departments, deptLoading, deptError, prefill, onPrefillCo
 // ===============================================================================
 // TAB 2 - View Generated Embeddings
 // ===============================================================================
-function ViewTab({ departments, deptLoading, deptError, onUpdate }) {
-    const [dept,         setDept]         = useState('');
+function ViewTab({ departments, deptLoading, deptError, onUpdate, fixedDepartment = '' }) {
+    const [dept,         setDept]         = useState(fixedDepartment);
     const [pklFiles,     setPklFiles]     = useState([]);
     const [history,      setHistory]      = useState([]);
     const [pklLoading,   setPklLoading]   = useState(false);
@@ -741,10 +799,16 @@ function ViewTab({ departments, deptLoading, deptError, onUpdate }) {
                 <div style={{ fontSize: '11px', fontWeight: 700, color: theme.accent, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14 }}>Filter</div>
                 <div style={{ maxWidth: 320 }}>
                     <label style={styles.label}>Department</label>
-                    <select value={dept} onChange={e => setDept(e.target.value)} style={styles.select} disabled={deptLoading}>
-                        <option value="">{deptLoading ? 'Loading...' : deptError ? 'Error' : 'Select department...'}</option>
-                        {departments.map(d => <option key={d} value={d}>{d.replace(/_/g, ' ')}</option>)}
-                    </select>
+                    {fixedDepartment ? (
+                        <div style={{ ...styles.select, display: 'flex', alignItems: 'center', background: theme.surfaceAlt, color: theme.textMuted, cursor: 'not-allowed' }}>
+                            {fixedDepartment.replace(/_/g, ' ')}
+                        </div>
+                    ) : (
+                        <select value={dept} onChange={e => setDept(e.target.value)} style={styles.select} disabled={deptLoading}>
+                            <option value="">{deptLoading ? 'Loading...' : deptError ? 'Error' : 'Select department...'}</option>
+                            {departments.map(d => <option key={d} value={d}>{d.replace(/_/g, ' ')}</option>)}
+                        </select>
+                    )}
                 </div>
             </div>
 
@@ -966,8 +1030,21 @@ function ViewTab({ departments, deptLoading, deptError, onUpdate }) {
                     {/* History log - one line per generation */}
                     {history.length > 0 && (
                         <div style={{ ...styles.card, marginTop: 20 }}>
-                            <div style={{ fontSize: '13px', fontWeight: 700, color: theme.text, marginBottom: 12 }}>Generation History</div>
-                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                                <span style={{ fontSize: '13px', fontWeight: 700, color: theme.text }}>Generation History</span>
+                                <span style={{ fontSize: '11px', fontWeight: 700, padding: '1px 8px', borderRadius: 99, background: theme.accentDim, color: theme.accent }}>{history.length}</span>
+                                <div style={{ flex: 1 }} />
+                                {dept && (
+                                    <span style={{
+                                        fontSize: '11px', fontWeight: 600, padding: '2px 10px', borderRadius: 6,
+                                        background: theme.accentDim, color: theme.accent,
+                                        border: `1px solid ${theme.accent}33`,
+                                    }}>
+                                        {dept.replace(/_/g, ' ')}
+                                    </span>
+                                )}
+                            </div>
+                            <div style={{ maxHeight: 320, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
                                 {history.map((rec, idx) => {
                                     const dt      = new Date(rec.lastUpdatedAt || rec.generatedAt);
                                     const missed  = (rec.missedRollNos || []).length;
@@ -982,10 +1059,10 @@ function ViewTab({ departments, deptLoading, deptError, onUpdate }) {
                                             <span style={{ fontFamily: theme.fontMono, fontSize: '11px', color: theme.textMuted, whiteSpace: 'nowrap' }}>
                                                 {dt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}, {dt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
                                             </span>
-                                            <span style={{ color: theme.border }}>.</span>
+                                            <span style={{ color: theme.border }}>·</span>
                                             <span style={{ fontWeight: 600, color: theme.text }}>{rec.subject || '-'}</span>
                                             <span style={{ color: theme.textMuted }}>Sem {rec.sem || '-'}</span>
-                                            <span style={{ color: theme.border }}>.</span>
+                                            <span style={{ color: theme.border }}>·</span>
                                             <span style={{ color: theme.success, fontWeight: 600 }}>{success} embedded</span>
                                             {missed > 0 && (
                                                 <span style={{ color: theme.danger, fontWeight: 600 }}>{missed} missing</span>
@@ -1004,7 +1081,7 @@ function ViewTab({ departments, deptLoading, deptError, onUpdate }) {
 
 // Main export
 // ===============================================================================
-export default function EmbeddingGeneration() {
+export default function EmbeddingGeneration({ fixedDepartment = '' }) {
     const { departments, deptLoading, deptError } = useDepartments();
     const [activeTab, setActiveTab] = useState(1);
     const [prefill,   setPrefill]   = useState(null);
@@ -1040,12 +1117,14 @@ export default function EmbeddingGeneration() {
                     departments={departments} deptLoading={deptLoading} deptError={deptError}
                     prefill={prefill}
                     onPrefillConsumed={() => setPrefill(null)}
+                    fixedDepartment={fixedDepartment}
                 />
             )}
             {activeTab === 2 && (
                 <ViewTab
                     departments={departments} deptLoading={deptLoading} deptError={deptError}
                     onUpdate={handleUpdate}
+                    fixedDepartment={fixedDepartment}
                 />
             )}
         </div>

@@ -356,7 +356,205 @@ class CameraController {
             return sendKnownError(res, error);
         }
     }
+    async startRecording(req, res) {
+    const { rtspUrl, label } = req.body;
+    if (!rtspUrl || !label)
+        return res.status(400).json({ error: 'rtspUrl and label required' });
+    try {
+        const result = await axios.post(`${ML_URL}/start-recording`,
+            { rtspUrl, label }, { timeout: 10000 });
+        return res.json(result.data);
+    } catch (error) {
+        return sendKnownError(res, error);
+    }
 }
+
+async stopRecording(req, res) {
+    const { recordingId } = req.body;
+    if (!recordingId)
+        return res.status(400).json({ error: 'recordingId required' });
+    try {
+        const result = await axios.post(`${ML_URL}/stop-recording`,
+            { recordingId }, { timeout: 15000 });
+        return res.json(result.data);
+    } catch (error) {
+        return sendKnownError(res, error);
+    }
+}
+
+async listRecordings(req, res) {
+    try {
+        const result = await axios.get(`${ML_URL}/recordings`, { timeout: 8000 });
+        return res.json(result.data);
+    } catch (error) {
+        return sendKnownError(res, error);
+    }
+}
+
+async downloadRecording(req, res) {
+    const path = require('path');
+    const fs   = require('fs');
+    const safe = path.basename(req.params.filename);
+     const filePath = path.join(process.cwd(), 'recordings', safe);
+
+    if (!fs.existsSync(filePath))
+        return res.status(404).json({ error: 'File not found' });
+    const stat = fs.statSync(filePath);
+    res.setHeader('Content-Type', 'video/mp4');
+    res.setHeader('Content-Disposition', `attachment; filename="${safe}"`);
+    res.setHeader('Content-Length', stat.size);
+    fs.createReadStream(filePath).pipe(res);
+}
+
+async downloadAudio(req, res) {
+    const { spawn } = require('child_process');
+    const path      = require('path');
+    const fs        = require('fs');
+    const safe      = path.basename(req.params.filename);
+  
+    const filePath = path.join(process.cwd(), 'recordings', safe);
+    if (!fs.existsSync(filePath))
+        return res.status(404).json({ error: 'File not found' });
+    const audioName = safe.replace(/\.mp4$/, '.mp3');
+    res.setHeader('Content-Type', 'audio/mpeg');
+    res.setHeader('Content-Disposition', `attachment; filename="${audioName}"`);
+    const ff = spawn('ffmpeg', [
+        '-i', filePath, '-vn', '-acodec', 'mp3',
+        '-q:a', '2', '-f', 'mp3', 'pipe:1',
+    ]);
+    ff.stdout.pipe(res);
+    ff.stderr.on('data', () => {});
+    req.on('close', () => ff.kill());
+}
+// ── Scheduled recording methods ────────────────────────────────────────────
+// In-memory store (survives server restart as long as the process runs;
+// for persistence across restarts you could move this to MongoDB later).
+// Key: scheduleId (uuid), Value: { scheduleId, rtspUrl, label, period,
+//   scheduledDate, startMin, endMin, status, activeRecordingId, timers[] }
+
+scheduleRecording(req, res) {
+    const { rtspUrl, label, period, scheduledDate } = req.body;
+    if (!rtspUrl || !label || !period || !scheduledDate)
+        return res.status(400).json({ error: 'rtspUrl, label, period and scheduledDate are required' });
+
+    const SLOT_SCHEDULE = {
+        period1: { startMin: 8 * 60 + 30,  endMin: 9 * 60 + 30  },
+        period2: { startMin: 9 * 60 + 30,  endMin: 10 * 60 + 30 },
+        period3: { startMin: 10 * 60 + 30, endMin: 11 * 60 + 30 },
+        period4: { startMin: 11 * 60 + 30, endMin: 12 * 60 + 30 },
+        period5: { startMin: 13 * 60 + 30, endMin: 14 * 60 + 30 },
+        period6: { startMin: 14 * 60 + 30, endMin: 15 * 60 + 30 },
+        period7: { startMin: 15 * 60 + 30, endMin: 16 * 60 + 30 },
+        period8: { startMin: 16 * 60 + 30, endMin: 17 * 60 + 30 },
+    };
+
+    const slot = SLOT_SCHEDULE[period];
+    if (!slot) return res.status(400).json({ error: `Unknown period: ${period}` });
+
+    const scheduleId = require('crypto').randomUUID();
+    const entry = {
+        scheduleId,
+        rtspUrl,
+        label,
+        period,
+        scheduledDate,     // "YYYY-MM-DD"
+        startMin: slot.startMin,
+        endMin:   slot.endMin,
+        status:   'scheduled',
+        activeRecordingId: null,
+        timers: [],
+    };
+
+    // Calculate ms until start and stop from now
+    const now = new Date();
+    const target = new Date(scheduledDate);
+    target.setHours(Math.floor(slot.startMin / 60), slot.startMin % 60, 0, 0);
+    const msUntilStart = target - now;
+
+    const targetEnd = new Date(scheduledDate);
+    targetEnd.setHours(Math.floor(slot.endMin / 60), slot.endMin % 60, 0, 0);
+    const msUntilEnd = targetEnd - now;
+
+    if (msUntilStart < 0) {
+        return res.status(400).json({ error: 'Scheduled time is in the past' });
+    }
+
+    // Auto-start timer
+    const startTimer = setTimeout(async () => {
+        try {
+            const axios = require('axios');
+            const ML_URL = process.env.ML_SERVICE_URL || 'http://localhost:8500';
+            const result = await axios.post(`${ML_URL}/start-recording`,
+                { rtspUrl, label }, { timeout: 10000 });
+            entry.activeRecordingId = result.data.recordingId;
+            entry.status = 'recording';
+            console.log(`[RecordScheduler] Auto-started recording for ${label} period=${period} id=${entry.activeRecordingId}`);
+        } catch (err) {
+            entry.status = 'error';
+            console.error(`[RecordScheduler] Failed to auto-start recording for ${label}:`, err.message);
+        }
+    }, msUntilStart);
+
+    // Auto-stop timer
+    const stopTimer = setTimeout(async () => {
+        if (!entry.activeRecordingId) return;
+        try {
+            const axios = require('axios');
+            const ML_URL = process.env.ML_SERVICE_URL || 'http://localhost:8500';
+            await axios.post(`${ML_URL}/stop-recording`,
+                { recordingId: entry.activeRecordingId }, { timeout: 15000 });
+            entry.status = 'done';
+            entry.activeRecordingId = null;
+            console.log(`[RecordScheduler] Auto-stopped recording for ${label} period=${period}`);
+        } catch (err) {
+            console.error(`[RecordScheduler] Failed to auto-stop recording for ${label}:`, err.message);
+        }
+    }, msUntilEnd);
+
+    entry.timers = [startTimer, stopTimer];
+
+    // Store in module-level map (defined below the class)
+    _schedules.set(scheduleId, entry);
+
+    return res.status(201).json({
+        scheduleId,
+        label,
+        period,
+        scheduledDate,
+        startTime: `${String(Math.floor(slot.startMin / 60)).padStart(2,'0')}:${String(slot.startMin % 60).padStart(2,'0')}`,
+        endTime:   `${String(Math.floor(slot.endMin / 60)).padStart(2,'0')}:${String(slot.endMin % 60).padStart(2,'0')}`,
+        status: 'scheduled',
+    });
+}
+
+listScheduledRecordings(req, res) {
+    const list = [..._schedules.values()].map(e => ({
+        scheduleId: e.scheduleId,
+        label:      e.label,
+        period:     e.period,
+        scheduledDate: e.scheduledDate,
+        startTime: `${String(Math.floor(e.startMin / 60)).padStart(2,'0')}:${String(e.startMin % 60).padStart(2,'0')}`,
+        endTime:   `${String(Math.floor(e.endMin / 60)).padStart(2,'0')}:${String(e.endMin % 60).padStart(2,'0')}`,
+        status:    e.status,
+        activeRecordingId: e.activeRecordingId,
+    }));
+    return res.json(list);
+}
+
+cancelScheduledRecording(req, res) {
+    const { scheduleId } = req.params;
+    const entry = _schedules.get(scheduleId);
+    if (!entry) return res.status(404).json({ error: 'Schedule not found' });
+    // Clear both timers
+    entry.timers.forEach(t => clearTimeout(t));
+    _schedules.delete(scheduleId);
+    return res.json({ deleted: true, scheduleId });
+}
+}
+
+// Module-level map for scheduled recordings (shared across all requests)
+const _schedules = new Map();
+
 function sendKnownError(res, error) {
     if (error.code === 11000) {
         return res.status(409).json({ error: 'Duplicate key error', details: error.keyValue });
