@@ -20,7 +20,10 @@ from pydantic import BaseModel
 from sklearn.cluster import DBSCAN as _DBSCAN
 
 import state
-from clustering_service import _detect_faces_tiled, _build_ui_mask
+from clustering_service import (
+    _detect_faces_tiled, _build_ui_mask,
+    reset_liveness_rejection_count, get_liveness_rejection_count,
+)
 
 logger = logging.getLogger("ml_service.rtsp_routes")
 router = APIRouter()
@@ -117,6 +120,11 @@ class _RTSPReader:
 
 
 def _open_capture(rtsp_url: str) -> cv2.VideoCapture:
+    if rtsp_url.endswith(".mp4") or os.path.exists(rtsp_url):
+        cap = cv2.VideoCapture(rtsp_url)
+        return cap
+    
+    
     url = rtsp_url if "rtsp_transport" in rtsp_url else rtsp_url + "?rtsp_transport=tcp"
     # Force FFmpeg to use 1 decode thread — the default multi-thread
     # decode spawns internal pthreads that race on macOS ARM64 and
@@ -537,6 +545,11 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
     """
     job["stop"].clear()
 
+    # Issue: liveness/anti-spoofing — reset the rejection counter so this
+    # run's summary reports only what it rejected (see note on the counter's
+    # concurrency tradeoff in clustering_service.py).
+    reset_liveness_rejection_count()
+
     yield {"type": "stage", "message": f"Loading enrolled embeddings for batch: {req.batch}…"}
 
     # Enrollment embeddings come from Node's cached _info.json mean_embedding
@@ -917,6 +930,11 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
                 "processing_time":       round(time.time() - start_t, 2),
                 "frames_read":           int(frame_count),
                 "duration_sec":          int(req.durationSec),
+                # Issue: liveness/anti-spoofing — count of face detections
+                # rejected as likely printed-photo/screen-replay spoofs during
+                # this run. Surfaced so dept-admins can see spoof attempts
+                # were caught rather than silently dropped.
+                "liveness_rejected":     int(get_liveness_rejection_count()),
             },
             "unmatched_clusters": unmatched_clusters,
             "frame_snapshots":    frame_snapshots,
