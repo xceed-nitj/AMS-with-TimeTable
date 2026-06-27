@@ -14,6 +14,11 @@ const CSS = `
     animation:fadeIn .25s ease;
   }
 
+  .tree-container{
+    display: flex;
+    justify-content: center;
+  }
+
   .ml-card{
     background:${T.surface};
     border:1px solid ${T.border};
@@ -50,8 +55,13 @@ const CSS = `
 
   .folder-tree{
     padding:14px 0;
+    width: 50%;
   }
 
+  .file-panel{
+    width: 50%;
+  }
+  
   .folder-node{
     margin-left:18px;
     border-left:1px dashed ${T.border};
@@ -132,9 +142,17 @@ const CSS = `
     .folder-row{
       padding:10px;
     }
-
+    .tree-container{
+      flex-direction: column;
+    }
     .folder-name{
       font-size:13px;
+    }
+    .folder-tree{
+        width: 100%;
+    }
+    .file-panel{
+        width: 100%;
     }
   }
 `;
@@ -142,6 +160,13 @@ const CSS = `
 export const MLDataFolder = () => {
     const [mlFolderTree, setMlFolderTree] = useState({});
     const [loading, setLoading] = useState(true);
+    const [selectedFolder, setSelectedFolder] = useState(null);
+    const [folderFiles, setFolderFiles] = useState({});
+    const [loadingFiles, setLoadingFiles] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [expandedFolders, setExpandedFolders] = useState(new Set([""]));
+
+    const [previewFile, setPreviewFile] = useState(null);
 
     const formatBytes = (bytes) => {
         if (!bytes) return "0 B";
@@ -151,15 +176,61 @@ export const MLDataFolder = () => {
 
         return `${(bytes/Math.pow(1024,i)).toFixed(2)} ${units[i]}`;
     };
+    
+    const getFolderFiles = async (folder, page = 1) => {
+        if (
+            folderFiles[folder] &&
+            folderFiles[folder].pages &&
+            folderFiles[folder].pages[page]
+        ) {
+            return;
+        }
+        setLoadingFiles(true);
+        try {
+            const res = await fetch(
+                `${apiUrl}/attendancemodule/mldatafoldertree/files?folder=${encodeURIComponent(folder)}&page=${page}&limit=50`
+            );
+            const data = await res.json();
+            setFolderFiles(prev => ({
+                ...prev,
+                [folder]: {
+                    totalFiles: data.totalFiles,
+                    hasMore: data.hasMore,
+                    pages: {
+                        ...(prev[folder]?.pages || {}),
+                        [page]: data.files,
+                    },
+                },
+            }));
+        } finally {
+            setLoadingFiles(false);
+        }
+    };
 
     const FolderNode = ({folder}) => {
-        const [open,setOpen] = React.useState(folder.name === "ml-data");
-
-        const hasChildren = folder.subfolders?.length > 0 || folder.files > 0;
+        const open = expandedFolders.has(folder.relativePath);
+        const hasChildren = folder.subfolders?.length > 0;
+        const toggleFolder = (path) => {
+            setExpandedFolders(prev => {
+                const next = new Set(prev);
+                if (next.has(path)) {
+                    next.delete(path);
+                } else {
+                    next.add(path);
+                }
+                return next;
+            });
+        };
 
         return (
             <div className="folder-node">
-                <div className="folder-row" onClick={() => hasChildren && setOpen(!open)}>
+                <div className="folder-row"  style={{background: selectedFolder === folder.relativePath && T.border}} onClick={() => {
+                    if (hasChildren) {
+                        toggleFolder(folder.relativePath);
+                    }
+                    setSelectedFolder(folder.relativePath);
+                    getFolderFiles(folder.relativePath, 1);
+                }}>
                     <div className="folder-left">
                         <span className="folder-arrow">
                             {hasChildren ? (open ? "▼" : "▶") : ""}
@@ -183,22 +254,11 @@ export const MLDataFolder = () => {
                             {
                                 hasChildren && folder.subfolders.map(sub => (
                                         <FolderNode
-                                            key={sub.name}
+                                            key={sub.relativePath}
                                             folder={sub}
                                         />
                                     ))
                             }
-                            {folder.files > 0 && (
-                                <div className="folder-files" style={{display: "flex", gap: "10px", marginTop: "6px"}}>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-text-icon lucide-file-text">
-                                        <path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/>
-                                            <path d="M14 2v5a1 1 0 0 0 1 1h5"/>
-                                            <path d="M10 9H8"/><path d="M16 13H8"/>
-                                        <path d="M16 17H8"/>
-                                    </svg>
-                                    {folder.files} {folder.files === 1 ? "File" : "Files"}
-                                </div>
-                            )}
                         </div>
                     
                     )
@@ -206,6 +266,11 @@ export const MLDataFolder = () => {
             </div>
         );
     };
+
+    const pageSize = 50;
+    const totalFiles = folderFiles[selectedFolder]?.totalFiles || 0;
+    const start = totalFiles === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+    const end = Math.min(currentPage * pageSize, totalFiles);
     
     const getMLFolderTree = async () => {
         try{
@@ -243,9 +308,227 @@ export const MLDataFolder = () => {
                             {formatBytes(mlFolderTree.size)}
                         </div>
                     </div>
-                    <div className="folder-tree">
+                  <div className='tree-container'>
+                    <div className="folder-tree" style={{borderRight: `1px solid ${T.border}`}}>
                         <FolderNode folder={mlFolderTree}/>
                     </div>
+                    <div className='file-panel'>
+                        {selectedFolder === null ? (
+                        <div
+                            style={{
+                                height: "100%",
+                                display: "flex",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                color: T.textMuted,
+                                fontSize: "15px",
+                            }}
+                        >
+                            Select a folder to view its files.
+                        </div>
+                    ) : (
+                        <>
+                            <div
+                                style={{
+                                    padding: "18px 20px",
+                                    borderBottom: `1px solid ${T.border}`,
+                                    fontWeight: 700,
+                                    fontSize: "16px",
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                }}
+                            >
+                                <span>{selectedFolder.length > 30 ? selectedFolder.slice(0, 30) + "..." : selectedFolder || "ml-data"}</span>
+
+                                <div style={{display: "flex", gap: "8px",justifyContent: "center",alignItems:"center", color: T.textMuted, fontWeight: 500, fontSize: "13px"}}>
+                                    <span>
+                                        {start}-{end} / {totalFiles} Files
+                                    </span>
+                                    <span>|</span>
+                                    <span style={{display: "flex", justifyContent: "center", alignItems: "center"}}>
+                                            <button
+                                        onClick={() => {
+                                            setCurrentPage(prev => {
+                                                if (prev === 1) return prev;
+                                                const page = prev - 1;
+                                                getFolderFiles(selectedFolder, page);
+                                                return page;
+                                            });
+                                        }}
+                                        style={{color: T.accent}}>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-left-icon lucide-chevron-left"><path d="m15 18-6-6 6-6"/></svg>
+                                        </button>
+                                    
+                                        Page <span style={{fontWeight: "700", color: T.accent, marginLeft: "4px"}}>{currentPage}</span>
+                                        <button
+                                        onClick={() => {
+                                            setCurrentPage(prev => {
+                                                const nextPage = prev + 1;
+                                                const hasCachedPage =
+                                                    folderFiles[selectedFolder]?.pages?.[nextPage];
+                                                const canGoNext =
+                                                    hasCachedPage || folderFiles[selectedFolder]?.hasMore;
+                                                if (canGoNext) {
+                                                    getFolderFiles(selectedFolder, nextPage);
+                                                    return nextPage;
+                                                }
+                                                return prev;
+                                            });
+                                        }}
+                                        style={{color: T.accent}}>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right-icon lucide-chevron-right"><path d="m9 18 6-6-6-6"/></svg>
+                                        </button>
+                                    </span>
+                                </div>
+                            </div>
+
+                            {loadingFiles ? (
+                                <div
+                                    style={{
+                                        padding: 40,
+                                        textAlign: "center",
+                                        color: T.textMuted,
+                                    }}
+                                >
+                                    Loading files...
+                                </div>
+                            ) : (
+                                <>
+                                    {(folderFiles[selectedFolder]?.pages?.[currentPage] || []).length === 0 ? (
+                                        <div
+                                            style={{
+                                                padding: 40,
+                                                textAlign: "center",
+                                                color: T.textMuted,
+                                            }}
+                                        >
+                                            This folder contains no files.
+                                        </div>
+                                    ) : (
+                                        <div style={{maxHeight: "66vh", overflow: "scroll"}}>
+                                            {(folderFiles[selectedFolder]?.pages?.[currentPage] || []).map(file => (
+                                                <div
+                                                    key={file.relativePath}
+                                                    onClick={() => setPreviewFile(file)}
+                                                    style={{
+                                                        display: "grid",
+                                                        gridTemplateColumns: "1fr 120px 170px",
+                                                        padding: "12px 20px",
+                                                        borderBottom: `1px solid ${T.border}`,
+                                                        cursor: "pointer",
+                                                        alignItems: "center",
+                                                    }}
+                                                >
+                                                    <div
+                                                    style={{
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        gap: "12px",
+                                                        overflow: "hidden",
+                                                    }}
+                                                >
+                                                    <img
+                                                        src={`${apiUrl}/attendancemodule/mldatafoldertree/file?path=${encodeURIComponent(file.relativePath)}`}
+                                                        alt={file.filename}
+                                                        style={{
+                                                            width: "40px",
+                                                            height: "24px",
+                                                            objectFit: "cover",
+                                                            borderRadius: "6px",
+                                                            border: `1px solid ${T.border}`,
+                                                            flexShrink: 0,
+                                                        }}
+                                                        loading="lazy"
+                                                    />
+
+                                                    <span
+                                                        style={{
+                                                            overflow: "hidden",
+                                                            textOverflow: "ellipsis",
+                                                            whiteSpace: "nowrap",
+                                                            fontWeight: 500,
+                                                        }}
+                                                    >
+                                                        {file.filename}
+                                                    </span>
+                                                </div>
+
+                                                    <div
+                                                        style={{
+                                                            color: T.textMuted,
+                                                            fontSize: "13px",
+                                                        }}
+                                                    >
+                                                        {formatBytes(file.size)}
+                                                    </div>
+
+                                                    <div
+                                                        style={{
+                                                            color: T.textMuted,
+                                                            fontSize: "13px",
+                                                        }}
+                                                    >
+                                                        {new Date(file.modified).toLocaleString()}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </>
+                            )}
+
+                            {previewFile && (
+                                <div
+                                    onClick={() => setPreviewFile(null)}
+                                    style={{
+                                        position: "fixed",
+                                        inset: 0,
+                                        background: "rgba(0,0,0,.75)",
+                                        display: "flex",
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                        zIndex: 10000,
+                                    }}
+                                >
+                                    <div
+                                        onClick={e => e.stopPropagation()}
+                                        style={{
+                                            background: "#fff",
+                                            padding: 20,
+                                            borderRadius: 10,
+                                            maxWidth: "90vw",
+                                            maxHeight: "90vh",
+                                        }}
+                                    >
+                                        <img
+                                            src={`${apiUrl}/attendancemodule/mldatafoldertree/file?path=${encodeURIComponent(
+                                                previewFile.relativePath
+                                            )}`}
+                                            alt={previewFile.filename}
+                                            style={{
+                                                maxWidth: "80vw",
+                                                maxHeight: "80vh",
+                                                display: "block",
+                                            }}
+                                        />
+
+                                        <div
+                                            style={{
+                                                marginTop: 15,
+                                                textAlign: "center",
+                                                fontWeight: 600,
+                                            }}
+                                        >
+                                            {previewFile.filename}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </>
+                    )}
+                    </div>
+                  </div>
                 </div>
             </div>
         </>
