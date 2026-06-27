@@ -140,7 +140,7 @@ function TabOverview({ setTab }) {
                 <Arrow />
                 <FlowCard n={4} icon="🏷️" title="Roll Assignment" sub="Auto-match + incharge verification" accent="#10b981" wide />
                 <Arrow />
-                <FlowCard n={5} icon="🧠" title="Subject Embeddings" sub="Map students per subject" accent="#f59e0b" />
+                <FlowCard n={5} icon="🧠" title="Subject Embeddings" sub="Dept incharge — map students per subject" accent="#f59e0b" wide />
                 <Arrow />
                 <FlowCard n={6} icon="✅" title="Attendance" sub="Live recognition" accent="#14b8a6" />
             </div>
@@ -154,7 +154,6 @@ function TabOverview({ setTab }) {
                         items: [
                             'Configure batches, cameras, and session dates',
                             'Configure capture settings (target images, frame skip, detection size)',
-                            'Generate and manage subject embeddings',
                             'Run attendance and review reports',
                             'System-level access to all modules',
                         ],
@@ -166,6 +165,7 @@ function TabOverview({ setTab }) {
                             'Verify and manage ERP photos in Manage Photos tab',
                             'Perform roll assignment — map clusters to roll numbers',
                             'Approve assignments for the department',
+                            'Generate and manage subject embeddings for their department',
                         ],
                     },
                 ].map(u => (
@@ -190,7 +190,7 @@ function TabOverview({ setTab }) {
                     { tab: 'groundtruth', icon: '📹', title: 'Ground Truth Capture',  color: '#0ea5e9', desc: 'Live RTSP stream capture from classroom cameras' },
                     { tab: 'erp',         icon: '🖼️', title: 'ERP Photo Upload',      color: '#f472b6', desc: 'Upload official student photos as identification reference' },
                     { tab: 'rollassign',  icon: '🏷️', title: 'Roll Assignment',       color: '#10b981', desc: 'Dept incharges map face clusters to roll numbers' },
-                    { tab: 'embeddings',  icon: '🧠', title: 'Subject Embeddings',     color: '#f59e0b', desc: 'Map registered students per subject to reduce matching effort' },
+                    { tab: 'embeddings',  icon: '🧠', title: 'Subject Embeddings',     color: '#f59e0b', desc: 'Dept incharge maps registered students per subject to enable targeted recognition' },
                     { tab: 'attendance',  icon: '✅', title: 'Running Attendance',    color: '#14b8a6', desc: 'Live recognition, session reports, frame verification' },
                 ].map(m => (
                     <div key={m.tab} style={{
@@ -299,7 +299,7 @@ function TabGroundTruth() {
 
             <Step n={4} title="Configure Capture Settings (Admin only)">
                 <ul style={{ margin: '4px 0 0 0', paddingLeft: 18, lineHeight: 1.9 }}>
-                    <li><strong>Target Images per Person:</strong> How many face images to collect per student (recommended: 10 — gives 5 for embedding + 5 backup).</li>
+                    <li><strong>Target Images per Person:</strong> How many face images to collect per student (recommended: 15 — gives 5 for embedding + 10 backup for diversity).</li>
                     <li><strong>Frame Skip:</strong> Frames skipped between captures. Higher = lighter CPU load. Recommended: 10 for live streams.</li>
                     <li><strong>Min Detection Size:</strong> Filters out very small/distant faces. Use 320 (Fast) for clear footage, 640 (Accurate) for large rooms with distant students.</li>
                 </ul>
@@ -555,8 +555,8 @@ function TabRollAssign() {
             </Note>
 
             <Note type="tip">
-                After all matches are approved, notify the admin to regenerate subject embeddings for this batch.
-                Attendance cannot be run until embeddings reflect the approved assignments.
+                After all matches are approved, the dept incharge should proceed to the <strong>Subject Embeddings</strong> tab
+                to generate embeddings for their subjects. Attendance cannot be run until embeddings reflect the approved assignments.
             </Note>
         </div>
     );
@@ -565,6 +565,12 @@ function TabRollAssign() {
 function TabEmbeddings() {
     return (
         <div>
+            <Note type="dept">
+                <strong>Who performs this step?</strong> Department Incharges — after completing roll assignment
+                for their batch, incharges generate subject embeddings for each subject in their department.
+                This is not an admin task.
+            </Note>
+
             <Note type="info">
                 <strong>What are Subject Embeddings?</strong> Subject Embeddings map the roll numbers of students
                 registered for a specific subject. During attendance, the system only compares detected faces
