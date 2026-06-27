@@ -246,6 +246,22 @@ router.get("/confidence-trend", async (req, res) => {
   }
 });
 
+router.get("/export", async (req, res) => {
+  try {
+    await ctrl.exportAttendance(req, res);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.get("/export-options", async (req, res) => {
+  try {
+    await ctrl.getExportOptions(req, res);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Get full report by ID (keep last to avoid conflicts with named routes above)
 router.get("/:id", async (req, res) => {
   try {

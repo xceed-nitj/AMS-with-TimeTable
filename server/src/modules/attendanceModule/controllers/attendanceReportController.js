@@ -537,6 +537,139 @@ class AttendanceReportController {
       res.status(500).json({ error: err.message });
     }
   }
+
+  // GET /attendancemodule/reports/export?batch=X&mode=subject|semester&value=Y
+  async exportAttendance(req, res) {
+    try {
+      const { batch, mode, value, fromDate, toDate } = req.query;
+      if (!batch || !mode || !value) {
+        return res
+          .status(400)
+          .json({ error: "batch, mode, and value are required" });
+      }
+      if (mode !== "subject" && mode !== "semester") {
+        return res
+          .status(400)
+          .json({ error: "mode must be 'subject' or 'semester'" });
+      }
+
+      const filter = { batch };
+      filter[mode] = value;
+
+      if (fromDate || toDate) {
+        filter.date = {};
+        if (fromDate) filter.date.$gte = fromDate;
+        if (toDate) filter.date.$lte = toDate;
+      }
+
+      const reports = await AttendanceReport.find(filter)
+        .select("date subject semester finalReport")
+        .sort({ date: 1 });
+
+      if (reports.length === 0) {
+        return res
+          .status(404)
+          .json({ error: "No reports found for this filter" });
+      }
+
+      const dateSet = new Set();
+      const studentMap = {};
+
+      for (const report of reports) {
+        const dateStr = report.date;
+        dateSet.add(dateStr);
+        for (const student of report.finalReport) {
+          if (!studentMap[student.rollNo]) {
+            studentMap[student.rollNo] = {};
+          }
+          const existing = studentMap[student.rollNo][dateStr];
+          if (!existing || (existing === "A" && student.finalStatus !== "A")) {
+            studentMap[student.rollNo][dateStr] = student.finalStatus;
+          }
+        }
+      }
+
+      const dates = [...dateSet].sort();
+      const rollNumbers = Object.keys(studentMap).sort();
+
+      const header = ["Roll No", ...dates];
+      const rows = rollNumbers.map((rollNo) => {
+        const row = [rollNo];
+        for (const d of dates) {
+          row.push(studentMap[rollNo][d] || "-");
+        }
+        return row;
+      });
+
+      const format = req.query.format || "csv";
+
+      if (format === "json") {
+        return res.json({
+          batch,
+          mode,
+          value,
+          dates,
+          rows: rollNumbers.map((rollNo) => ({
+            rollNo,
+            statuses: dates.map((d) => studentMap[rollNo][d] || "-"),
+          })),
+        });
+      }
+
+      const csvLines = [header.join(","), ...rows.map((r) => r.join(","))];
+      const csvContent = csvLines.join("\n");
+
+      const filename = `attendance_${mode}_${value.replace(/\s+/g, "_")}_${batch}.csv`;
+
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${filename}"`,
+      );
+      res.send(csvContent);
+    } catch (err) {
+      console.error("[AttendanceReport] exportAttendance error:", err);
+      res.status(500).json({ error: err.message });
+    }
+  }
+
+  // GET /attendancemodule/reports/export-options?batch=X
+  async getExportOptions(req, res) {
+    try {
+      const { batch } = req.query;
+      if (!batch) return res.status(400).json({ error: "batch is required" });
+
+      const [subjects, semesters, subjectFacultyDocs] = await Promise.all([
+        AttendanceReport.distinct("subject", {
+          batch,
+          subject: { $nin: [null, ""] },
+        }),
+        AttendanceReport.distinct("semester", {
+          batch,
+          semester: { $nin: [null, ""] },
+        }),
+        AttendanceReport.find({ batch, subject: { $nin: [null, ""] } })
+          .select("subject faculty")
+          .lean(),
+      ]);
+
+      // Build subject -> faculty map (most recent faculty wins if subject taught by multiple)
+      const subjectFacultyMap = {};
+      for (const doc of subjectFacultyDocs) {
+        if (doc.subject && doc.faculty) {
+          subjectFacultyMap[doc.subject] = doc.faculty;
+        }
+      }
+
+      res.json({
+        subjects: subjects.sort(),
+        semesters: semesters.sort(),
+        subjectFaculty: subjectFacultyMap,
+      });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  }
 }
 
 module.exports = AttendanceReportController;
