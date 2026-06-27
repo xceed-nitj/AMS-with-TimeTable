@@ -157,6 +157,41 @@ const CSS = `
   }
 `;
 
+const IMAGE_EXTS = new Set(['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg']);
+
+const getFileExt = (filename) => filename.split('.').pop().toLowerCase();
+
+const isImage = (filename) => IMAGE_EXTS.has(getFileExt(filename));
+
+const ExtBadge = ({ filename }) => {
+    const ext = getFileExt(filename);
+    const colors = {
+        pkl:  { bg: '#f3e8ff', color: '#7c3aed' },
+        csv:  { bg: '#dcfce7', color: '#166534' },
+        xlsx: { bg: '#dcfce7', color: '#166534' },
+        xls:  { bg: '#dcfce7', color: '#166534' },
+        json: { bg: '#dbeafe', color: '#1e40af' },
+        mp4:  { bg: '#fee2e2', color: '#991b1b' },
+        avi:  { bg: '#fee2e2', color: '#991b1b' },
+        txt:  { bg: '#f1f5f9', color: '#475569' },
+        npy:  { bg: '#fef3c7', color: '#92400e' },
+        pt:   { bg: '#fce7f3', color: '#9d174d' },
+        h5:   { bg: '#fce7f3', color: '#9d174d' },
+    };
+    const style = colors[ext] || { bg: '#f1f5f9', color: '#6b7280' };
+    return (
+        <div style={{
+            width: 40, height: 24, borderRadius: 6, flexShrink: 0,
+            background: style.bg, border: `1px solid ${style.color}30`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 9, fontWeight: 800, color: style.color,
+            textTransform: 'uppercase', letterSpacing: 0.5,
+        }}>
+            {ext.slice(0, 4)}
+        </div>
+    );
+};
+
 export const MLDataFolder = () => {
     const [mlFolderTree, setMlFolderTree] = useState({});
     const [loading, setLoading] = useState(true);
@@ -428,19 +463,23 @@ export const MLDataFolder = () => {
                                                         overflow: "hidden",
                                                     }}
                                                 >
-                                                    <img
-                                                        src={`${apiUrl}/attendancemodule/mldatafoldertree/file?path=${encodeURIComponent(file.relativePath)}`}
-                                                        alt={file.filename}
-                                                        style={{
-                                                            width: "40px",
-                                                            height: "24px",
-                                                            objectFit: "cover",
-                                                            borderRadius: "6px",
-                                                            border: `1px solid ${T.border}`,
-                                                            flexShrink: 0,
-                                                        }}
-                                                        loading="lazy"
-                                                    />
+                                                    {isImage(file.filename) ? (
+                                                        <img
+                                                            src={`${apiUrl}/attendancemodule/mldatafoldertree/file?path=${encodeURIComponent(file.relativePath)}`}
+                                                            alt={file.filename}
+                                                            style={{
+                                                                width: "40px",
+                                                                height: "24px",
+                                                                objectFit: "cover",
+                                                                borderRadius: "6px",
+                                                                border: `1px solid ${T.border}`,
+                                                                flexShrink: 0,
+                                                            }}
+                                                            loading="lazy"
+                                                        />
+                                                    ) : (
+                                                        <ExtBadge filename={file.filename} />
+                                                    )}
 
                                                     <span
                                                         style={{
@@ -478,53 +517,84 @@ export const MLDataFolder = () => {
                                 </>
                             )}
 
-                            {previewFile && (
-                                <div
-                                    onClick={() => setPreviewFile(null)}
-                                    style={{
-                                        position: "fixed",
-                                        inset: 0,
-                                        background: "rgba(0,0,0,.75)",
-                                        display: "flex",
-                                        justifyContent: "center",
-                                        alignItems: "center",
-                                        zIndex: 10000,
-                                    }}
-                                >
-                                    <div
-                                        onClick={e => e.stopPropagation()}
+                            {previewFile && (() => {
+                                const currentFiles = folderFiles[selectedFolder]?.pages?.[currentPage] || [];
+                                const previewIdx = currentFiles.findIndex(f => f.relativePath === previewFile.relativePath);
+                                const canPrev = previewIdx > 0;
+                                const canNext = previewIdx < currentFiles.length - 1;
+                                const navBtn = (enabled, onClick, children) => (
+                                    <button
+                                        onClick={onClick}
+                                        disabled={!enabled}
                                         style={{
-                                            background: "#fff",
-                                            padding: 20,
-                                            borderRadius: 10,
-                                            maxWidth: "90vw",
-                                            maxHeight: "90vh",
+                                            width: 40, height: 40, borderRadius: '50%',
+                                            background: enabled ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.2)',
+                                            border: 'none', cursor: enabled ? 'pointer' : 'default',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            fontSize: 18, color: enabled ? '#374151' : 'rgba(0,0,0,0.2)',
+                                            flexShrink: 0,
+                                        }}
+                                    >{children}</button>
+                                );
+                                return (
+                                    <div
+                                        onClick={() => setPreviewFile(null)}
+                                        style={{
+                                            position: "fixed", inset: 0,
+                                            background: "rgba(0,0,0,.82)",
+                                            display: "flex", justifyContent: "center",
+                                            alignItems: "center", zIndex: 10000, gap: 16,
                                         }}
                                     >
-                                        <img
-                                            src={`${apiUrl}/attendancemodule/mldatafoldertree/file?path=${encodeURIComponent(
-                                                previewFile.relativePath
-                                            )}`}
-                                            alt={previewFile.filename}
-                                            style={{
-                                                maxWidth: "80vw",
-                                                maxHeight: "80vh",
-                                                display: "block",
-                                            }}
-                                        />
+                                        {navBtn(canPrev, (e) => { e.stopPropagation(); setPreviewFile(currentFiles[previewIdx - 1]); }, '‹')}
 
                                         <div
+                                            onClick={e => e.stopPropagation()}
                                             style={{
-                                                marginTop: 15,
-                                                textAlign: "center",
-                                                fontWeight: 600,
+                                                background: "#fff", padding: 20,
+                                                borderRadius: 12, maxWidth: "80vw", maxHeight: "90vh",
+                                                display: 'flex', flexDirection: 'column', alignItems: 'center',
                                             }}
                                         >
-                                            {previewFile.filename}
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: 12 }}>
+                                                <span style={{ fontSize: 12, color: '#9ca3af' }}>
+                                                    {previewIdx + 1} / {currentFiles.length}
+                                                </span>
+                                                <button
+                                                    onClick={() => setPreviewFile(null)}
+                                                    style={{
+                                                        background: 'none', border: 'none', cursor: 'pointer',
+                                                        fontSize: 18, color: '#6b7280', lineHeight: 1,
+                                                    }}
+                                                >✕</button>
+                                            </div>
+
+                                            {isImage(previewFile.filename) ? (
+                                                <img
+                                                    src={`${apiUrl}/attendancemodule/mldatafoldertree/file?path=${encodeURIComponent(previewFile.relativePath)}`}
+                                                    alt={previewFile.filename}
+                                                    style={{ maxWidth: "75vw", maxHeight: "75vh", display: "block", borderRadius: 8 }}
+                                                />
+                                            ) : (
+                                                <div style={{
+                                                    width: 200, height: 160, display: 'flex', flexDirection: 'column',
+                                                    alignItems: 'center', justifyContent: 'center', gap: 12,
+                                                    background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0',
+                                                }}>
+                                                    <ExtBadge filename={previewFile.filename} />
+                                                    <span style={{ fontSize: 12, color: '#6b7280' }}>Preview not available</span>
+                                                </div>
+                                            )}
+
+                                            <div style={{ marginTop: 12, textAlign: "center", fontWeight: 600, fontSize: 13, color: '#374151', maxWidth: '75vw', wordBreak: 'break-all' }}>
+                                                {previewFile.filename}
+                                            </div>
                                         </div>
+
+                                        {navBtn(canNext, (e) => { e.stopPropagation(); setPreviewFile(currentFiles[previewIdx + 1]); }, '›')}
                                     </div>
-                                </div>
-                            )}
+                                );
+                            })()}
                         </>
                     )}
                     </div>

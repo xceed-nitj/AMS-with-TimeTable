@@ -799,11 +799,134 @@ function TabOther() {
     );
 }
 
+// ── developers tab ────────────────────────────────────────────────────────────
+// Commits scoped to: client/src/attendancemodule/, server/src/modules/attendanceModule/,
+//                    server/src/models/attendanceModule/, python-ml-service/
+
+const AMS_DEVS_BY_YEAR = {
+    2026: {
+        metric: 'commits',
+        devs: [
+            { name: 'Dr. D. Harimurugan', github: 'harimurugan1989', count: 75              },
+            { name: 'Samiksha Khaire',    github: null,               count: 28              },
+            { name: 'Anmoldeep Kaur',     github: 'anmolkaur92',     count: 27              },
+            { name: 'Mukal Markanda',     github: 'CodewithMukal',   count: 22              },
+            { name: 'Pallvi Saini',       github: null,               count: 19              },
+            { name: 'Karan Gupta',        github: 'guptakaran0720',  count: 16              },
+            { name: 'Amit Mallick',       github: 'amit837-design',  count: 11, prs: 4      },
+            { name: 'Gulshan',            github: 'Gulshan-heap',    count: 10, prs: 1      },
+            { name: 'Javin Chutani',      github: 'javin1106',       count: 9               },
+        ],
+    },
+    2023: {
+        metric: 'PRs merged',
+        devs: [
+            { name: 'Aanchal', github: null, count: 1 },
+        ],
+    },
+};
+
+function DevCard({ dev, rank, metric }) {
+    const isFirst = rank === 0;
+    const accentColor = isFirst ? '#7c3aed' : '#374151';
+    const bgColor     = isFirst ? '#faf5ff' : '#f9fafb';
+    const borderColor = isFirst ? '#e9d5ff' : '#e5e7eb';
+
+    return (
+        <div style={{
+            background: bgColor, border: `1px solid ${borderColor}`,
+            borderRadius: 10, padding: '12px 14px',
+            display: 'flex', alignItems: 'center', gap: 12,
+            transition: 'box-shadow .15s',
+        }}
+            onMouseEnter={e => e.currentTarget.style.boxShadow = '0 2px 10px rgba(0,0,0,0.07)'}
+            onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}
+        >
+            <div style={{
+                width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
+                background: isFirst ? 'linear-gradient(135deg,#7c3aed,#a855f7)' : 'linear-gradient(135deg,#6b7280,#9ca3af)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 14, fontWeight: 800, color: '#fff',
+            }}>
+                {dev.name.charAt(0).toUpperCase()}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: accentColor }}>{dev.name}</span>
+                    {dev.prs && (
+                        <span style={{
+                            fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 99,
+                            background: '#eef2ff', color: '#6366f1', border: '1px solid #c7d2fe',
+                        }}>{dev.prs} PR{dev.prs !== 1 ? 's' : ''}</span>
+                    )}
+                </div>
+                {dev.github ? (
+                    <a href={`https://github.com/${dev.github}`} target="_blank" rel="noreferrer"
+                        style={{ fontSize: 11, color: '#6366f1', textDecoration: 'none', fontFamily: 'monospace' }}
+                        onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
+                        onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}
+                    >@{dev.github}</a>
+                ) : (
+                    <span style={{ fontSize: 11, color: '#9ca3af', fontFamily: 'monospace' }}>—</span>
+                )}
+            </div>
+            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                <div style={{ fontSize: 16, fontWeight: 800, color: accentColor, lineHeight: 1 }}>{dev.count}</div>
+                <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 1 }}>{metric}</div>
+            </div>
+        </div>
+    );
+}
+
+function TabDevelopers() {
+    const years = Object.keys(AMS_DEVS_BY_YEAR).map(Number).sort((a, b) => b - a);
+    const allDevs = years.flatMap(y => AMS_DEVS_BY_YEAR[y].devs);
+    const totalDevs = new Set(allDevs.map(d => d.name)).size;
+
+    return (
+        <div>
+            <SectionTitle>Developers & Contributors</SectionTitle>
+            <Note type="info">
+                Scoped to attendance module files — frontend, backend controllers/models, and Python ML service.
+                Sorted by contributions per year, newest year first.
+            </Note>
+
+            {years.map(year => {
+                const { metric, devs } = AMS_DEVS_BY_YEAR[year];
+                const yearTotal = devs.reduce((s, d) => s + d.count, 0);
+                return (
+                    <div key={year} style={{ marginBottom: 28 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                            <div style={{
+                                fontSize: 13, fontWeight: 800, color: '#6366f1',
+                                background: '#eef2ff', padding: '3px 12px',
+                                borderRadius: 20, border: '1px solid #c7d2fe',
+                            }}>{year}</div>
+                            <div style={{ flex: 1, height: 1, background: '#e4e8f5' }} />
+                            <div style={{ fontSize: 11, color: '#9ca3af' }}>
+                                {devs.length} contributor{devs.length !== 1 ? 's' : ''} · {yearTotal} {metric}
+                            </div>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 8 }}>
+                            {devs.map((d, i) => <DevCard key={d.name} dev={d} rank={i} metric={metric} />)}
+                        </div>
+                    </div>
+                );
+            })}
+
+            <div style={{ padding: '10px 16px', borderRadius: 8, background: '#f9fafb', border: '1px solid #e5e7eb', fontSize: 12, color: '#6b7280', textAlign: 'center' }}>
+                {totalDevs} unique contributors to this module
+            </div>
+        </div>
+    );
+}
+
 // ── main component ────────────────────────────────────────────────────────────
 
 export default function Manual({ standalone = false }) {
     const [tab, setTab] = useState('overview');
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [showDevs, setShowDevs] = useState(false);
 
     useEffect(() => {
         if (!standalone) return;
@@ -863,20 +986,45 @@ export default function Manual({ standalone = false }) {
                 padding: '24px 28px', maxWidth: 900, margin: '0 auto',
                 fontFamily: T.fontBody,
             }}>
-                <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 14 }}>
                     <div style={{
                         width: 42, height: 42, borderRadius: 10,
                         background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontSize: 20,
                     }}>📖</div>
-                    <div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 20, fontWeight: 800, color: T.text }}>Help & User Manual</div>
                         <div style={{ fontSize: 13, color: T.textMuted, marginTop: 2 }}>
                             Step-by-step guide for the AI Attendance Management System
                         </div>
                     </div>
+                    <button
+                        onClick={() => setShowDevs(v => !v)}
+                        style={{
+                            flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6,
+                            padding: '7px 14px', borderRadius: 8, cursor: 'pointer',
+                            fontSize: 12, fontWeight: 700,
+                            background: showDevs ? '#6366f1' : '#f5f3ff',
+                            color: showDevs ? '#fff' : '#6366f1',
+                            border: `1.5px solid ${showDevs ? '#6366f1' : '#c4b5fd'}`,
+                            transition: 'all .15s',
+                        }}
+                    >
+                        👥 Developers
+                    </button>
                 </div>
+
+                {showDevs ? (
+                    <div style={{
+                        background: '#fff', borderRadius: 12,
+                        border: '1px solid #e4e8f5',
+                        padding: '28px 32px',
+                        boxShadow: '0 1px 6px rgba(26,31,60,0.05)',
+                    }}>
+                        <TabDevelopers />
+                    </div>
+                ) : (<>
 
                 {/* Step navigator */}
                 <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: 32, overflowX: 'auto', paddingBottom: 4 }}>
@@ -932,6 +1080,7 @@ export default function Manual({ standalone = false }) {
                 }}>
                     {TAB_CONTENT[tab]}
                 </div>
+                </>)}
             </div>
         </>
     );
