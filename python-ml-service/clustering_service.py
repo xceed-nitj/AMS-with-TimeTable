@@ -10,6 +10,7 @@ import numpy as np
 from sklearn.cluster import DBSCAN
 
 import state
+from face_utils import compute_liveness_score, run_onnx_liveness
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +36,37 @@ NMS_IOU_THRESH = 0.35
 
 # Quality filter
 MIN_SHARPNESS = 10.0     # Laplacian variance
+
+# ── Liveness / anti-spoofing ──────────────────────────────────────────────
+# Heuristic score threshold (face_utils.compute_liveness_score) below which
+# a crop is treated as a likely spoof (printed photo / screen) and rejected
+# before it ever reaches embedding/clustering. Only used when no ONNX
+# liveness model is loaded (state.liveness_session is None) — the ONNX path
+# uses its own probability threshold below instead.
+#
+# If you're seeing real students rejected, raise LIVENESS_HEURISTIC_THRESHOLD
+# down (less strict). If obvious printed photos are getting through, raise it.
+LIVENESS_HEURISTIC_THRESHOLD = 0.15
+LIVENESS_ONNX_THRESHOLD       = 0.50   # "live" class probability, 0..1
+ENABLE_LIVENESS_CHECK         = True   # global kill-switch, set False to disable entirely
+
+# Module-level counter, not thread-local — multiple attendance runs across
+# different rooms can run concurrently (see state.face_lock comment), so a
+# single global count mixes rejections from concurrent runs together. This
+# is an accepted tradeoff to avoid changing _detect_faces_tiled's signature
+# everywhere it's called; callers that care about an exact per-run count
+# should call reset_liveness_rejection_count() right before their run and
+# accept that a different concurrent run on another room could add to it.
+_liveness_rejection_count = 0
+
+
+def reset_liveness_rejection_count():
+    global _liveness_rejection_count
+    _liveness_rejection_count = 0
+
+
+def get_liveness_rejection_count():
+    return _liveness_rejection_count
 MIN_FACE_PX   = 20      # minimum face side in original-frame pixels
 
 # FIX-F: tight crop to avoid bleeding into neighbour's face
@@ -268,6 +300,34 @@ def _digital_zoom(frame: np.ndarray, zoom_factor: float,
 #      → detections=[] → no crops saved.
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+def _check_liveness(crop_bgr):
+    """
+    Decide whether a face crop looks like a live face vs a printed photo /
+    screen replay. Returns (is_live: bool, score: float, method: str).
+
+    method is "onnx" or "heur" — included so rejected-frame filenames in
+    debug mode make it obvious which path made the call, useful when tuning
+    LIVENESS_HEURISTIC_THRESHOLD / LIVENESS_ONNX_THRESHOLD against real
+    footage from your own classrooms.
+    """
+    if state.liveness_session is not None:
+        # Same lock as face_app.get() — ONNXRuntime sessions are not
+        # guaranteed safe under concurrent Run() calls from multiple threads,
+        # and attendance jobs for different rooms run concurrently.
+        with state.face_lock:
+            live_prob = run_onnx_liveness(
+                state.liveness_session, state.liveness_input_name, crop_bgr,
+                input_size=state.liveness_input_size,
+            )
+        if live_prob is not None:
+            return (live_prob >= LIVENESS_ONNX_THRESHOLD, live_prob, "onnx")
+        # ONNX inference failed for this crop — fall through to heuristic
+        # rather than silently letting every failure through unchecked.
+
+    score = compute_liveness_score(crop_bgr)
+    return (score >= LIVENESS_HEURISTIC_THRESHOLD, score, "heur")
+
+
 def _detect_faces_tiled(face_app, frame: np.ndarray,
                         ui_mask: np.ndarray = None,
                         preview_cb=None,
@@ -478,6 +538,27 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
                 except Exception:
                     pass
             continue
+
+        # ── Liveness / anti-spoofing check ──────────────────────────────────
+        # Reject crops that look like a printed photo or phone/tablet screen
+        # held up to the camera, before they reach embedding/clustering —
+        # exactly like the blur/size rejects above. Uses the ONNX model if
+        # one was loaded at startup, otherwise the always-available heuristic.
+        if ENABLE_LIVENESS_CHECK:
+            is_live, live_score, live_method = _check_liveness(crop)
+            if not is_live:
+                global _liveness_rejection_count
+                _liveness_rejection_count += 1
+                if _debug:
+                    try:
+                        fname = (f"fr{debug_frame_id:04d}_REJECT_SPOOF_"
+                                 f"{live_method}{live_score:.2f}_"
+                                 f"det{det_score:.2f}.jpg")
+                        cv2.imwrite(os.path.join(rejected_dir, fname), crop,
+                                    [cv2.IMWRITE_JPEG_QUALITY, 90])
+                    except Exception:
+                        pass
+                continue
  
         # Quality score — use zoomed dimensions for fair scoring
         quality = float(
