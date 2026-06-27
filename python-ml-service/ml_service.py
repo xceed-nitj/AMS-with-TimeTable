@@ -5,6 +5,7 @@
 import os
 import pickle
 import logging
+import sqlite3
 import subprocess
 import sys
 import threading
@@ -12,6 +13,7 @@ import warnings
 from collections import deque
 from contextlib import asynccontextmanager
 from datetime import datetime
+import numpy as np
 
 # insightface uses deprecated APIs in scikit-image / numpy — suppress until upstream fixes.
 warnings.filterwarnings("ignore", message=r"`estimate` is deprecated",  category=FutureWarning)
@@ -29,6 +31,7 @@ from video_processing    import router as video_router
 from clustering_routes   import router as cluster_router
 from ground_truth_routes import router as gt_router
 from rtsp_routes         import router as rtsp_router
+from tracked_routes      import router as tracked_router   # NEW — live tracked attendance
 
 LOG_BUFFER = deque(maxlen=int(os.environ.get("ML_LOG_BUFFER_LINES", "500")))
 LOG_LOCK = threading.Lock()
@@ -90,10 +93,14 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, ".."))
 DB_PATH  = os.path.join(ROOT_DIR, "server", "ml-data", "embeddings_db.pkl")
 CLIENT_GROUND_TRUTH = os.path.join(ROOT_DIR, "server", "ml-data", "ground_truth")
+FAISS_PATH = os.path.join(ROOT_DIR, "server", "ml-data", "embeddings", "faiss.index")
+META_DB    = os.path.join(ROOT_DIR, "server", "ml-data", "embeddings", "metadata.db")
 
 logger.info(f"ROOT_DIR: {ROOT_DIR}")
 logger.info(f"DB_PATH:  {DB_PATH}")
 logger.info(f"CLIENT_GROUND_TRUTH: {CLIENT_GROUND_TRUTH}")
+logger.info(f"FAISS_PATH: {FAISS_PATH}")
+logger.info(f"META_DB:    {META_DB}")
 
 
 # ─── Model + DB loading ───────────────────────────────────────────────────────
@@ -104,8 +111,8 @@ def load_model(det_size: int = INSIGHTFACE_DET_SIZE):
     providers = ["CUDAExecutionProvider", "CPUExecutionProvider"] if use_gpu else ["CPUExecutionProvider"]
     ctx_id    = 0 if use_gpu else -1
     state.current_det_size = det_size
-    logger.info(f"Loading InsightFace buffalo_l ({'GPU' if use_gpu else 'CPU'}, det_size={det_size})…")
-    state.face_app = FaceAnalysis(name="buffalo_l", providers=providers)
+    logger.info(f"Loading InsightFace buffalo_s ({'GPU' if use_gpu else 'CPU'}, det_size={det_size})…")
+    state.face_app = FaceAnalysis(name="buffalo_s", providers=providers)
     state.face_app.prepare(ctx_id=ctx_id, det_size=(det_size, det_size), det_thresh=0.3)
     logger.info("Model loaded.")
 
@@ -141,6 +148,110 @@ def load_embeddings():
         logger.warning("No embeddings_db.pkl found — run /build-embeddings to enroll students.")
 
 
+# ─── FAISS loading (NEW) ──────────────────────────────────────────────────────
+
+def _rebuild_embeddings_db_from_faiss():
+    """
+    Reconstruct state.embeddings_db from the already-loaded FAISS index +
+    vid_to_roll mapping so that clustering routes (which read embeddings_db)
+    see every student that Generate_embeddings.py indexed.
+    """
+    if state.faiss_index is None or not state.vid_to_roll:
+        logger.warning("Cannot rebuild embeddings_db — FAISS index or vid_to_roll not loaded.")
+        state.embeddings_db = {}
+        return
+
+    n = state.faiss_index.ntotal
+    roll_to_vids: dict = {}
+    for vid, roll in state.vid_to_roll.items():
+        roll_to_vids.setdefault(roll, []).append(vid)
+
+    db = {}
+    for roll, vids in roll_to_vids.items():
+        embs = []
+        for vid in vids:
+            try:
+                vec = state.faiss_index.reconstruct(int(vid))
+                embs.append(vec)
+            except Exception:
+                pass   # IndexIVFFlat without direct_map — skip gracefully
+        if not embs:
+            continue
+        mean_emb = np.mean(embs, axis=0).astype("float32")
+        norm = np.linalg.norm(mean_emb)
+        if norm > 1e-6:
+            mean_emb /= norm
+        db[roll] = {"name": roll, "embedding": mean_emb}
+
+    state.embeddings_db = db
+    logger.info("Rebuilt embeddings_db from FAISS: %d students (%d vectors total).", len(db), n)
+
+
+def load_faiss():
+    """
+    Load the FAISS index + SQLite metadata, populate state.faiss_index /
+    state.vid_to_roll, then rebuild state.embeddings_db from FAISS truth
+    (with the legacy pkl applied as a thin override layer on top).
+
+    Called once at startup after load_model(). Safe to skip if the index
+    hasn't been generated yet (logs a warning and returns).
+    """
+    import faiss
+
+    logger.info("Loading FAISS index…")
+
+    if not os.path.exists(FAISS_PATH):
+        logger.warning(f"FAISS index not found at {FAISS_PATH} — run Generate_embeddings.py first.")
+        return
+
+    state.faiss_index = faiss.read_index(FAISS_PATH)
+
+    # Build direct map so reconstruct() works on IndexIVFFlat (≥ 1000 students).
+    try:
+        state.faiss_index.make_direct_map()
+        logger.info("Direct map built — reconstruct() enabled.")
+    except Exception as exc:
+        logger.warning("make_direct_map() failed (non-fatal): %s", exc)
+
+    if not os.path.exists(META_DB):
+        logger.warning(f"Metadata DB not found at {META_DB}.")
+        return
+
+    conn = sqlite3.connect(META_DB)
+    rows = conn.execute("SELECT vector_id, roll FROM embeddings").fetchall()
+    conn.close()
+
+    state.vid_to_roll = {int(v): r for v, r in rows}
+    state._next_vector_id = (max(state.vid_to_roll.keys()) + 1) if state.vid_to_roll else 0
+
+    logger.info(f"{state.faiss_index.ntotal} embeddings loaded from FAISS.")
+
+    # Rebuild embeddings_db from FAISS (source of truth), then apply pkl overrides
+    _rebuild_embeddings_db_from_faiss()
+
+    if os.path.exists(DB_PATH):
+        try:
+            with open(DB_PATH, "rb") as f:
+                overrides = pickle.load(f)
+            valid_rolls = set(state.vid_to_roll.values())
+            applied = {k: v for k, v in overrides.items() if k in valid_rolls}
+            state.embeddings_db.update(applied)
+            logger.info("Applied %d pkl override(s).", len(applied))
+        except Exception as exc:
+            logger.warning("Could not load pkl overrides: %s", exc)
+
+    # Re-persist merged result
+    try:
+        os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+        with open(DB_PATH, "wb") as f:
+            pickle.dump(state.embeddings_db, f)
+        logger.info("Merged embeddings_db persisted (%d students).", len(state.embeddings_db))
+    except Exception as exc:
+        logger.warning("Could not re-persist merged embeddings_db: %s", exc)
+
+    state.faiss_dirty = False
+
+
 # ─── Lifespan ─────────────────────────────────────────────────────────────────
 
 @asynccontextmanager
@@ -148,6 +259,7 @@ async def lifespan(app: FastAPI):
     state.load_model_fn = load_model   # expose to route modules without circular import
     load_model()
     load_embeddings()
+    load_faiss()          # NEW — loads FAISS index on top of the pkl
     yield
 
 
@@ -166,7 +278,7 @@ app.add_middleware(
 app.include_router(video_router)
 app.include_router(cluster_router)
 app.include_router(gt_router)
-# app.include_router(rtsp_router)
+app.include_router(tracked_router)   # NEW — /run-attendance-rtsp-tracked
 app.include_router(rtsp_router)
 
 # Serve ground-truth photos as static files
@@ -182,11 +294,19 @@ if os.path.exists(CLIENT_GROUND_TRUTH):
 
 @app.get("/health")
 def health():
+    faiss_count = state.faiss_index.ntotal if state.faiss_index is not None else 0
+    unique_students = (
+        len(set(state.vid_to_roll.values())) if state.vid_to_roll
+        else len(state.embeddings_db)
+    )
     return {
         "status":            "ok",
         "model_loaded":      state.face_app is not None,
-        "students_enrolled": len(state.embeddings_db),
+        "students_enrolled": unique_students,
         "det_size":          state.current_det_size,
+        "faiss_loaded":      state.faiss_index is not None,
+        "faiss_vectors":     faiss_count,
+        "faiss_dirty":       getattr(state, "faiss_dirty", False),
     }
 
 
@@ -304,6 +424,7 @@ def test_detection():
         ]
     }
 
+
 from pydantic import BaseModel
 from typing import Optional
 
@@ -324,8 +445,8 @@ def reload_embeddings_ep(req: ReloadEmbeddingsRequest = ReloadEmbeddingsRequest(
             state.embeddings_db = pickle.load(f)
         logger.info(f"Loaded subject embeddings from {req.pkl_path}: {len(state.embeddings_db)} students.")
     else:
-        load_embeddings()  # loads default embeddings_db.pkl
-    return {"status": "ok", "students_enrolled": len(state.embeddings_db), "source": req.pkl_path or DB_PATH}
+        load_faiss()   # reload both FAISS and embeddings_db
+    return {"status": "ok", "students_enrolled": len(state.embeddings_db), "source": req.pkl_path or FAISS_PATH}
 
 
 # ─── Entry point ──────────────────────────────────────────────────────────────

@@ -4,7 +4,8 @@
 #   POST /process-video-with-rolllist
 #
 # Both routes scan every sampled frame, match detected faces against
-# embeddings_db using cosine similarity, and return an attendance dict.
+# the FAISS index (or embeddings_db fallback) using cosine similarity,
+# and return an attendance dict.
 
 import os
 import time
@@ -17,6 +18,7 @@ from fastapi import APIRouter, HTTPException
 import state
 from models import VideoRequest, CompareRequest
 from clustering_service import _detect_faces_tiled, _build_ui_mask
+from faiss_utils import _recognize_face   # NEW — FAISS top-k voting
 
 logger = logging.getLogger("ml_service.video_processing")
 router = APIRouter()
@@ -28,6 +30,10 @@ def _process_frames(videoPath, frame_skip, match_threshold):
     """
     Open a video, scan sampled frames, and return per-student detection counts
     and per-frame confidence scores.
+
+    Recognition now uses FAISS top-k voting (_recognize_face) when a FAISS
+    index is loaded. Falls back to the old numpy-dot-product argmax if only
+    the pkl embeddings_db is available (e.g. FAISS index hasn't been built yet).
 
     Returns
     -------
@@ -44,15 +50,23 @@ def _process_frames(videoPath, frame_skip, match_threshold):
     W       = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     ui_mask = _build_ui_mask(H, W)
 
-    enrolled_ids = list(state.embeddings_db.keys())
-    enroll_mat   = (
-        np.array(
-            [state.embeddings_db[sid]["embedding"] for sid in enrolled_ids],
-            dtype=np.float32,
+    # Decide which backend to use
+    use_faiss = state.faiss_index is not None
+
+    # Legacy pkl backend — only used if FAISS hasn't been built yet
+    if not use_faiss:
+        enrolled_ids = list(state.embeddings_db.keys())
+        enroll_mat   = (
+            np.array(
+                [state.embeddings_db[sid]["embedding"] for sid in enrolled_ids],
+                dtype=np.float32,
+            )
+            if enrolled_ids
+            else None
         )
-        if enrolled_ids
-        else None
-    )
+    else:
+        enrolled_ids = None
+        enroll_mat = None
 
     detected          = {}
     confidence_scores = {}
@@ -72,16 +86,30 @@ def _process_frames(videoPath, frame_skip, match_threshold):
         if not ret or frame is None:
             continue
 
-        for d in _detect_faces_tiled(state.face_app, frame, ui_mask):
-            if enroll_mat is None:
-                continue
-            scores  = enroll_mat @ d["embedding"]
-            best_i  = int(np.argmax(scores))
-            best_sc = float(scores[best_i])
-            if best_sc >= match_threshold:
-                sid = enrolled_ids[best_i]
-                detected[sid] = detected.get(sid, 0) + 1
-                confidence_scores.setdefault(sid, []).append(best_sc)
+        for d in _detect_faces_tiled(state.face_app, frame, ui_mask, profile="live"):
+            if use_faiss:
+                # FAISS path — top-k voting, more robust than single argmax
+                roll, score = _recognize_face(
+                    d["embedding"],
+                    state.faiss_index,
+                    state.vid_to_roll,
+                    5,
+                    match_threshold,
+                )
+                if roll is not None:
+                    detected[roll] = detected.get(roll, 0) + 1
+                    confidence_scores.setdefault(roll, []).append(score)
+            else:
+                # Legacy pkl path — direct numpy dot product
+                if enroll_mat is None:
+                    continue
+                scores  = enroll_mat @ d["embedding"]
+                best_i  = int(np.argmax(scores))
+                best_sc = float(scores[best_i])
+                if best_sc >= match_threshold:
+                    sid = enrolled_ids[best_i]
+                    detected[sid] = detected.get(sid, 0) + 1
+                    confidence_scores.setdefault(sid, []).append(best_sc)
         processed += 1
 
     cap.release()
@@ -94,7 +122,7 @@ def _process_frames(videoPath, frame_skip, match_threshold):
 def process_video(req: VideoRequest):
     if not os.path.exists(req.videoPath):
         raise HTTPException(status_code=404, detail=f"Video not found: {req.videoPath}")
-    if not state.embeddings_db:
+    if state.faiss_index is None and not state.embeddings_db:
         raise HTTPException(status_code=400, detail="No embeddings loaded.")
 
     start = time.time()
@@ -103,13 +131,19 @@ def process_video(req: VideoRequest):
     )
     elapsed = time.time() - start
 
+    # Build result using FAISS metadata when available; fall back to embeddings_db.
+    all_rolls = (
+        set(state.vid_to_roll.values()) if state.faiss_index is not None
+        else set(state.embeddings_db.keys())
+    )
     attendance = {}
-    for sid, data in state.embeddings_db.items():
+    for sid in all_rolls:
+        name = state.embeddings_db.get(sid, {}).get("name", sid)
         avg_conf = (
             float(np.mean(confidence_scores[sid])) if sid in confidence_scores else 0.0
         )
         attendance[sid] = {
-            "name":            data["name"],
+            "name":           name,
             "status":          "present" if detected.get(sid, 0) >= 3 else "absent",
             "detections":      detected.get(sid, 0),
             "avg_confidence":  round(avg_conf, 4),
@@ -119,9 +153,9 @@ def process_video(req: VideoRequest):
     return {
         "attendance": attendance,
         "summary": {
-            "total":             len(state.embeddings_db),
+            "total":             len(attendance),
             "present":           present,
-            "absent":            len(state.embeddings_db) - present,
+            "absent":            len(attendance) - present,
             "processing_time":   round(elapsed, 2),
             "frames_processed":  processed,
         },
@@ -132,7 +166,7 @@ def process_video(req: VideoRequest):
 def process_video_with_rolllist(req: CompareRequest):
     if not os.path.exists(req.videoPath):
         raise HTTPException(status_code=404, detail=f"Video not found: {req.videoPath}")
-    if not state.embeddings_db:
+    if state.faiss_index is None and not state.embeddings_db:
         raise HTTPException(status_code=400, detail="No embeddings loaded.")
 
     start = time.time()
@@ -140,10 +174,15 @@ def process_video_with_rolllist(req: CompareRequest):
         req.videoPath, req.frame_skip, req.review_threshold
     )
     elapsed = time.time() - start
+    all_rolls = (
+        set(state.vid_to_roll.values()) if state.faiss_index is not None
+        else set(state.embeddings_db.keys())
+    )
 
     # Build per-student attendance with three-zone confidence
     attendance = {}
-    for sid, data in state.embeddings_db.items():
+    for sid in all_rolls:
+        name      = state.embeddings_db.get(sid, {}).get("name", sid)
         det_count = detected.get(sid, 0)
         avg_conf  = (
             float(np.mean(confidence_scores[sid])) if sid in confidence_scores else 0.0
@@ -156,7 +195,7 @@ def process_video_with_rolllist(req: CompareRequest):
             status = "absent"
 
         attendance[sid] = {
-            "name":             data["name"],
+            "name":             name,
             "status":           status,
             "detections":       det_count,
             "avg_confidence":   round(avg_conf, 4),
@@ -243,7 +282,7 @@ def process_video_with_rolllist(req: CompareRequest):
         },
         "summary": {
             "total_in_roll_list": len(roll_list),
-            "total_in_ml_db":     len(state.embeddings_db),
+            "total_in_ml_db":     len(attendance),
             "present":            present,
             "review":             review,
             "absent":             absent,
