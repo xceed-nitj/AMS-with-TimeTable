@@ -244,6 +244,7 @@ import DeptMenuConfig from './attendancemodule/DeptMenuConfig';
 
 //confifence monitor
 import ConfidenceMonitor from './attendancemodule/confidenceMonitor';
+import { MLDataFolder } from './attendancemodule/MLDataFolder.jsx';
 
 function App() {
   return (
@@ -685,6 +686,7 @@ function App() {
           <Route path="gpu" element={<GpuMetrics />} />
           <Route path="dept-menu-config" element={<DeptMenuConfig />} />
           <Route path="scheduler" element={<SchedulerPage />} />
+          <Route path="view-mldata" element={<MLDataFolder />} />
         </Route>
 
         {/* ─── Department Admin Routes ────────────────────────────── */}

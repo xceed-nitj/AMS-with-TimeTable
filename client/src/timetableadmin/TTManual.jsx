@@ -678,11 +678,175 @@ function TabOther() {
     );
 }
 
+// ── developers tab ────────────────────────────────────────────────────────────
+// Commits scoped to: client/src/timetableadmin/, server/src/modules/timetableModule/,
+//                    server/src/models/timetableModule/
+
+const TT_DEVS_BY_YEAR = {
+    2023: {
+        metric: 'commits',
+        devs: [
+            { name: 'Dr. D. Harimurugan', github: 'harimurugan1989', count: 219, prs: 9  },
+            { name: 'Akshika Garg',       github: 'Akshikagarg',     count: 34,  prs: 22 },
+            { name: 'pihu24',             github: 'pihu24',          count: 33,  prs: 23 },
+            { name: 'Dhruv Bhardwaj',     github: 'dhruv064',        count: 19,  prs: 12 },
+            { name: 'Maddy',              github: 'Maddy091',         count: 4,   prs: 3  },
+            { name: 'Sourabh Parihar',    github: 'sourabh-parihar', count: 4,   prs: 2  },
+            { name: 'Gautam Singla',      github: 'ggsingla',        count: 1,   prs: 1  },
+            { name: 'sDaman830',          github: null,               count: 0,   prs: 2  },
+            { name: 'Kashish Mangal',     github: 'Kashish-gitt',    count: 0,   prs: 1  },
+        ],
+    },
+    2024: {
+        metric: 'commits',
+        devs: [
+            { name: 'Dr. D. Harimurugan', github: 'harimurugan1989', count: 43,  prs: 1  },
+            { name: 'Akshika Garg',       github: 'Akshikagarg',     count: 11,  prs: 7  },
+            { name: 'Ankit',              github: 'i-ankit-here',    count: 10              },
+            { name: 'Jagjit',             github: 'Jagjit0306',      count: 9,   prs: 1  },
+            { name: 'pihu24',             github: 'pihu24',          count: 4,   prs: 4  },
+            { name: 'Dhruv Bhardwaj',     github: 'dhruv064',        count: 2,   prs: 1  },
+            { name: 'Maddy',              github: 'Maddy091',         count: 1,   prs: 1  },
+            { name: 'Gautam Singla',      github: 'ggsingla',        count: 1,   prs: 1  },
+            { name: 'Sumit Teerthani',    github: 'SumitTeerthani',  count: 0,   prs: 2  },
+            { name: 'Ajay Kumar Yadav',   github: 'Ajay1105',        count: 0,   prs: 1  },
+            { name: 'Ayush Kumar',        github: 'Akdest',          count: 0,   prs: 1  },
+            { name: 'Anurag Varshney',    github: 'AnuragVar',       count: 0,   prs: 1  },
+        ],
+    },
+    2025: {
+        metric: 'commits',
+        devs: [
+            { name: 'Dr. D. Harimurugan', github: 'harimurugan1989',    count: 51 },
+            { name: 'Saksham Kaushish',   github: null,                  count: 15 },
+            { name: 'Pallvi Saini',       github: null,                  count: 6  },
+            { name: 'One Eyed Reaper',    github: 'PiercedBySanity1410', count: 6  },
+            { name: 'Anshika',            github: 'Anshika5618',         count: 6  },
+            { name: 'Vaibhav Verma',      github: 'vaibhav0047',        count: 5  },
+            { name: 'Sritiz Sahu',        github: 'sritiz',              count: 4  },
+            { name: 'Pranjal Singla',     github: 'pranjal-singla-15',  count: 2  },
+            { name: 'Ishan Jain',         github: 'Ishannjain',          count: 1  },
+            { name: 'Jashandeep Singh',   github: null,                  count: 1  },
+        ],
+    },
+    2026: {
+        metric: 'commits',
+        devs: [
+            { name: 'Dr. D. Harimurugan', github: 'harimurugan1989',    count: 71 },
+            { name: 'One Eyed Reaper',    github: 'PiercedBySanity1410', count: 7  },
+            { name: 'Pallvi Saini',       github: null,                  count: 6  },
+            { name: 'Vaibhav Verma',      github: 'vaibhav0047',        count: 5  },
+            { name: 'Sritiz Sahu',        github: 'sritiz',              count: 4  },
+            { name: 'Samiksha Khaire',    github: null,                  count: 4  },
+            { name: 'Manik Dureja',       github: 'manikdureja',        count: 2  },
+            { name: 'Anmoldeep Kaur',     github: 'anmolkaur92',        count: 1  },
+        ],
+    },
+};
+
+function TTDevCard({ dev, rank, metric }) {
+    const isFirst = rank === 0;
+    const accentColor = isFirst ? '#6366f1' : '#374151';
+    const bgColor     = isFirst ? '#eef2ff' : '#f9fafb';
+    const borderColor = isFirst ? '#c7d2fe' : '#e5e7eb';
+
+    return (
+        <div style={{
+            background: bgColor, border: `1px solid ${borderColor}`,
+            borderRadius: 10, padding: '12px 14px',
+            display: 'flex', alignItems: 'center', gap: 12,
+            transition: 'box-shadow .15s',
+        }}
+            onMouseEnter={e => e.currentTarget.style.boxShadow = '0 2px 10px rgba(0,0,0,0.07)'}
+            onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}
+        >
+            <div style={{
+                width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
+                background: isFirst ? 'linear-gradient(135deg,#6366f1,#8b5cf6)' : 'linear-gradient(135deg,#6b7280,#9ca3af)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 14, fontWeight: 800, color: '#fff',
+            }}>
+                {dev.name.charAt(0).toUpperCase()}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: accentColor }}>{dev.name}</span>
+                    {dev.prs && (
+                        <span style={{
+                            fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 99,
+                            background: '#eef2ff', color: '#6366f1', border: '1px solid #c7d2fe',
+                        }}>{dev.prs} PR{dev.prs !== 1 ? 's' : ''}</span>
+                    )}
+                </div>
+                {dev.github ? (
+                    <a href={`https://github.com/${dev.github}`} target="_blank" rel="noreferrer"
+                        style={{ fontSize: 11, color: '#6366f1', textDecoration: 'none', fontFamily: 'monospace' }}
+                        onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
+                        onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}
+                    >@{dev.github}</a>
+                ) : (
+                    <span style={{ fontSize: 11, color: '#9ca3af', fontFamily: 'monospace' }}>—</span>
+                )}
+            </div>
+            {dev.count > 0 && (
+                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: accentColor, lineHeight: 1 }}>{dev.count}</div>
+                    <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 1 }}>{metric}</div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+function TabDevelopers() {
+    const years = Object.keys(TT_DEVS_BY_YEAR).map(Number).sort((a, b) => b - a);
+    const allDevs = years.flatMap(y => TT_DEVS_BY_YEAR[y].devs);
+    const totalDevs = new Set(allDevs.map(d => d.name)).size;
+
+    return (
+        <div>
+            <SectionTitle>Developers & Contributors</SectionTitle>
+            <Note type="key">
+                Scoped to timetable module files — frontend, backend controllers/models.
+                Ordered by commits; PR badge shown where available.
+            </Note>
+
+            {years.map(year => {
+                const { metric, devs } = TT_DEVS_BY_YEAR[year];
+                const yearTotal = devs.reduce((s, d) => s + d.count, 0);
+                return (
+                    <div key={year} style={{ marginBottom: 28 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                            <div style={{
+                                fontSize: 13, fontWeight: 800, color: '#6366f1',
+                                background: '#eef2ff', padding: '3px 12px',
+                                borderRadius: 20, border: '1px solid #c7d2fe',
+                            }}>{year}</div>
+                            <div style={{ flex: 1, height: 1, background: '#e4e8f5' }} />
+                            <div style={{ fontSize: 11, color: '#9ca3af' }}>
+                                {devs.length} contributor{devs.length !== 1 ? 's' : ''} · {yearTotal} {metric}
+                            </div>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 8 }}>
+                            {devs.map((d, i) => <TTDevCard key={d.name} dev={d} rank={i} metric={metric} />)}
+                        </div>
+                    </div>
+                );
+            })}
+
+            <div style={{ padding: '10px 16px', borderRadius: 8, background: '#f9fafb', border: '1px solid #e5e7eb', fontSize: 12, color: '#6b7280', textAlign: 'center' }}>
+                {totalDevs} unique contributors to this module
+            </div>
+        </div>
+    );
+}
+
 // ── main component ────────────────────────────────────────────────────────────
 
 export default function TTManual({ standalone = false }) {
     const [tab, setTab] = useState('overview');
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [showDevs, setShowDevs] = useState(false);
 
     useEffect(() => {
         if (!standalone) return;
@@ -742,20 +906,45 @@ export default function TTManual({ standalone = false }) {
                 fontFamily: T.fontBody,
             }}>
                 {/* Header */}
-                <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 14 }}>
                     <div style={{
                         width: 42, height: 42, borderRadius: 10,
                         background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontSize: 20,
                     }}>📖</div>
-                    <div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 20, fontWeight: 800, color: T.text }}>Timetable Module — User Manual</div>
                         <div style={{ fontSize: 13, color: T.textMuted, marginTop: 2 }}>
                             Step-by-step guide · XCEED, NIT Jallandhar
                         </div>
                     </div>
+                    <button
+                        onClick={() => setShowDevs(v => !v)}
+                        style={{
+                            flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6,
+                            padding: '7px 14px', borderRadius: 8, cursor: 'pointer',
+                            fontSize: 12, fontWeight: 700,
+                            background: showDevs ? '#6366f1' : '#f5f3ff',
+                            color: showDevs ? '#fff' : '#6366f1',
+                            border: `1.5px solid ${showDevs ? '#6366f1' : '#c4b5fd'}`,
+                            transition: 'all .15s',
+                        }}
+                    >
+                        👥 Developers
+                    </button>
                 </div>
+
+                {showDevs ? (
+                    <div style={{
+                        background: '#fff', borderRadius: 12,
+                        border: '1px solid #e4e8f5',
+                        padding: '28px 32px',
+                        boxShadow: '0 1px 6px rgba(26,31,60,0.05)',
+                    }}>
+                        <TabDevelopers />
+                    </div>
+                ) : (<>
 
                 {/* Step navigator */}
                 <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: 32, overflowX: 'auto', paddingBottom: 4 }}>
@@ -811,6 +1000,7 @@ export default function TTManual({ standalone = false }) {
                 }}>
                     {TAB_CONTENT[tab]}
                 </div>
+                </>)}
             </div>
         </>
     );

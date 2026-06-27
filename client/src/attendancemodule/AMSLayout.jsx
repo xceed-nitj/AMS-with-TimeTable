@@ -38,7 +38,6 @@ const NAV = [
     route: '/attendance/confidence',
     label: 'Confidence Monitor',
   },
-
   { id: 'manual', route: '/ams-manual', label: 'Help & Manual', newTab: true },
 ];
 

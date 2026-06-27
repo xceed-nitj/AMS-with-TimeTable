@@ -2,6 +2,7 @@
 
 const AttendanceReport = require("../../../models/attendanceReport");
 const LockSem = require("../../../models/locksem");
+const Student = require("../../../models/student");
 
 function mergeStudentStatus(slotResults) {
   const rollMap = {};
@@ -15,6 +16,9 @@ function mergeStudentStatus(slotResults) {
         confidenceZone: s.confidenceZone || "low",
         firstSeenSec: s.firstSeenSec,
         clusterFolder: s.clusterFolder,
+        detectedAge: s.detectedAge ?? null,
+        detectedGender: s.detectedGender ?? null,
+        genderMismatch: s.genderMismatch || false,
         slot: slot.slot,
       });
     }
@@ -69,6 +73,12 @@ function mergeStudentStatus(slotResults) {
       confidenceZone: best.confidenceZone,
       firstSeenSec: best.firstSeenSec,
       clusterFolder: best.clusterFolder,
+      detectedAge: best.detectedAge,
+      detectedGender: best.detectedGender,
+      // If ANY slot flagged a mismatch, surface it on the final record —
+      // a single confirmed mismatch is worth a manual look even if other
+      // slots didn't detect a face clearly enough to compare.
+      genderMismatch: entries.some((e) => e.genderMismatch),
       finalStatus,
     });
   }
@@ -131,9 +141,35 @@ class AttendanceReportController {
       // Build per-student list from ML result
       const students = [];
       const attendance = mlResult.attendance || {};
+
+      // Bulk-fetch enrolled students' recorded gender for cross-checking
+      // against what InsightFace detected during this session — avoids one
+      // DB round-trip per student.
+      const rollNos = Object.keys(attendance);
+      const enrolledStudents = rollNos.length
+        ? await Student.find({ rollNo: { $in: rollNos } }, { rollNo: 1, gender: 1 }).lean()
+        : [];
+      const recordedGenderByRoll = {};
+      for (const s of enrolledStudents) {
+        // Student.gender is "Male"/"Female"/"Other" — normalise to M/F to compare
+        // against detectedGender ("M"/"F") from InsightFace's genderage head.
+        if (s.gender?.toLowerCase() === "male")   recordedGenderByRoll[s.rollNo] = "M";
+        else if (s.gender?.toLowerCase() === "female") recordedGenderByRoll[s.rollNo] = "F";
+        // "Other" has no M/F equivalent — left unset, so genderMismatch stays false
+      }
+
       for (const [rollNo, data] of Object.entries(attendance)) {
         const rawStatus = data.status || "absent";
         const status = VALID_STATUSES.has(rawStatus) ? rawStatus : "absent";
+
+        const detectedGender = data.gender || null;   // "M" | "F" | null from ML
+        const recordedGender = recordedGenderByRoll[rollNo];
+        // Only flag a mismatch when both sides have a value to compare —
+        // missing data (no detection, or "Other" on file) is never flagged.
+        const genderMismatch = Boolean(
+          detectedGender && recordedGender && detectedGender !== recordedGender
+        );
+
         students.push({
           rollNo,
           status,
@@ -141,6 +177,9 @@ class AttendanceReportController {
           confidenceZone: data.confidence_zone || "low",
           firstSeenSec: data.first_seen_sec || null,
           clusterFolder: data.cluster_folder || null,
+          detectedAge: data.age ?? null,
+          detectedGender,
+          genderMismatch,
           finalStatus:
             status === "present" ? "P" : status === "review" ? "R" : "A",
         });
@@ -314,6 +353,9 @@ class AttendanceReportController {
           status: entry?.status || "absent",
           finalStatus: entry?.finalStatus || "A",
           avgConfidence: entry?.avgConfidence || 0,
+          detectedAge: entry?.detectedAge ?? null,
+          detectedGender: entry?.detectedGender ?? null,
+          genderMismatch: entry?.genderMismatch || false,
           reportId: r._id,
         };
       });

@@ -60,5 +60,6 @@ router.use('/settings/batches', require("./batchSettingsRoutes"));
 router.use('/settings/notifications', require("./notificationSettingsRoutes"));
 router.use('/health', require("./healthRoutes"));
 router.use('/unknown-faces', require("./unknownFaceRoutes"));
+router.use('/mldatafoldertree', require("./mldataFolderSizeRoutes"))
 
 module.exports = router;

@@ -137,58 +137,76 @@ async function resolveCameras(room, roomOverride) {
     count: cams.length,
   };
 }
+// Rooms now come from the Camera registry (one row per roomId with an active
+// camera) — AcquisitionControl's old room-management tab was removed, so
+// config.includedRooms is no longer maintained by anyone. We keep reading
+// includedRooms only as an *optional* per-room override (disable a room,
+// or override its RTSP URL) layered on top of the Camera-sourced list.
+async function getEnabledRooms(config) {
+  const roomIds = await Camera.distinct('roomId', { isActive: true });
+  const overrideMap = {};
+  (config.includedRooms || []).forEach((r) => {
+    if (r.room) overrideMap[r.room.toUpperCase()] = r;
+  });
 
-// ── Step: resolve embedding PKL for a subject — returns bytes too (stateless) ──
-function resolveEmbeddingPkl(dept, subject, session) {
-  const fs = require('fs');
-  const deptSafe = safeSubject(dept || 'UNKNOWN');
-  const sessionToUse = session || currentSession();
-  const folder = path.join(EMBEDDINGS_DIR, sessionToUse, deptSafe);
-  if (!fs.existsSync(folder)) return null;
-
-  const pklFiles = fs.readdirSync(folder).filter((f) => f.endsWith('.pkl'));
-  if (!pklFiles.length) return null;
-
-  const subjectTokens = safeSubject(subject).toLowerCase().split('_').filter(Boolean);
-  let best = null;
-  let bestScore = 0;
-  for (const f of pklFiles) {
-    const fileTokens = f.replace(/\.pkl$/i, '').toLowerCase().split('_');
-    const overlap = subjectTokens.filter((t) => fileTokens.includes(t)).length;
-    if (overlap > bestScore) { bestScore = overlap; best = f; }
-  }
-  if (!best) return null;
-
-  const fullPath = path.join(folder, best);
-  let pklData;
-  try {
-    // Node owns ml-data/ — reads the bytes itself and ships them over the
-    // wire. Python is stateless: it never touches this path, since in a
-    // deployed setup Node and the ML service may not share a filesystem.
-    pklData = fs.readFileSync(fullPath).toString('base64');
-  } catch (err) {
-    console.error('[Scheduler] Failed to read PKL bytes:', err.message);
-    return null;
-  }
-
-  return { filename: best, pklData };
+  return roomIds
+    .filter(Boolean)
+    .map((room) => {
+      const ov = overrideMap[room.toUpperCase()];
+      return {
+        room,
+        enabled: ov ? ov.enabled !== false : true,
+        rtspUrl1: ov?.rtspUrl1 || '',
+        rtspUrl2: ov?.rtspUrl2 || '',
+        note: ov?.note || '',
+      };
+    })
+    .filter((r) => r.enabled !== false)
+    .sort((a, b) => a.room.localeCompare(b.room));
 }
 
-// ── Step: lookup Subject doc for ERP metadata ─────────────────────────────
-async function lookupSubjectMeta(subject, sem, dept) {
-  if (!subject) return null;
+// ── Step: resolve Subject doc + its pre-generated embedding PKL together ──
+// Subject.embeddingFile is set once embeddings are generated for that
+// subject (via the existing EmbeddingGeneration page) — that's the
+// authoritative pointer. We read it directly rather than fuzzy-guessing a
+// filename, and never touch ground_truth/ or roll numbers from here at all.
+async function resolveSubjectAndPkl(subjectText, sem, dept, session) {
   const subj = await Subject.findOne({
-    subjectFullName: { $regex: subject.trim(), $options: 'i' },
+    subjectFullName: { $regex: (subjectText || '').trim(), $options: 'i' },
     sem,
   }).lean();
-  if (!subj) return null;
-  return {
+
+  const subjectMeta = subj ? {
     subName: subj.subName || '',
     subCode: subj.subCode || '',
     subjectFullName: subj.subjectFullName || '',
     credits: subj.credits ?? null,
-  };
+  } : null;
+
+  if (!subj || !subj.embeddingFile) {
+    return { subjectMeta, pkl: null };
+  }
+
+  const fs = require('fs');
+  const deptSafe = safeSubject(dept || subj.dept || 'UNKNOWN');
+  const sessionToUse = session || currentSession();
+  const fullPath = path.join(EMBEDDINGS_DIR, sessionToUse, deptSafe, subj.embeddingFile);
+
+  if (!fs.existsSync(fullPath)) {
+    return { subjectMeta, pkl: null, pklMissingReason: `Subject.embeddingFile (${subj.embeddingFile}) not found on disk at expected path` };
+  }
+
+  let pklData;
+  try {
+    pklData = fs.readFileSync(fullPath).toString('base64');
+  } catch (err) {
+    return { subjectMeta, pkl: null, pklMissingReason: `Failed to read PKL: ${err.message}` };
+  }
+
+  return { subjectMeta, pkl: { filename: subj.embeddingFile, pklData } };
 }
+
+
 
 // ── Run one room end-to-end ────────────────────────────────────────────────
 async function runRoom({ room, roomOverride, slot, date, config }) {
@@ -224,58 +242,90 @@ async function runRoom({ room, roomOverride, slot, date, config }) {
   }
 
   // 4. Embedding check
-  const pkl = resolveEmbeddingPkl(ctx.dept, ctx.subject, ctx.session);
+ // 4. Subject + embeddings (one lookup gives us both)
+  const { subjectMeta, pkl, pklMissingReason } = await resolveSubjectAndPkl(ctx.subject, ctx.sem, ctx.dept, ctx.session);
   if (!pkl) {
     return {
-      room, status: 'skipped', reason: 'No Embeddings for Subject',
+      room, status: 'skipped',
+      reason: pklMissingReason || 'No Embeddings for Subject — generate embeddings for this subject first',
       ctx, cameras, log,
     };
   }
   push(`Embeddings found: ${pkl.filename}`);
 
-  // 5. Run settings
+ // 5. Run settings — now actually used (was previously computed and ignored)
   const periodCfg = (config.periods || []).find((p) => p.periodKey === slot) || {};
   const numRuns = periodCfg.numRuns ?? config.globalNumRuns ?? 1;
   const runDurationSec = periodCfg.runDurationSec ?? config.globalRunDurationSec ?? 120;
+  const checkIntervalMin = periodCfg.checkIntervalMin ?? config.globalCheckIntervalMin ?? 5;
   const presentLogic = periodCfg.presentLogic ?? config.globalPresentLogic ?? 'majority';
 
-// 6. Call Python ML service (sync, single run — see "numRuns behavior" open question)
-  push(`Starting ML run (durationSec=${runDurationSec}, presentLogic=${presentLogic})`);
-  let mlResult;
-  try {
-    // Stateless: send the PKL bytes themselves, not a path. Python and Node
-    // may be on different machines in a deployed setup, so no shared
-    // filesystem can be assumed — same contract as embeddingSyncHelper.js
-    // and the ERP embedding endpoints in ground_truth_routes.py.
-    const res = await axios.post(
-      `${ML_URL}/run-attendance-rtsp-sync`,
-      {
-        rtspUrl: cameras.cam1,
-        rtspUrl2: cameras.cam2 || '',
-        batch: ctx.batch,
-        room,
-        slot,
-        date,
-        durationSec: runDurationSec,
-        subject: ctx.subject,
-        faculty: ctx.faculty,
-        semester: ctx.sem,
-        locksemId: ctx.locksemId,
-        embeddingsPklData: pkl.pklData,   // base64 .pkl bytes — replaces enrolledEmbeddings
-      },
-      { timeout: 300000 },
-    );
-    mlResult = res.data;
-  } catch (err) {
-    return {
-      room, status: 'error', reason: err.response?.data?.detail || err.message,
-      ctx, cameras, pkl, log,
-    };
+  // 6. Call Python ML service — numRuns times, checkIntervalMin apart
+  push(`Plan: ${numRuns} run(s), ${runDurationSec}s each, ${checkIntervalMin}min apart, logic=${presentLogic}`);
+  const runResults = [];
+  for (let i = 1; i <= numRuns; i++) {
+    if (i > 1) {
+      push(`Waiting ${checkIntervalMin} min before run ${i}/${numRuns}`);
+      await new Promise((r) => setTimeout(r, checkIntervalMin * 60 * 1000));
+    }
+    push(`Starting run ${i}/${numRuns}`);
+    try {
+      const res = await axios.post(
+        `${ML_URL}/run-attendance-rtsp-sync`,
+        {
+          rtspUrl: cameras.cam1,
+          rtspUrl2: cameras.cam2 || '',
+          batch: ctx.batch,
+          room, slot, date,
+          durationSec: runDurationSec,
+          subject: ctx.subject,
+          faculty: ctx.faculty,
+          semester: ctx.sem,
+          locksemId: ctx.locksemId,
+          embeddingsPklData: pkl.pklData,
+        },
+        { timeout: 300000 },
+      );
+      runResults.push(res.data);
+      push(`Run ${i} done: P:${res.data.summary?.present} A:${res.data.summary?.absent} R:${res.data.summary?.review}`);
+    } catch (err) {
+      push(`Run ${i} failed: ${err.response?.data?.detail || err.message}`);
+    }
   }
-  push(`ML run complete: P:${mlResult.summary?.present} A:${mlResult.summary?.absent} R:${mlResult.summary?.review}`);
 
-  // 7. Subject metadata for ERP
-  const subjectMeta = await lookupSubjectMeta(ctx.subject, ctx.sem, ctx.dept);
+  if (!runResults.length) {
+    return { room, status: 'error', reason: 'All ML runs failed', ctx, cameras, pkl, log };
+  }
+
+  // Merge per-student status across runs according to presentLogic
+  const rollMap = {};
+  for (const r of runResults) {
+    for (const [rollNo, data] of Object.entries(r.attendance || {})) {
+      (rollMap[rollNo] ||= []).push(data);
+    }
+  }
+  const mlResult = {
+    attendance: Object.fromEntries(
+      Object.entries(rollMap).map(([rollNo, entries]) => {
+        const presentCount = entries.filter((e) => e.status === 'present').length;
+        const isPresent =
+          presentLogic === 'any_run'   ? presentCount > 0 :
+          presentLogic === 'all_runs'  ? presentCount === entries.length :
+          presentLogic === 'first_run' ? entries[0].status === 'present' :
+          /* majority */                  presentCount > entries.length / 2;
+        const best = entries.reduce((p, c) => (c.avg_confidence > p.avg_confidence ? c : p), entries[0]);
+        return [rollNo, { ...best, status: isPresent ? 'present' : (entries.some(e => e.status === 'review') ? 'review' : 'absent') }];
+      }),
+    ),
+    summary: {
+      present: 0, absent: 0, review: 0, // recomputed below from merged attendance
+    },
+  };
+  mlResult.summary.present = Object.values(mlResult.attendance).filter((s) => s.status === 'present').length;
+  mlResult.summary.absent  = Object.values(mlResult.attendance).filter((s) => s.status === 'absent').length;
+  mlResult.summary.review  = Object.values(mlResult.attendance).filter((s) => s.status === 'review').length;
+
+
 
   // 8. Save report
   const attendance = mlResult.attendance || {};
@@ -362,9 +412,11 @@ exports.runAll = async (req, res) => {
     const config = await AcquisitionControl.findOne({ profileName: 'default' }).lean();
     if (!config) return res.status(404).json({ error: 'AcquisitionControl config not found' });
 
-    const enabledRooms = (config.includedRooms || []).filter((r) => r.enabled !== false);
+    const enabledRooms = await getEnabledRooms(config);
     if (!enabledRooms.length) {
-      return res.status(400).json({ error: 'No enabled rooms in AcquisitionControl. Add rooms first.' });
+      return res.status(400).json({
+        error: 'No active cameras found in the Camera Registry. Add a camera for a room before running the scheduler.',
+      });
     }
 
     const results = await Promise.allSettled(
@@ -403,7 +455,7 @@ exports.preview = async (req, res) => {
     const config = await AcquisitionControl.findOne({ profileName: 'default' }).lean();
     if (!config) return res.status(404).json({ error: 'AcquisitionControl config not found' });
 
-    const enabledRooms = (config.includedRooms || []).filter((r) => r.enabled !== false);
+    const enabledRooms = await getEnabledRooms(config);
 
     const rooms = await Promise.all(
       enabledRooms.map(async (roomOverride) => {

@@ -586,6 +586,7 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
     yield {"type": "stage", "message": f"Stream open {W}×{H} — recording {req.durationSec}s…"}
  
     all_embeddings, all_face_images, all_timestamps, all_quality = [], [], [], []
+    all_demographics = []  # [{"age": int|None, "gender": "M"|"F"|None}, ...] — parallel to all_embeddings
     CAMERA_SWITCH_SEC = 30
     cameras = [req.rtspUrl]
     if req.rtspUrl2:
@@ -653,6 +654,7 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
                 all_face_images.append(d["crop"])
                 all_timestamps.append(round(elapsed, 2))
                 all_quality.append(d["quality"])
+                all_demographics.append({"age": d.get("age"), "gender": d.get("gender")})
 
             # ── Emit raw + annotated frame every SNAP_EVERY_SEC seconds ──────
             # Encoded in-memory and shipped as a "frame_snapshot" event —
@@ -779,6 +781,23 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
             rec["detections"]     = prev_n + n
             if rec["first_seen_sec"] is None:
                 rec["first_seen_sec"] = round(float(all_timestamps[indices[0]]), 1)
+
+            # ── Demographics: aggregate age/gender across this cluster's
+            # detections, so a single noisy frame doesn't decide the value.
+            # Gender → majority vote (most frequent value wins).
+            # Age    → median of all valid readings (robust to outliers).
+            cluster_demo = [all_demographics[i] for i in indices]
+            ages    = [d["age"]    for d in cluster_demo if d.get("age")    is not None]
+            genders = [d["gender"] for d in cluster_demo if d.get("gender") is not None]
+
+            if ages:
+                ages_sorted  = sorted(ages)
+                median_age   = ages_sorted[len(ages_sorted) // 2]
+                rec["age_samples"] = rec.get("age_samples", []) + ages
+                rec["age"] = sorted(rec["age_samples"])[len(rec["age_samples"]) // 2]
+            if genders:
+                rec["gender_samples"] = rec.get("gender_samples", []) + genders
+                rec["gender"] = max(set(rec["gender_samples"]), key=rec["gender_samples"].count)
  
     # ── Unmatched clusters ─────────────────────────────────────────────────
     unmatched_clusters = []
@@ -862,6 +881,16 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
                     }
  
     yield {"type": "stage", "message": f"✅ {len(unique_labels)} clusters matched against {len(enrolled)} enrolled students"}
+
+    # ── Strip internal working fields before emitting ───────────────────────
+    # age_samples/gender_samples were only needed to compute the running
+    # median/majority-vote during the assignment loop above.
+    for rec in attendance.values():
+        rec.pop("age_samples", None)
+        rec.pop("gender_samples", None)
+        rec.setdefault("age", None)
+        rec.setdefault("gender", None)
+
  
     # ── Final result event ─────────────────────────────────────────────────
     yield {
