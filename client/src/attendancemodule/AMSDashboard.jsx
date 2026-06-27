@@ -582,7 +582,7 @@ export default function AMSDashboard() {
                     <button
                       style={{
                         color: T.indigo,
-                        textDecoration: "underline",
+                        textDecoration: "none",
                         display : "flex",
                         justifyContent: "center",
                         alignItems: "center",
