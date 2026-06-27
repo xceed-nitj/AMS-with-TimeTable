@@ -111,8 +111,8 @@ def load_model(det_size: int = INSIGHTFACE_DET_SIZE):
     providers = ["CUDAExecutionProvider", "CPUExecutionProvider"] if use_gpu else ["CPUExecutionProvider"]
     ctx_id    = 0 if use_gpu else -1
     state.current_det_size = det_size
-    logger.info(f"Loading InsightFace buffalo_s ({'GPU' if use_gpu else 'CPU'}, det_size={det_size})…")
-    state.face_app = FaceAnalysis(name="buffalo_s", providers=providers)
+    logger.info(f"Loading InsightFace buffalo_l ({'GPU' if use_gpu else 'CPU'}, det_size={det_size})…")
+    state.face_app = FaceAnalysis(name="buffalo_l", providers=providers)
     state.face_app.prepare(ctx_id=ctx_id, det_size=(det_size, det_size), det_thresh=0.3)
     logger.info("Model loaded.")
 

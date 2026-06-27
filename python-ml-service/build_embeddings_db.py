@@ -16,8 +16,8 @@ def build_embeddings(photos_dir: str, output_path: str):
         print("Install with:  pip install insightface==0.7.3 opencv-python-headless")
         return
 
-    print(f"Loading InsightFace buffalo_s  det_size={DET_SIZE}×{DET_SIZE} (CPU)")
-    app = FaceAnalysis(name="buffalo_s", providers=["CPUExecutionProvider"])
+    print(f"Loading InsightFace buffalo_l  det_size={DET_SIZE}×{DET_SIZE} (CPU)")
+    app = FaceAnalysis(name="buffalo_l", providers=["CPUExecutionProvider"])
     app.prepare(ctx_id=0, det_size=(DET_SIZE, DET_SIZE))
 
     student_folders = [
