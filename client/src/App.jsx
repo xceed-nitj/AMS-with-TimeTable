@@ -245,6 +245,7 @@ import DeptMenuConfig from './attendancemodule/DeptMenuConfig';
 //confifence monitor
 import ConfidenceMonitor from './attendancemodule/confidenceMonitor';
 import { MLDataFolder } from './attendancemodule/MLDataFolder.jsx';
+import MLFineTuning from './attendancemodule/MLFineTuning';
 
 function App() {
   return (
@@ -682,6 +683,7 @@ function App() {
           <Route path="reports" element={<AttendanceReport />} />
           <Route path="frame-verification" element={<FrameVerification />} />
           <Route path="confidence" element={<ConfidenceMonitor />} />
+          <Route path="ml-fine-tuning" element={<MLFineTuning />} />
           <Route path="acquisition-control" element={<AcquisitionControl />} />
           <Route path="gpu" element={<GpuMetrics />} />
           <Route path="dept-menu-config" element={<DeptMenuConfig />} />

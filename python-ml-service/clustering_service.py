@@ -10,6 +10,7 @@ import numpy as np
 from sklearn.cluster import DBSCAN
 
 import state
+from face_utils import compute_liveness_score, run_onnx_liveness
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +36,43 @@ NMS_IOU_THRESH = 0.35
 
 # Quality filter
 MIN_SHARPNESS = 10.0     # Laplacian variance
+
+# ── Liveness / anti-spoofing ──────────────────────────────────────────────
+# Tunable thresholds and the enable/disable flag now live in
+# state.liveness_config (mutable, persisted to ml-data/liveness_config.json,
+# editable at runtime from the ML Fine Tuning page) instead of hardcoded
+# constants here — see _check_liveness() below, which reads from it on
+# every call so a change takes effect on the very next detection.
+#
+# Rejected crops are saved to LIVENESS_REJECTED_DIR (when
+# state.liveness_config["save_rejected_crops"] is True) so accuracy can be
+# audited later — separate from the existing debug-only rejected_dir used
+# for blur/size rejects, since this folder is meant to be checked routinely,
+# not just during debugging.
+LIVENESS_REJECTED_DIR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..",
+    "server", "ml-data", "liveness_rejected",
+)
+
+# Module-level counter, not thread-local — multiple attendance runs across
+# different rooms can run concurrently (see state.face_lock comment), so a
+# single global count mixes rejections from concurrent runs together. This
+# is an accepted tradeoff to avoid changing _detect_faces_tiled's signature
+# everywhere it's called; callers that care about an exact per-run count
+# should call reset_liveness_rejection_count() right before their run and
+# accept that a different concurrent run on another room could add to it.
+_liveness_rejection_count = 0
+
+
+def reset_liveness_rejection_count():
+    global _liveness_rejection_count
+    _liveness_rejection_count = 0
+
+
+def get_liveness_rejection_count():
+    return _liveness_rejection_count
+
+
 MIN_FACE_PX   = 20      # minimum face side in original-frame pixels
 
 # FIX-F: tight crop to avoid bleeding into neighbour's face
@@ -268,6 +306,41 @@ def _digital_zoom(frame: np.ndarray, zoom_factor: float,
 #      → detections=[] → no crops saved.
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+def _check_liveness(crop_bgr):
+    """
+    Decide whether a face crop looks like a live face vs a printed photo /
+    screen replay. Returns (is_live: bool, score: float, method: str).
+
+    Thresholds are read from state.liveness_config on every call (not
+    hardcoded constants) so a change made on the ML Fine Tuning page takes
+    effect on the very next detection, no restart needed.
+
+    method is "onnx" or "heur" — included so rejected-frame filenames in
+    debug mode make it obvious which path made the call, useful when tuning
+    the thresholds against real footage from your own classrooms.
+    """
+    with state.liveness_config_lock:
+        heuristic_threshold = state.liveness_config["heuristic_threshold"]
+        onnx_threshold       = state.liveness_config["onnx_threshold"]
+
+    if state.liveness_session is not None:
+        # Same lock as face_app.get() — ONNXRuntime sessions are not
+        # guaranteed safe under concurrent Run() calls from multiple threads,
+        # and attendance jobs for different rooms run concurrently.
+        with state.face_lock:
+            live_prob = run_onnx_liveness(
+                state.liveness_session, state.liveness_input_name, crop_bgr,
+                input_size=state.liveness_input_size,
+            )
+        if live_prob is not None:
+            return (live_prob >= onnx_threshold, live_prob, "onnx")
+        # ONNX inference failed for this crop — fall through to heuristic
+        # rather than silently letting every failure through unchecked.
+
+    score = compute_liveness_score(crop_bgr)
+    return (score >= heuristic_threshold, score, "heur")
+
+
 def _detect_faces_tiled(face_app, frame: np.ndarray,
                         ui_mask: np.ndarray = None,
                         preview_cb=None,
@@ -478,6 +551,50 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
                 except Exception:
                     pass
             continue
+
+        # ── Liveness / anti-spoofing check ──────────────────────────────────
+        # Reject crops that look like a printed photo or phone/tablet screen
+        # held up to the camera, before they reach embedding/clustering.
+        # Uses the ONNX model if one was loaded at startup, otherwise the
+        # always-available heuristic. Enabled/disabled and thresholds are
+        # read fresh from state.liveness_config on every call.
+        with state.liveness_config_lock:
+            liveness_enabled = state.liveness_config["enabled"]
+            save_rejected    = state.liveness_config["save_rejected_crops"]
+
+        if liveness_enabled:
+            is_live, live_score, live_method = _check_liveness(crop)
+            if not is_live:
+                global _liveness_rejection_count
+                _liveness_rejection_count += 1
+
+                # Always save rejected crops here (when the setting is on) —
+                # this is a routine accuracy-audit trail, not a debug-only
+                # artifact, so it doesn't depend on the _debug flag the
+                # blur/size rejects above use.
+                if save_rejected:
+                    try:
+                        os.makedirs(LIVENESS_REJECTED_DIR, exist_ok=True)
+                        ts_ms = int(time.time() * 1000)
+                        fname = (f"{ts_ms}_{live_method}{live_score:.2f}_"
+                                 f"det{det_score:.2f}.jpg")
+                        cv2.imwrite(os.path.join(LIVENESS_REJECTED_DIR, fname), crop,
+                                    [cv2.IMWRITE_JPEG_QUALITY, 90])
+                    except Exception:
+                        pass
+
+                # Debug-mode copy alongside the existing blur/size rejects,
+                # for when you're actively investigating one capture session.
+                if _debug:
+                    try:
+                        fname = (f"fr{debug_frame_id:04d}_REJECT_SPOOF_"
+                                 f"{live_method}{live_score:.2f}_"
+                                 f"det{det_score:.2f}.jpg")
+                        cv2.imwrite(os.path.join(rejected_dir, fname), crop,
+                                    [cv2.IMWRITE_JPEG_QUALITY, 90])
+                    except Exception:
+                        pass
+                continue
  
         # Quality score — use zoomed dimensions for fair scoring
         quality = float(

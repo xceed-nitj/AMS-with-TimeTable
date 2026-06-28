@@ -283,6 +283,46 @@ router.get('/logs', async (req, res) => {
     }
 });
 
+// ─── Liveness / Anti-Spoofing Config (ML Fine Tuning page) ───
+router.get('/liveness-config', async (req, res) => {
+    try {
+        const result = await axios.get(`${ML_URL}/liveness-config`, { timeout: 5000 });
+        res.json(result.data);
+    } catch (e) {
+        res.status(503).json({
+            error: e.response?.data?.error || e.message || 'Liveness config unavailable',
+        });
+    }
+});
+
+router.post('/liveness-config', async (req, res) => {
+    try {
+        const result = await axios.post(`${ML_URL}/liveness-config`, req.body, { timeout: 5000 });
+        res.json(result.data);
+    } catch (e) {
+        const status = e.response?.status || 503;
+        res.status(status).json({
+            error: e.response?.data?.error || e.message || 'Failed to update liveness config',
+        });
+    }
+});
+
+router.get('/liveness-rejected-samples', async (req, res) => {
+    try {
+        const limit = Number.parseInt(req.query.limit, 10) || 50;
+        const result = await axios.get(`${ML_URL}/liveness-rejected-samples`, {
+            timeout: 10000,
+            params: { limit },
+        });
+        res.json(result.data);
+    } catch (e) {
+        res.status(503).json({
+            samples: [], total: 0,
+            error: e.response?.data?.error || e.message || 'Rejected samples unavailable',
+        });
+    }
+});
+
 // ─── ML Service Status ────────────────────────────────────────
 router.get('/status', (req, res) => {
     res.json(mlProcess.getStatus());

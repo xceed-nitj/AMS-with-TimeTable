@@ -110,6 +110,51 @@ def load_model(det_size: int = INSIGHTFACE_DET_SIZE):
     logger.info("Model loaded.")
 
 
+def load_liveness_model():
+    """
+    Optional: load a dedicated ONNX liveness/anti-spoofing classifier
+    (e.g. MiniFASNet) if a model file is present.
+
+    Looks for the path in LIVENESS_MODEL_PATH env var, falling back to
+    python-ml-service/models/liveness.onnx. If nothing is found, this is
+    NOT an error — clustering_service.py falls back to the always-available
+    heuristic scorer in face_utils.compute_liveness_score(), so liveness
+    checking still works, just with lower accuracy than a trained model.
+
+    See python-ml-service/README_LIVENESS.md for where to download a
+    compatible model (MiniFASNet ONNX export, 3-class softmax: live /
+    print-attack / replay-attack) and drop it in.
+    """
+    model_path = os.environ.get(
+        "LIVENESS_MODEL_PATH",
+        os.path.join(BASE_DIR, "models", "liveness.onnx"),
+    )
+    if not os.path.exists(model_path):
+        logger.info(
+            f"[Liveness] No ONNX model found at {model_path} — "
+            f"using heuristic anti-spoofing fallback (see README_LIVENESS.md "
+            f"to enable the higher-accuracy model)."
+        )
+        state.liveness_session = None
+        state.liveness_input_name = None
+        return
+
+    try:
+        import onnxruntime as ort
+        state.liveness_session = ort.InferenceSession(
+            model_path, providers=["CPUExecutionProvider"]
+        )
+        state.liveness_input_name = state.liveness_session.get_inputs()[0].name
+        logger.info(f"[Liveness] Loaded ONNX anti-spoofing model from {model_path}")
+    except Exception as e:
+        logger.warning(
+            f"[Liveness] Failed to load {model_path}: {e} — "
+            f"falling back to heuristic anti-spoofing."
+        )
+        state.liveness_session = None
+        state.liveness_input_name = None
+
+
 def _migrate_folder(old_path, new_path, label):
     """One-time move of a data folder from its old location to server/ml-data/."""
     import shutil
@@ -147,6 +192,9 @@ def load_embeddings():
 async def lifespan(app: FastAPI):
     state.load_model_fn = load_model   # expose to route modules without circular import
     load_model()
+    load_liveness_model()
+    from liveness_config_store import load_liveness_config
+    load_liveness_config()
     load_embeddings()
     yield
 
