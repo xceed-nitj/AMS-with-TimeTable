@@ -48,3 +48,62 @@ def get_aligned_face(face_app, frame, face, min_face_size=50):
     aligned = cv2.resize(aligned, (160, 160))
     aligned = normalize_lighting(aligned)
     return aligned
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ── Liveness / Anti-Spoofing Core Score Engines ───────────────────
+# ─────────────────────────────────────────────────────────────────────────────
+
+def compute_liveness_score(crop_bgr):
+    """
+    Heuristic anti-spoofing score based on texture spread, color compression, and glare.
+    Returns a float score where higher means more likely live, lower means spoof.
+    """
+    if crop_bgr is None or crop_bgr.size == 0:
+        return 0.0
+    
+    gray = cv2.cvtColor(crop_bgr, cv2.COLOR_BGR2GRAY)
+    
+    # 1. Texture richness (Laplacian variance across patch)
+    texture = cv2.Laplacian(gray, cv2.CV_64F).var()
+    
+    # 2. Color richness (spread of chrominance to detect printer/screen compression)
+    ycrcb = cv2.cvtColor(crop_bgr, cv2.COLOR_BGR2YCrCb)
+    color = float(np.std(ycrcb[:, :, 1]) + np.std(ycrcb[:, :, 2]))
+    
+    # 3. Specular highlight ratio (glare tracking from glassy devices or paper prints)
+    glare_pixels = np.sum(gray > 235)
+    total_pixels = gray.size
+    glare = glare_pixels / total_pixels if total_pixels > 0 else 0.0
+    
+    # Normalizing terms based on typical webcam CCTV face-crop frames
+    texture_term = min(texture / 15.0, 1.0)
+    color_term   = min(color / 40.0, 1.0)
+    glare_term   = min(glare * 10.0, 1.0)
+
+    # Weighted composite score calculations
+    score = (texture_term * 0.5) + (color_term * 0.35) - (glare_term * 0.4)
+    return float(score)
+
+
+def run_onnx_liveness(session, input_name, crop_bgr, input_size=80):
+    """
+    Run a MiniFASNet-style ONNX liveness classifier on a face crop.
+    Expects a 3-class softmax output: [live, print-attack, replay-attack]
+    Returns the "live" class probability as a float in [0, 1], or None if inference fails.
+    """
+    try:
+        resized = cv2.resize(crop_bgr, (input_size, input_size))
+        # Structure image blobs into correct neural format: [1, 3, 80, 80]
+        blob = resized.astype(np.float32).transpose(2, 0, 1)[np.newaxis, ...]
+        outputs = session.run(None, {input_name: blob})
+        
+        preds = outputs[0][0]
+        
+        # Safe exponential softmax computation to extract precise probabilities
+        exp_preds = np.exp(preds - np.max(preds))
+        probs = exp_preds / np.sum(exp_preds)
+        
+        # Index 0 strictly maps to the authentic "live" face probability
+        return float(probs[0])
+    except Exception:
+        return None

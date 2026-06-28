@@ -10,6 +10,7 @@ import logging
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from tracemalloc import start
+from typing import Optional
 
 import cv2
 import numpy as np
@@ -20,7 +21,12 @@ from pydantic import BaseModel
 from sklearn.cluster import DBSCAN as _DBSCAN
 
 import state
-from clustering_service import _detect_faces_tiled, _build_ui_mask
+import clustering_service
+import liveness_config_store
+from clustering_service import (
+    _detect_faces_tiled, _build_ui_mask,
+    reset_liveness_rejection_count, get_liveness_rejection_count,
+)
 
 logger = logging.getLogger("ml_service.rtsp_routes")
 router = APIRouter()
@@ -537,6 +543,11 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
     """
     job["stop"].clear()
 
+    # Issue: liveness/anti-spoofing — reset the rejection counter so this
+    # run's summary reports only what it rejected (see note on the counter's
+    # concurrency tradeoff in clustering_service.py).
+    reset_liveness_rejection_count()
+
     yield {"type": "stage", "message": f"Loading enrolled embeddings for batch: {req.batch}…"}
 
     # Enrollment embeddings come from Node's cached _info.json mean_embedding
@@ -962,6 +973,11 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
                 "processing_time":       round(time.time() - start_t, 2),
                 "frames_read":           int(frame_count),
                 "duration_sec":          int(req.durationSec),
+                # Issue: liveness/anti-spoofing — count of face detections
+                # rejected as likely printed-photo/screen-replay spoofs during
+                # this run. Surfaced so dept-admins can see spoof attempts
+                # were caught rather than silently dropped.
+                "liveness_rejected":     int(get_liveness_rejection_count()),
             },
             "unmatched_clusters": unmatched_clusters,
             "frame_snapshots":    frame_snapshots,
@@ -1358,3 +1374,85 @@ def list_recordings_ep():
                 "sizeBytes":   size,
             })
     return result
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Liveness / anti-spoofing — runtime config (ML Fine Tuning page)
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Backs the dropdown threshold selectors + enable/disable toggle on the
+# new "ML Fine Tuning" admin page. Reads/writes state.liveness_config,
+# persisted to ml-data/liveness_config.json via liveness_config_store.py
+# so changes survive a server restart. clustering_service.py reads this
+# dict fresh on every face detection — no restart needed after a change.
+
+class LivenessConfigUpdate(BaseModel):
+    enabled: Optional[bool] = None
+    heuristic_threshold: Optional[float] = None
+    onnx_threshold: Optional[float] = None
+    save_rejected_crops: Optional[bool] = None
+
+
+@router.get("/liveness-config")
+def get_liveness_config_ep():
+    """Current liveness config + whether an ONNX model is actually loaded."""
+    with state.liveness_config_lock:
+        config = dict(state.liveness_config)
+    return {
+        **config,
+        "onnx_model_loaded": state.liveness_session is not None,
+        "rejected_this_run": clustering_service.get_liveness_rejection_count(),
+    }
+
+
+@router.post("/liveness-config")
+def update_liveness_config_ep(req: LivenessConfigUpdate):
+    """
+    Partial update — only fields present in the request body are changed.
+    Validates threshold ranges before applying so a typo from the frontend
+    (e.g. a stray "1.5") can't silently break detection.
+    """
+    updates = req.dict(exclude_none=True)
+
+    for key in ("heuristic_threshold", "onnx_threshold"):
+        if key in updates and not (0.0 <= updates[key] <= 1.0):
+            return JSONResponse(
+                status_code=400,
+                content={"error": f"{key} must be between 0.0 and 1.0, got {updates[key]}"},
+            )
+
+    new_config = liveness_config_store.update_liveness_config(updates)
+    logger.info(f"[LivenessConfig] Updated: {updates} → {new_config}")
+    return {
+        **new_config,
+        "onnx_model_loaded": state.liveness_session is not None,
+    }
+
+
+@router.get("/liveness-rejected-samples")
+def list_liveness_rejected_samples(limit: int = 50):
+    """
+    Recent rejected-crop filenames (and a base64 thumbnail of each) for the
+    ML Fine Tuning page's accuracy-review panel — lets an admin actually
+    look at what got rejected and judge whether the threshold needs
+    adjusting, rather than only seeing a count.
+    """
+    rejected_dir = clustering_service.LIVENESS_REJECTED_DIR
+    if not os.path.isdir(rejected_dir):
+        return {"samples": [], "total": 0}
+
+    files = sorted(
+        (f for f in os.listdir(rejected_dir) if f.lower().endswith(".jpg")),
+        reverse=True,  # filenames are ms-timestamp-prefixed → newest first
+    )
+    total = len(files)
+    samples = []
+    for fname in files[:limit]:
+        try:
+            with open(os.path.join(rejected_dir, fname), "rb") as f:
+                b64 = base64.b64encode(f.read()).decode("ascii")
+            samples.append({"filename": fname, "image": f"data:image/jpeg;base64,{b64}"})
+        except Exception:
+            continue
+
+    return {"samples": samples, "total": total}
