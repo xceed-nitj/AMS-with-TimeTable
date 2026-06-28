@@ -7,42 +7,46 @@ import { DEGREES, YEARS, theme, styles, cssReset } from './config';
 import { useDepartments } from './useDepartments';
 import UnknownFaces from './UnknownFaces';
 import getEnvironment from '../getenvironment';
+import ExportReportsTab from './ExportReportsTab';
 
-const apiUrl     = getEnvironment();
+const apiUrl = getEnvironment();
 const REPORT_API = `${apiUrl}/attendancemodule/reports`;
-const ML_API     = `${apiUrl}/ml`;
+const ML_API = `${apiUrl}/ml`;
 const pct = (a, b) => (b > 0 ? Math.round((a / b) * 100) : 0);
 const CAMERA_SWITCH_SEC = 30; // must match CAMERA_SWITCH_SEC in rtsp_routes.py
 
-export default function AttendanceReport({ fixedDepartment = '' }) {
-    const navigate = useNavigate();
-    const [tab, setTab] = useState('run');
+export default function AttendanceReport() {
+  const navigate = useNavigate();
+  const [tab, setTab] = useState('run');
 
-    // ── Inputs ────────────────────────────────────────────────────
-    const [room,     setRoom]     = useState('');
-    const [slot,     setSlot]     = useState('');
-    const [rtspUrl,  setRtspUrl]  = useState('');
-    const [date,     setDate]     = useState(new Date().toISOString().split('T')[0]);
-    const [duration, setDuration] = useState(120);
-    const [rtspUrl2,         setRtspUrl2]         = useState('');
-    const [checkIntervalMin, setCheckIntervalMin] = useState(5);
+  // ── Inputs ────────────────────────────────────────────────────
+  const [room, setRoom] = useState('');
+  const [slot, setSlot] = useState('');
+  const [rtspUrl, setRtspUrl] = useState('');
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [duration, setDuration] = useState(120);
+  const [rtspUrl2, setRtspUrl2] = useState('');
+  const [checkIntervalMin, setCheckIntervalMin] = useState(5);
 
-    // ── Room list from DB ─────────────────────────────────────────
-    const [rooms,        setRooms]        = useState([]);
-    const [roomSearch,   setRoomSearch]   = useState('');
-    const [showRoomDrop, setShowRoomDrop] = useState(false);
+  // ── Room list from DB ─────────────────────────────────────────
+  const [rooms, setRooms] = useState([]);
+  const [roomSearch, setRoomSearch] = useState('');
+  const [showRoomDrop, setShowRoomDrop] = useState(false);
 
-    // ── Timetable auto-lookup state ───────────────────────────────
-    const [ttStatus, setTtStatus] = useState(null); // null | 'loading' | 'found' | 'notfound'
+  // ── Timetable auto-lookup state ───────────────────────────────
+  const [ttStatus, setTtStatus] = useState(null); // null | 'loading' | 'found' | 'notfound'
 
-    // ── Fallback batch (if LockSem lookup fails) ──────────────────
-    const [degree,     setDegree]     = useState('BTECH');
-    const [department, setDepartment] = useState(fixedDepartment);
-    const [year,       setYear]       = useState('');
-    const { departments, deptLoading, deptError } = useDepartments();
-    const sanitizeDept = (d) => (d || '').trim().replace(/\s+/g, '_').toUpperCase();
-    const manualBatch = degree && department && year
-        ? `${degree}_${sanitizeDept(department)}_${year}` : null;
+  // ── Fallback batch (if LockSem lookup fails) ──────────────────
+  const [degree, setDegree] = useState('BTECH');
+  const [department, setDepartment] = useState('');
+  const [year, setYear] = useState('');
+  const { departments, deptLoading, deptError } = useDepartments();
+  const sanitizeDept = (d) =>
+    (d || '').trim().replace(/\s+/g, '_').toUpperCase();
+  const manualBatch =
+    degree && department && year
+      ? `${degree}_${sanitizeDept(department)}_${year}`
+      : null;
 
     // ── AcquisitionControl config ─────────────────────────────────
     const [acqConfig, setAcqConfig] = useState(null);
@@ -94,15 +98,15 @@ export default function AttendanceReport({ fixedDepartment = '' }) {
     const [sessionActive,   setSessionActive]   = useState(false);
     const [sessionChecks,   setSessionChecks]   = useState(0);
 
-    // ── History ───────────────────────────────────────────────────
-    const [reports,     setReports]     = useState([]);
-    const [histLoading, setHistLoading] = useState(false);
-    const [filterBatch, setFilterBatch] = useState('');
-    const [filterDate,  setFilterDate]  = useState('');
+  // ── History ───────────────────────────────────────────────────
+  const [reports, setReports] = useState([]);
+  const [histLoading, setHistLoading] = useState(false);
+  const [filterBatch, setFilterBatch] = useState('');
+  const [filterDate, setFilterDate] = useState('');
 
-    // ── Detail ────────────────────────────────────────────────────
-    const [detailReport,  setDetailReport]  = useState(null);
-    const [detailLoading, setDetailLoading] = useState(false);
+  // ── Detail ────────────────────────────────────────────────────
+  const [detailReport, setDetailReport] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
     // ── Camera status from DB ─────────────────────────────────────
     const [cameraStatus,  setCameraStatus]  = useState(null); // null | 'ok' | 'inactive' | 'none'
@@ -110,22 +114,24 @@ export default function AttendanceReport({ fixedDepartment = '' }) {
     const [showCameraWarn, setShowCameraWarn] = useState(false);
     const [pendingAction,  setPendingAction]  = useState(null); // 'run'
 
-    const [toast, setToast] = useState(null);
-    const showToast = (msg, type = 'success') => {
-        setToast({ msg, type });
-        setTimeout(() => setToast(null), 5000);
-    };
+  const [toast, setToast] = useState(null);
+  const showToast = (msg, type = 'success') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 5000);
+  };
 
-    // ── Fetch room list from DB on mount ──────────────────────────
-    useEffect(() => {
-        (async () => {
-            try {
-                const res  = await fetch(`${apiUrl}/timetablemodule/lock/rooms`);
-                const data = await res.json();
-                setRooms(data.rooms || []);
-            } catch { /* silently ignore */ }
-        })();
-    }, []);
+  // ── Fetch room list from DB on mount ──────────────────────────
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${apiUrl}/timetablemodule/lock/rooms`);
+        const data = await res.json();
+        setRooms(data.rooms || []);
+      } catch {
+        /* silently ignore */
+      }
+    })();
+  }, []);
 
     // ── Timetable auto-lookup when room + slot + date change ──────
     useEffect(() => {
@@ -173,59 +179,67 @@ export default function AttendanceReport({ fixedDepartment = '' }) {
         return () => ctrl.abort();
     }, [room, slot, date, acqConfig]);
 
-    // ── Auto-fetch camera RTSPs for the selected room from Camera model ────────
-    useEffect(() => {
-        if (!room) {
-            setRtspUrl('');
-            setRtspUrl2('');
-            rtspUrl2Ref.current = '';
-            setCameraStatus(null);
-            setCameraWarnAck(false);
-            return;
+  // ── Auto-fetch camera RTSPs for the selected room from Camera model ────────
+  useEffect(() => {
+    if (!room) {
+      setRtspUrl('');
+      setRtspUrl2('');
+      rtspUrl2Ref.current = '';
+      setCameraStatus(null);
+      setCameraWarnAck(false);
+      return;
+    }
+    (async () => {
+      try {
+        const res = await fetch(
+          `${apiUrl}/attendancemodule/cameras?roomId=${encodeURIComponent(room)}`,
+        );
+        if (!res.ok) return;
+        const cams = await res.json();
+        const cam1 = cams.find((c) => c.position === 'front-left');
+        const cam2 = cams.find((c) => c.position === 'front-right');
+        if (cam1?.streamUrl) setRtspUrl(cam1.streamUrl);
+        if (cam2?.streamUrl) {
+          setRtspUrl2(cam2.streamUrl);
+          rtspUrl2Ref.current = cam2.streamUrl;
+        } else {
+          setRtspUrl2('');
+          rtspUrl2Ref.current = '';
         }
-        (async () => {
-            try {
-                const res  = await fetch(`${apiUrl}/attendancemodule/cameras?roomId=${encodeURIComponent(room)}`);
-                if (!res.ok) return;
-                const cams = await res.json();
-                const cam1 = cams.find(c => c.position === 'front-left');
-                const cam2 = cams.find(c => c.position === 'front-right');
-                if (cam1?.streamUrl) setRtspUrl(cam1.streamUrl);
-                if (cam2?.streamUrl) {
-                    setRtspUrl2(cam2.streamUrl);
-                    rtspUrl2Ref.current = cam2.streamUrl;
-                } else {
-                    setRtspUrl2('');
-                    rtspUrl2Ref.current = '';
-                }
-                const anyInactive = cams.some(c => !c.isActive || c.status === 'offline' || c.status === 'maintenance');
-                const noCameras   = cams.length === 0;
-                setCameraWarnAck(false);
-                if (noCameras)        setCameraStatus('none');
-                else if (anyInactive) setCameraStatus('inactive');
-                else                  setCameraStatus('ok');
-            } catch {
-                setCameraStatus(null);
-            }
-        })();
-    }, [room]);
+        const anyInactive = cams.some(
+          (c) =>
+            !c.isActive || c.status === 'offline' || c.status === 'maintenance',
+        );
+        const noCameras = cams.length === 0;
+        setCameraWarnAck(false);
+        if (noCameras) setCameraStatus('none');
+        else if (anyInactive) setCameraStatus('inactive');
+        else setCameraStatus('ok');
+      } catch {
+        setCameraStatus(null);
+      }
+    })();
+  }, [room]);
 
-    // ── Fetch saved reports ───────────────────────────────────────
-    const fetchReports = useCallback(async () => {
-        setHistLoading(true);
-        try {
-            const params = new URLSearchParams();
-            if (filterBatch) params.set('batch', filterBatch);
-            if (filterDate)  params.set('date',  filterDate);
-            if (fixedDepartment) params.set('department', fixedDepartment);
-            const res  = await fetch(`${REPORT_API}?${params}`);
-            const data = await res.json();
-            setReports(data.reports || []);
-        } catch { showToast('Failed to load reports', 'error'); }
-        setHistLoading(false);
-    }, [filterBatch, filterDate, fixedDepartment]);
+  // ── Fetch saved reports ───────────────────────────────────────
+  const fetchReports = useCallback(async () => {
+    setHistLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (filterBatch) params.set('batch', filterBatch);
+      if (filterDate) params.set('date', filterDate);
+      const res = await fetch(`${REPORT_API}?${params}`);
+      const data = await res.json();
+      setReports(data.reports || []);
+    } catch {
+      showToast('Failed to load reports', 'error');
+    }
+    setHistLoading(false);
+  }, [filterBatch, filterDate]);
 
-    useEffect(() => { if (tab === 'history') fetchReports(); }, [tab, fetchReports]);
+  useEffect(() => {
+    if (tab === 'history') fetchReports();
+  }, [tab, fetchReports]);
 
     // ── Auto-poll detail report when session is live ──────────────
     useEffect(() => {
@@ -307,76 +321,57 @@ export default function AttendanceReport({ fixedDepartment = '' }) {
                 }),
             });
 
-            if (!response.ok) {
-                const errData = await response.json().catch(() => ({}));
-                showToast(errData.error || `Server error ${response.status}`, 'error');
-                setProcessing(false);
-                setPreviewActive(false);
-                return;
-            }
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
 
-            const reader  = response.body.getReader();
-            const decoder = new TextDecoder();
-            let   buffer  = '';
-
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                buffer += decoder.decode(value, { stream: true });
-                const parts = buffer.split('\n\n');
-                buffer = parts.pop();
-                for (const part of parts) {
-                    const dataLine = part.split('\n').find(l => l.startsWith('data: '));
-                    if (!dataLine) continue;
-                    try {
-                        const ev = JSON.parse(dataLine.slice(6).trim());
-                        if (ev.type === 'job_id') {
-                            setJobId(ev.jobId);
-                        }
-                        if (ev.type === 'stage') {
-                            setStreamLog(prev => [...prev, ev.message]);
-                        }
-                        if (ev.type === 'frame') {
-                            setLiveStats({
-                                frames:    ev.frame,
-                                faces:     ev.total_embs,
-                                elapsed:   ev.elapsed,
-                                remaining: ev.remaining,
-                            });
-                            setLiveFrame({
-                                faces:   ev.faces,
-                                camera:  ev.camera,
-                                elapsed: ev.elapsed,
-                            });
-                            if (ev.camera != null && ev.camera !== activeCamRef.current) {
-                                activeCamRef.current = ev.camera;
-                                setActiveCam(ev.camera);
-                                setCamSwitchAt(Date.now());
-                            }
-                        }
-                        if (ev.type === 'done') {
-                            setMlResult(ev.result);
-                            if (ev.result?.metadata) {
-                                setDerivedCtx(prev => ({ ...prev, ...ev.result.metadata }));
-                            }
-                            setSnapshots(ev.result?.frame_snapshots || []);
-                            setPreviewActive(false);
-                            showToast('Processed — review and save');
-                            setProcessing(false);
-                        }
-                        if (ev.type === 'error') {
-                            showToast(ev.message, 'error');
-                            setPreviewActive(false);
-                            setProcessing(false);
-                        }
-                    } catch {}
-                }
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const parts = buffer.split('\n\n');
+        buffer = parts.pop();
+        for (const part of parts) {
+          const dataLine = part.split('\n').find((l) => l.startsWith('data: '));
+          if (!dataLine) continue;
+          try {
+            const ev = JSON.parse(dataLine.slice(6).trim());
+            if (ev.type === 'job_id') {
+              setJobId(ev.jobId);
             }
-        } catch (e) {
-            showToast('Failed: ' + e.message, 'error');
-            setProcessing(false);
+            if (ev.type === 'stage') {
+              setStreamLog((prev) => [...prev, ev.message]);
+            }
+            if (ev.type === 'frame') {
+              setLiveStats({ frames: ev.frame, faces: ev.total_embs, elapsed: ev.elapsed, remaining: ev.remaining });
+              setLiveFrame({ faces: ev.faces, camera: ev.camera, elapsed: ev.elapsed });
+              if (ev.camera != null && ev.camera !== activeCamRef.current) {
+                activeCamRef.current = ev.camera;
+                setActiveCam(ev.camera);
+                setCamSwitchAt(Date.now());
+              }
+            }
+            if (ev.type === 'done') {
+              setMlResult(ev.result);
+              if (ev.result?.metadata) setDerivedCtx(prev => ({ ...prev, ...ev.result.metadata }));
+              setSnapshots(ev.result?.frame_snapshots || []);
+              setPreviewActive(false);
+              showToast('Processed — review and save');
+              setProcessing(false);
+            }
+            if (ev.type === 'error') {
+              showToast(ev.message, 'error');
+              setPreviewActive(false);
+              setProcessing(false);
+            }
+          } catch {}
         }
-    };
+      }
+    } catch (e) {
+      showToast('Failed: ' + e.message, 'error');
+      setProcessing(false);
+    }
+  };
 
     // ── Start multi-run session — kept for later ──────────────────
     const startSession = async () => {
@@ -484,48 +479,77 @@ export default function AttendanceReport({ fixedDepartment = '' }) {
         setSaving(false);
     };
 
-    const openDetail = async (id) => {
-        setTab('detail'); setDetailLoading(true); setDetailReport(null);
-        try { setDetailReport(await (await fetch(`${REPORT_API}/${id}`)).json()); }
-        catch { showToast('Failed to load report', 'error'); }
-        setDetailLoading(false);
-    };
+  const openDetail = async (id) => {
+    setTab('detail');
+    setDetailLoading(true);
+    setDetailReport(null);
+    try {
+      setDetailReport(await (await fetch(`${REPORT_API}/${id}`)).json());
+    } catch {
+      showToast('Failed to load report', 'error');
+    }
+    setDetailLoading(false);
+  };
 
-    const overrideStatus = async (reportId, rollNo, finalStatus) => {
-        try {
-            const res  = await fetch(`${REPORT_API}/${reportId}/student/${rollNo}`, {
-                method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ finalStatus }),
-            });
-            const data = await res.json();
-            if (data.error) { showToast(data.error, 'error'); return; }
-            setDetailReport(prev => ({
-                ...prev,
-                finalReport: prev.finalReport.map(s => s.rollNo === rollNo ? { ...s, finalStatus } : s),
-                summary: data.summary,
-            }));
-            showToast(`${rollNo} → ${finalStatus}`);
-        } catch { showToast('Override failed', 'error'); }
-    };
+  const overrideStatus = async (reportId, rollNo, finalStatus) => {
+    try {
+      const res = await fetch(`${REPORT_API}/${reportId}/student/${rollNo}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ finalStatus }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        showToast(data.error, 'error');
+        return;
+      }
+      setDetailReport((prev) => ({
+        ...prev,
+        finalReport: prev.finalReport.map((s) =>
+          s.rollNo === rollNo ? { ...s, finalStatus } : s,
+        ),
+        summary: data.summary,
+      }));
+      showToast(`${rollNo} → ${finalStatus}`);
+    } catch {
+      showToast('Override failed', 'error');
+    }
+  };
 
-    const finalizeReport = async (id) => {
-        if (!window.confirm('Finalize? Cannot edit after.')) return;
-        try {
-            const data = await (await fetch(`${REPORT_API}/${id}/finalize`, { method: 'POST' })).json();
-            if (data.error) { showToast(data.error, 'error'); return; }
-            setDetailReport(prev => ({ ...prev, status: 'finalized' }));
-            showToast('Report finalized');
-        } catch { showToast('Finalize failed', 'error'); }
-    };
+  const finalizeReport = async (id) => {
+    if (!window.confirm('Finalize? Cannot edit after.')) return;
+    try {
+      const data = await (
+        await fetch(`${REPORT_API}/${id}/finalize`, { method: 'POST' })
+      ).json();
+      if (data.error) {
+        showToast(data.error, 'error');
+        return;
+      }
+      setDetailReport((prev) => ({ ...prev, status: 'finalized' }));
+      showToast('Report finalized');
+    } catch {
+      showToast('Finalize failed', 'error');
+    }
+  };
 
-    const deleteReport = async (id) => {
-        if (!window.confirm('Delete this draft?')) return;
-        try {
-            const data = await (await fetch(`${REPORT_API}/${id}`, { method: 'DELETE' })).json();
-            if (data.error) { showToast(data.error, 'error'); return; }
-            showToast('Deleted'); setTab('history'); fetchReports();
-        } catch { showToast('Delete failed', 'error'); }
-    };
+  const deleteReport = async (id) => {
+    if (!window.confirm('Delete this draft?')) return;
+    try {
+      const data = await (
+        await fetch(`${REPORT_API}/${id}`, { method: 'DELETE' })
+      ).json();
+      if (data.error) {
+        showToast(data.error, 'error');
+        return;
+      }
+      showToast('Deleted');
+      setTab('history');
+      fetchReports();
+    } catch {
+      showToast('Delete failed', 'error');
+    }
+  };
 
  // ── Derived period config for display ─────────────────────────
     const slotLabel = (key) => {
@@ -1052,205 +1076,322 @@ export default function AttendanceReport({ fixedDepartment = '' }) {
                 </div>
             )}
 
+
+
             {/* ════ HISTORY TAB ════ */}
             {tab === 'history' && (
-                <div>
-                    <div style={{ ...styles.card, marginBottom: 16, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                        <div>
-                            <label style={styles.label}>Batch</label>
-                            <input placeholder="e.g. BTECH_TT_2026" value={filterBatch}
-                                onChange={e => setFilterBatch(e.target.value)}
-                                style={{ ...styles.input, width: 220 }} />
-                        </div>
-                        <div>
-                            <label style={styles.label}>Date</label>
-                            <input type="date" value={filterDate} onChange={e => setFilterDate(e.target.value)}
-                                style={{ ...styles.input, width: 180 }} />
-                        </div>
-                        <button onClick={fetchReports} style={styles.btnPrimary}>Search</button>
-                        <button onClick={() => { setFilterBatch(''); setFilterDate(''); }} style={styles.btnGhost}>Clear</button>
-                    </div>
+        <div>
+          <div
+            style={{
+              ...styles.card,
+              marginBottom: 16,
+              display: 'flex',
+              gap: 12,
+              flexWrap: 'wrap',
+              alignItems: 'flex-end',
+            }}
+          >
+            <div>
+              <label style={styles.label}>Batch</label>
+              <input
+                placeholder="e.g. BTECH_TT_2026"
+                value={filterBatch}
+                onChange={(e) => setFilterBatch(e.target.value)}
+                style={{ ...styles.input, width: 220 }}
+              />
+            </div>
+            <div>
+              <label style={styles.label}>Date</label>
+              <input
+                type="date"
+                value={filterDate}
+                onChange={(e) => setFilterDate(e.target.value)}
+                style={{ ...styles.input, width: 180 }}
+              />
+            </div>
+            <button onClick={fetchReports} style={styles.btnPrimary}>
+              Search
+            </button>
+            <button
+              onClick={() => {
+                setFilterBatch('');
+                setFilterDate('');
+              }}
+              style={styles.btnGhost}
+            >
+              Clear
+            </button>
+          </div>
 
-                    {histLoading ? (
-                        <div style={{ textAlign: 'center', padding: 48, color: theme.textMuted }}>Loading...</div>
-                    ) : reports.length === 0 ? (
-                        <div style={{ ...styles.card, textAlign: 'center', padding: 48, color: theme.textMuted }}>
-                            No reports found.
-                        </div>
-                    ) : (
-                        <div style={{ ...styles.card, padding: 0, overflow: 'hidden' }}>
-                            <table className="ams-table">
-                                <thead>
-                                    <tr>
-                                        {['Batch','Date','Slot','Subject','Faculty','P','A','%','Status',''].map(h => (
-                                            <th key={h}>{h}</th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {reports.map(r => (
-                                        <tr key={r._id} style={{ cursor: 'pointer' }}
-                                            onClick={() => openDetail(r._id)}>
-                                            <td style={{ padding: '11px 14px', fontFamily: theme.fontMono, fontSize: '12px', fontWeight: 600, color: theme.text }}>{r.batch}</td>
-                                            <td style={{ padding: '11px 14px', color: theme.text }}>{r.date}</td>
-                                            <td style={{ padding: '11px 14px', color: theme.textMuted }}>{slotLabel(r.timeSlot) || '—'}</td>
-                                            <td style={{ padding: '11px 14px', color: theme.text }}>{r.subject || '—'}</td>
-                                            <td style={{ padding: '11px 14px', color: theme.textMuted }}>{r.faculty || '—'}</td>
-                                            <td style={{ padding: '11px 14px', color: theme.success, fontWeight: 700 }}>{r.summary?.present ?? '—'}</td>
-                                            <td style={{ padding: '11px 14px', color: theme.danger,  fontWeight: 700 }}>{r.summary?.absent  ?? '—'}</td>
-                                            <td style={{ padding: '11px 14px', fontFamily: theme.fontMono }}>
-                                                {r.summary ? pct(r.summary.present, r.summary.totalStudents) + '%' : '—'}
-                                            </td>
-                                            <td style={{ padding: '11px 14px' }}>
-                                                <span style={styles.badge(r.status === 'finalized' ? 'success' : 'warning')}>
-                                                    {r.status}
-                                                </span>
-                                            </td>
-                                            <td style={{ padding: '11px 14px', color: theme.accent, fontSize: '12px' }}>View</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </div>
-            )}
+          {histLoading ? (
+            <div
+              style={{
+                textAlign: 'center',
+                padding: 48,
+                color: theme.textMuted,
+              }}
+            >
+              Loading...
+            </div>
+          ) : reports.length === 0 ? (
+            <div
+              style={{
+                ...styles.card,
+                textAlign: 'center',
+                padding: 48,
+                color: theme.textMuted,
+              }}
+            >
+              No reports found.
+            </div>
+          ) : (
+            <div style={{ ...styles.card, padding: 0, overflow: 'hidden' }}>
+              <table className="ams-table">
+                <thead>
+                  <tr>
+                    {[
+                      'Batch',
+                      'Date',
+                      'Slot',
+                      'Subject',
+                      'Faculty',
+                      'P',
+                      'A',
+                      '%',
+                      'Status',
+                      '',
+                    ].map((h) => (
+                      <th key={h}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {reports.map((r) => (
+                    <tr
+                      key={r._id}
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => openDetail(r._id)}
+                    >
+                      <td
+                        style={{
+                          padding: '11px 14px',
+                          fontFamily: theme.fontMono,
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          color: theme.text,
+                        }}
+                      >
+                        {r.batch}
+                      </td>
 
-            {/* ════ DETAIL TAB ════ */}
-            {tab === 'detail' && (
-                <div>
-                    {detailLoading && <div style={{ textAlign: 'center', padding: 48, color: theme.textMuted }}>Loading...</div>}
-                    {detailReport && !detailLoading && (
-                        <div style={{ animation: 'fadeIn 0.3s' }}>
-                            <div style={{ ...styles.card, marginBottom: 16 }}>
-                                {detailReport.status === 'live' && (
-                                    <div style={{
-                                        padding: '12px 16px', borderRadius: 8, marginBottom: 16,
-                                        background: theme.accentDim, border: `1px solid ${theme.accent}`,
-                                        display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
-                                    }}>
-                                        <span style={{
-                                            width: 10, height: 10, borderRadius: '50%',
-                                            background: theme.accent, display: 'inline-block',
-                                            animation: 'spin 1.5s linear infinite',
-                                        }} />
-                                        <span style={{ color: theme.accent, fontWeight: 700, fontSize: '13px' }}>
-                                            Live Session — {detailReport.slotResults?.length || 0} run(s) completed
-                                        </span>
-                                        <span style={{ fontSize: '12px', color: theme.textMuted }}>
-                                            Auto-updating every 10 seconds
-                                        </span>
-                                        <button
-                                            onClick={() => stopSession(detailReport._id)}
-                                            style={{ ...styles.btnDanger, padding: '6px 14px', fontSize: '12px', marginLeft: 'auto' }}
-                                        >
-                                            Stop Session
-                                        </button>
-                                    </div>
-                                )}
-
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
-                                    <div>
-                                        <div style={{ fontFamily: theme.fontMono, fontSize: '18px', fontWeight: 700, marginBottom: 6 }}>
-                                            {detailReport.batch}
-                                        </div>
-                                        <div style={{ display: 'flex', gap: 20, fontSize: '13px', color: theme.textMuted, flexWrap: 'wrap' }}>
-                                            {[
-                                                ['Date',    detailReport.date],
-                                                ['Slot', slotLabel(detailReport.timeSlot) || '—'],
-                                                ['Subject', detailReport.subject  || '—'],
-                                                ['Faculty', detailReport.faculty  || '—'],
-                                                ['Room',    detailReport.room     || '—'],
-                                                ['Sem',     detailReport.semester || '—'],
-                                            ].map(([k, v]) => (
-                                                <span key={k}>
-                                                    <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{k}: </span>
-                                                    <span style={{ color: theme.text, fontWeight: 600 }}>{v}</span>
-                                                </span>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                                        <span style={styles.badge(detailReport.status === 'finalized' ? 'success' : 'warning')}>
-                                            {detailReport.status}
-                                        </span>
-                                        {detailReport.status !== 'finalized' && (
-                                            <>
-                                                <button onClick={() => finalizeReport(detailReport._id)}
-                                                    style={{ ...styles.btnPrimary, padding: '8px 18px', fontSize: '13px' }}>
-                                                    Finalize
-                                                </button>
-                                                <button onClick={() => deleteReport(detailReport._id)}
-                                                    style={{ ...styles.btnDanger, padding: '8px 18px' }}>
-                                                    Delete Draft
-                                                </button>
-                                            </>
-                                        )}
-                                        <button onClick={() => setTab('unknown')}
-                                            style={{ ...styles.btnPrimary, background: theme.accent, padding: '8px 18px', fontSize: '13px' }}>
-                                            Review Unknown Faces ({detailReport.summary?.unknownFaceCount ?? 0})
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <StatBar stats={[
-                                { label: 'Total',   val: detailReport.summary?.totalStudents ?? 0, color: theme.text    },
-                                { label: 'Present', val: detailReport.summary?.present       ?? 0, color: theme.success },
-                                { label: 'Absent',  val: detailReport.summary?.absent        ?? 0, color: theme.danger  },
-                                { label: 'Att. %',  val: (detailReport.summary?.attendancePct ?? 0) + '%', color: theme.accent },
-                                { label: 'Unknown', val: detailReport.summary?.unknownFaceCount ?? 0, color: theme.warning },
-                            ]} theme={theme} styles={styles} />
-
-                            {detailReport.slotResults?.length > 0 ? (
-                                <MultiRunTable
-                                    report={detailReport}
-                                    readOnly={detailReport.status === 'finalized'}
-                                    onOverride={(rollNo, status) => overrideStatus(detailReport._id, rollNo, status)}
-                                    theme={theme} styles={styles}
-                                />
-                            ) : (
-                                <AttendanceTable
-                                    rows={detailReport.finalReport || []}
-                                    readOnly={detailReport.status === 'finalized'}
-                                    onOverride={(rollNo, status) => overrideStatus(detailReport._id, rollNo, status)}
-                                    theme={theme} styles={styles}
-                                />
-                            )}
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {/* ════ UNKNOWN FACES TAB ════ */}
-            {tab === 'unknown' && (
-                <div style={{ marginTop: 16 }}>
-                    <UnknownFaces embedded={true} defaultDate={date} defaultDept={derivedCtx?.dept || department} fixedDept={fixedDepartment} />
-                </div>
-            )}
+                      <td style={{ padding: '11px 14px', color: theme.text }}>
+                        {r.date}
+                      </td>
+                      <td
+                        style={{ padding: '11px 14px', color: theme.textMuted }}
+                      >
+                        {slotLabel(r.timeSlot) || '—'}
+                      </td>
+                      <td style={{ padding: '11px 14px', color: theme.text }}>
+                        {r.subject || '—'}
+                      </td>
+                      <td
+                        style={{ padding: '11px 14px', color: theme.textMuted }}
+                      >
+                        {r.faculty || '—'}
+                      </td>
+                      <td
+                        style={{
+                          padding: '11px 14px',
+                          color: theme.success,
+                          fontWeight: 700,
+                        }}
+                      >
+                        {r.summary?.present ?? '—'}
+                      </td>
+                      <td
+                        style={{
+                          padding: '11px 14px',
+                          color: theme.danger,
+                          fontWeight: 700,
+                        }}
+                      >
+                        {r.summary?.absent ?? '—'}
+                      </td>
+                      <td
+                        style={{
+                          padding: '11px 14px',
+                          fontFamily: theme.fontMono,
+                        }}
+                      >
+                        {r.summary
+                          ? pct(r.summary.present, r.summary.totalStudents) +
+                            '%'
+                          : '—'}
+                      </td>
+                      <td style={{ padding: '11px 14px' }}>
+                        <span
+                          style={styles.badge(
+                            r.status === 'finalized' ? 'success' : 'warning',
+                          )}
+                        >
+                          {r.status}
+                        </span>
+                      </td>
+                      <td
+                        style={{
+                          padding: '11px 14px',
+                          color: theme.accent,
+                          fontSize: '12px',
+                        }}
+                      >
+                        View
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
-    );
+      )}
+
+      {/* ════ DETAIL TAB ════ */}
+      {tab === 'detail' && (
+        <div>
+          {detailLoading && (
+            <div style={{ textAlign: 'center', padding: 48, color: theme.textMuted }}>Loading...</div>
+          )}
+          {detailReport && !detailLoading && (
+            <div style={{ animation: 'fadeIn 0.3s' }}>
+              <div style={{ ...styles.card, marginBottom: 16 }}>
+                {detailReport.status === 'live' && (
+                  <div style={{
+                    padding: '12px 16px', borderRadius: 8, marginBottom: 16,
+                    background: theme.accentDim, border: `1px solid ${theme.accent}`,
+                    display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+                  }}>
+                    <span style={{ width: 10, height: 10, borderRadius: '50%', background: theme.accent, display: 'inline-block', animation: 'spin 1.5s linear infinite' }} />
+                    <span style={{ color: theme.accent, fontWeight: 700, fontSize: '13px' }}>
+                      Live Session — {detailReport.slotResults?.length || 0} run(s) completed
+                    </span>
+                    <span style={{ fontSize: '12px', color: theme.textMuted }}>Auto-updating every 10 seconds</span>
+                    <button onClick={() => stopSession(detailReport._id)}
+                      style={{ ...styles.btnDanger, padding: '6px 14px', fontSize: '12px', marginLeft: 'auto' }}>
+                      Stop Session
+                    </button>
+                  </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+                  <div>
+                    <div style={{ fontFamily: theme.fontMono, fontSize: '18px', fontWeight: 700, marginBottom: 6 }}>
+                      {detailReport.batch}
+                    </div>
+                    <div style={{ display: 'flex', gap: 20, fontSize: '13px', color: theme.textMuted, flexWrap: 'wrap' }}>
+                      {[
+                        ['Date', detailReport.date],
+                        ['Slot', slotLabel(detailReport.timeSlot) || '—'],
+                        ['Subject', detailReport.subject || '—'],
+                        ['Faculty', detailReport.faculty || '—'],
+                        ['Room', detailReport.room || '—'],
+                        ['Sem', detailReport.semester || '—'],
+                      ].map(([k, v]) => (
+                        <span key={k}>
+                          <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{k}: </span>
+                          <span style={{ color: theme.text, fontWeight: 600 }}>{v}</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <span style={styles.badge(detailReport.status === 'finalized' ? 'success' : 'warning')}>
+                      {detailReport.status}
+                    </span>
+                    {detailReport.status !== 'finalized' && (
+                      <>
+                        <button onClick={() => finalizeReport(detailReport._id)}
+                          style={{ ...styles.btnPrimary, padding: '8px 18px', fontSize: '13px' }}>
+                          Finalize
+                        </button>
+                        <button onClick={() => deleteReport(detailReport._id)}
+                          style={{ ...styles.btnDanger, padding: '8px 18px' }}>
+                          Delete Draft
+                        </button>
+                      </>
+                    )}
+                    <button onClick={() => setTab('unknown')}
+                      style={{ ...styles.btnPrimary, background: theme.accent, padding: '8px 18px', fontSize: '13px' }}>
+                      Review Unknown Faces ({detailReport.summary?.unknownFaceCount ?? 0})
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <StatBar stats={[
+                { label: 'Total',   val: detailReport.summary?.totalStudents ?? 0, color: theme.text },
+                { label: 'Present', val: detailReport.summary?.present ?? 0,       color: theme.success },
+                { label: 'Absent',  val: detailReport.summary?.absent ?? 0,        color: theme.danger },
+                { label: 'Att. %',  val: (detailReport.summary?.attendancePct ?? 0) + '%', color: theme.accent },
+                { label: 'Unknown', val: detailReport.summary?.unknownFaceCount ?? 0, color: theme.warning },
+              ]} theme={theme} styles={styles} />
+              {detailReport.slotResults?.length > 0 ? (
+                <MultiRunTable
+                  report={detailReport}
+                  readOnly={detailReport.status === 'finalized'}
+                  onOverride={(rollNo, status) => overrideStatus(detailReport._id, rollNo, status)}
+                  theme={theme} styles={styles}
+                />
+              ) : (
+                <AttendanceTable
+                  rows={detailReport.finalReport || []}
+                  readOnly={detailReport.status === 'finalized'}
+                  onOverride={(rollNo, status) => overrideStatus(detailReport._id, rollNo, status)}
+                  theme={theme} styles={styles}
+                />
+              )}
+            </div>
+          )}
+        </div>
+      )}
+      {tab === 'export' && <ExportReportsTab />}
+      {tab === 'unknown' && (
+        <div style={{ marginTop: 16 }}>
+          <UnknownFaces
+            embedded={true}
+            defaultDate={date}
+            defaultDept={derivedCtx?.dept || department}
+          />
+        </div>
+      )}
+    </div>
+  );
 }
 
 function MultiRunTable({ report, readOnly, onOverride, theme, styles }) {
-    const runs = report.slotResults || [];
-    const finalLookup = {};
-    for (const s of (report.finalReport || [])) {
-        finalLookup[s.rollNo] = s;
-    }
+  const runs = report.slotResults || [];
+  const finalLookup = {};
+  for (const s of report.finalReport || []) {
+    finalLookup[s.rollNo] = s;
+  }
 
-    const allRollNos = [...new Set([
-        ...runs.flatMap(r => r.students.map(s => s.rollNo)),
-        ...Object.keys(finalLookup),
-    ])].sort();
+  // Collect all roll numbers across all runs + finalReport
+  const allRollNos = [
+    ...new Set([
+      ...runs.flatMap((r) => r.students.map((s) => s.rollNo)),
+      ...Object.keys(finalLookup),
+    ]),
+  ].sort();
 
-    const runLookup = {};
-    for (const rollNo of allRollNos) {
-        runLookup[rollNo] = {};
-        for (let ri = 0; ri < runs.length; ri++) {
-            runLookup[rollNo][ri] = runs[ri].students.find(s => s.rollNo === rollNo) || null;
-        }
+  // Build lookup: rollNo → runIndex → student record
+  const runLookup = {};
+  for (const rollNo of allRollNos) {
+    runLookup[rollNo] = {};
+    for (let ri = 0; ri < runs.length; ri++) {
+      runLookup[rollNo][ri] =
+        runs[ri].students.find((s) => s.rollNo === rollNo) || null;
     }
+  }
+
+   
 
     const cellStyle = (status) => ({
         padding: '2px 6px', borderRadius: 4, fontSize: '11px', fontWeight: 600,
@@ -1355,103 +1496,204 @@ function MultiRunTable({ report, readOnly, onOverride, theme, styles }) {
 }
 
 function StatBar({ stats, theme, styles }) {
-    return (
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${stats.length},1fr)`, gap: 12, marginBottom: 16 }}>
-            {stats.map(s => (
-                <div key={s.label} style={{ ...styles.card, textAlign: 'center', padding: '18px 12px' }}>
-                    <div style={{ fontSize: '28px', fontWeight: 700, color: s.color, fontFamily: theme.fontMono }}>{s.val}</div>
-                    <div style={{ fontSize: '11px', color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 4 }}>{s.label}</div>
-                </div>
-            ))}
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: `repeat(${stats.length},1fr)`,
+        gap: 12,
+        marginBottom: 16,
+      }}
+    >
+      {stats.map((s) => (
+        <div
+          key={s.label}
+          style={{ ...styles.card, textAlign: 'center', padding: '18px 12px' }}
+        >
+          <div
+            style={{
+              fontSize: '28px',
+              fontWeight: 700,
+              color: s.color,
+              fontFamily: theme.fontMono,
+            }}
+          >
+            {s.val}
+          </div>
+          <div
+            style={{
+              fontSize: '11px',
+              color: theme.textMuted,
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              marginTop: 4,
+            }}
+          >
+            {s.label}
+          </div>
         </div>
-    );
+      ))}
+    </div>
+  );
 }
 
 function CameraWarningModal({ status, room, onProceed, onCancel }) {
-    if (!status || status === 'ok') return null;
+  if (!status || status === 'ok') return null;
 
-    const isNone   = status === 'none';
-    const title    = isNone ? '⚠️ No Cameras Found' : '⚠️ Camera Offline / Inactive';
-    const bodyText = isNone
-        ? `No cameras are registered for room "${room}". Add cameras in Camera Management before running attendance.`
-        : `One or more cameras for room "${room}" are currently offline or inactive. The RTSP stream may fail or produce incomplete results.`;
+  const isNone = status === 'none';
+  const title = isNone ? '⚠️ No Cameras Found' : '⚠️ Camera Offline / Inactive';
+  const bodyText = isNone
+    ? `No cameras are registered for room "${room}". Add cameras in Camera Management before running attendance.`
+    : `One or more cameras for room "${room}" are currently offline or inactive. The RTSP stream may fail or produce incomplete results.`;
 
-    return (
-        <div style={{
-            position: 'fixed', inset: 0, zIndex: 1000,
-            background: 'rgba(0,0,0,0.7)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            animation: 'fadeIn 0.2s',
-        }}>
-            <div style={{
-                background: '#ffffff',
-                border: `1px solid ${isNone ? '#ef4444' : '#f59e0b'}`,
-                borderRadius: 12, padding: '32px 36px',
-                maxWidth: 480, width: '90%',
-                boxShadow: '0 24px 64px rgba(26,31,60,0.18)',
-            }}>
-                <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 14,
-                    color: isNone ? '#ef4444' : '#f59e0b' }}>
-                    {title}
-                </div>
-                <div style={{ fontSize: 14, color: '#7b84ab', lineHeight: 1.7, marginBottom: 24 }}>
-                    {bodyText}
-                </div>
-                <div style={{
-                    padding: '10px 14px', borderRadius: 8, marginBottom: 24,
-                    background: isNone ? 'rgba(248,113,113,0.08)' : 'rgba(251,191,36,0.08)',
-                    border: `1px solid ${isNone ? 'rgba(248,113,113,0.3)' : 'rgba(251,191,36,0.3)'}`,
-                    fontSize: 13, fontFamily: "'IBM Plex Mono', monospace",
-                    color: isNone ? '#f87171' : '#fbbf24',
-                }}>
-                    Room: {room} &nbsp;·&nbsp; Status: {isNone ? 'No cameras registered' : 'Offline / Inactive'}
-                </div>
-                <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-                    <button onClick={onCancel} style={{
-                        padding: '10px 22px', borderRadius: 6,
-                        background: 'transparent', border: '1px solid #242a45',
-                        color: '#636e8a', fontSize: 14, fontWeight: 600, cursor: 'pointer',
-                    }}>
-                        Cancel
-                    </button>
-                    {!isNone && (
-                        <button onClick={onProceed} style={{
-                            padding: '10px 22px', borderRadius: 6,
-                            background: 'rgba(251,191,36,0.15)', border: '1px solid #fbbf24',
-                            color: '#fbbf24', fontSize: 14, fontWeight: 700, cursor: 'pointer',
-                        }}>
-                            Proceed Anyway
-                        </button>
-                    )}
-                </div>
-            </div>
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 1000,
+        background: 'rgba(0,0,0,0.7)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        animation: 'fadeIn 0.2s',
+      }}
+    >
+      <div
+        style={{
+          background: '#ffffff',
+          border: `1px solid ${isNone ? '#ef4444' : '#f59e0b'}`,
+          borderRadius: 12,
+          padding: '32px 36px',
+          maxWidth: 480,
+          width: '90%',
+          boxShadow: '0 24px 64px rgba(26,31,60,0.18)',
+        }}
+      >
+        <div
+          style={{
+            fontSize: 20,
+            fontWeight: 800,
+            marginBottom: 14,
+            color: isNone ? '#ef4444' : '#f59e0b',
+          }}
+        >
+          {title}
         </div>
-    );
+        <div
+          style={{
+            fontSize: 14,
+            color: '#7b84ab',
+            lineHeight: 1.7,
+            marginBottom: 24,
+          }}
+        >
+          {bodyText}
+        </div>
+        <div
+          style={{
+            padding: '10px 14px',
+            borderRadius: 8,
+            marginBottom: 24,
+            background: isNone
+              ? 'rgba(248,113,113,0.08)'
+              : 'rgba(251,191,36,0.08)',
+            border: `1px solid ${isNone ? 'rgba(248,113,113,0.3)' : 'rgba(251,191,36,0.3)'}`,
+            fontSize: 13,
+            fontFamily: "'IBM Plex Mono', monospace",
+            color: isNone ? '#f87171' : '#fbbf24',
+          }}
+        >
+          Room: {room} &nbsp;·&nbsp; Status:{' '}
+          {isNone ? 'No cameras registered' : 'Offline / Inactive'}
+        </div>
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+          <button
+            onClick={onCancel}
+            style={{
+              padding: '10px 22px',
+              borderRadius: 6,
+              background: 'transparent',
+              border: '1px solid #242a45',
+              color: '#636e8a',
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            Cancel
+          </button>
+          {!isNone && (
+            <button
+              onClick={onProceed}
+              style={{
+                padding: '10px 22px',
+                borderRadius: 6,
+                background: 'rgba(251,191,36,0.15)',
+                border: '1px solid #fbbf24',
+                color: '#fbbf24',
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              Proceed Anyway
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function AttendanceTable({ rows, readOnly, onOverride, theme, styles }) {
-    return (
-        <div style={{ ...styles.card, padding: 0, overflow: 'hidden' }}>
-            <table className="ams-table">
-                <thead>
-                    <tr>
-                        {['#', 'Roll No', 'In List', 'ML Status', 'Confidence', 'Zone', 'First Seen', 'Final',
-                          !readOnly && 'Override'].filter(Boolean).map(h => (
-                            <th key={h}>{h}</th>
-                        ))}
-                    </tr>
-                </thead>
-                <tbody>
-                    {rows.map((s, i) => (
-                        <tr key={s.rollNo} style={{
-                            background: s.flagged
-                                ? 'rgba(251,191,36,0.07)'
-                                : s.finalStatus === 'R'
-                                    ? theme.warningDim
-                                    : 'transparent',
-                        }}>
-                            <td style={{ padding: '10px 14px', color: theme.textMuted }}>{i + 1}</td>
-                            <td style={{ padding: '10px 14px', fontFamily: theme.fontMono, fontWeight: 600, color: '#111' }}>{s.rollNo}</td>
+  return (
+    <div style={{ ...styles.card, padding: 0, overflow: 'hidden' }}>
+      <table className="ams-table">
+        <thead>
+          <tr>
+            {[
+              '#',
+              'Roll No',
+              'In List',
+              'ML Status',
+              'Confidence',
+              'Zone',
+              'First Seen',
+              'Final',
+              !readOnly && 'Override',
+            ]
+              .filter(Boolean)
+              .map((h) => (
+                <th key={h}>{h}</th>
+              ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((s, i) => (
+            <tr
+              key={s.rollNo}
+              style={{
+                background: s.flagged
+                  ? 'rgba(251,191,36,0.07)'
+                  : s.finalStatus === 'R'
+                    ? theme.warningDim
+                    : 'transparent',
+              }}
+            >
+              <td style={{ padding: '10px 14px', color: theme.textMuted }}>
+                {i + 1}
+              </td>
+              <td
+                style={{
+                  padding: '10px 14px',
+                  fontFamily: theme.fontMono,
+                  fontWeight: 600,
+                  color: '#111',
+                }}
+              >
+                {s.rollNo}
+              </td>
 
                             <td style={{ padding: '10px 14px' }}>
                                 {s.flagged === true ? (
@@ -1468,68 +1710,169 @@ function AttendanceTable({ rows, readOnly, onOverride, theme, styles }) {
                                 )}
                             </td>
 
-                            <td style={{ padding: '10px 14px' }}>
-                                <span style={{ padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600,
-                                    background: s.status === 'present'  ? theme.successDim
-                                              : s.status === 'review'   ? theme.warningDim
-                                              : s.status === 'no_photo' ? theme.accentDim
-                                              : theme.dangerDim,
-                                    color:      s.status === 'present'  ? theme.success
-                                              : s.status === 'review'   ? theme.warning
-                                              : s.status === 'no_photo' ? theme.accent
-                                              : theme.danger }}>
-                                    {s.status === 'no_photo' ? 'no photo' : (s.status || '—')}
-                                </span>
-                            </td>
-                            <td style={{ padding: '10px 14px' }}>
-                                {s.avgConfidence > 0 ? (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                        <div style={{ width: 70, height: 5, borderRadius: '3px', background: theme.border, overflow: 'hidden' }}>
-                                            <div style={{ width: `${s.avgConfidence * 100}%`, height: '100%',
-                                                background: s.avgConfidence >= 0.65 ? theme.success : s.avgConfidence >= 0.45 ? theme.warning : theme.danger }} />
-                                        </div>
-                                        <span style={{ fontFamily: theme.fontMono, fontSize: '12px', color: theme.textMuted }}>
-                                            {(s.avgConfidence * 100).toFixed(1)}%
-                                        </span>
-                                    </div>
-                                ) : <span style={{ color: theme.textMuted }}>—</span>}
-                            </td>
-                            <td style={{ padding: '10px 14px', fontSize: '11px', fontWeight: 600,
-                                color: s.confidenceZone === 'high' ? theme.success : s.confidenceZone === 'medium' ? theme.warning : theme.textMuted }}>
-                                {s.confidenceZone || '—'}
-                            </td>
-                            <td style={{ padding: '10px 14px', color: theme.textMuted, fontFamily: theme.fontMono, fontSize: '12px' }}>
-                                {s.firstSeenSec != null ? `${Math.floor(s.firstSeenSec / 60)}m ${Math.round(s.firstSeenSec % 60)}s` : '—'}
-                            </td>
-                            <td style={{ padding: '10px 14px' }}>
-                                <span style={{ padding: '3.5px 12px', borderRadius: '999px', fontSize: '12px', fontWeight: 700,
-                                    fontFamily: theme.fontMono,
-                                    background: s.finalStatus === 'P' ? theme.successDim : s.finalStatus === 'R' ? theme.warningDim : theme.dangerDim,
-                                    color:      s.finalStatus === 'P' ? theme.success    : s.finalStatus === 'R' ? theme.warning    : theme.danger }}>
-                                    {s.finalStatus}
-                                </span>
-                            </td>
-                            {!readOnly && (
-                                <td style={{ padding: '10px 14px' }}>
-                                    <div style={{ display: 'flex', gap: 4 }}>
-                                        {['P', 'A', 'R'].map(st => (
-                                            <button key={st} onClick={() => onOverride(s.rollNo, st)}
-                                                disabled={s.finalStatus === st}
-                                                style={{ padding: '3px 10px', borderRadius: '4px', fontSize: '11px',
-                                                    fontWeight: 700, cursor: 'pointer', border: 'none',
-                                                    fontFamily: theme.fontMono, opacity: s.finalStatus === st ? 0.3 : 1,
-                                                    background: st === 'P' ? theme.successDim : st === 'R' ? theme.warningDim : theme.dangerDim,
-                                                    color:      st === 'P' ? theme.success    : st === 'R' ? theme.warning    : theme.danger }}>
-                                                {st}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </td>
-                            )}
-                        </tr>
+              <td style={{ padding: '10px 14px' }}>
+                <span
+                  style={{
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    background:
+                      s.status === 'present'
+                        ? theme.successDim
+                        : s.status === 'review'
+                          ? theme.warningDim
+                          : s.status === 'no_photo'
+                            ? theme.accentDim
+                            : theme.dangerDim,
+                    color:
+                      s.status === 'present'
+                        ? theme.success
+                        : s.status === 'review'
+                          ? theme.warning
+                          : s.status === 'no_photo'
+                            ? theme.accent
+                            : theme.danger,
+                  }}
+                >
+                  {s.status === 'no_photo' ? 'no photo' : s.status || '—'}
+                </span>
+              </td>
+              <td style={{ padding: '10px 14px' }}>
+                {s.avgConfidence > 0 ? (
+                  <div
+                    style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+                  >
+                    <div
+                      style={{
+                        width: 70,
+                        height: 5,
+                        borderRadius: '3px',
+                        background: theme.border,
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: `${s.avgConfidence * 100}%`,
+                          height: '100%',
+                          background:
+                            s.avgConfidence >= 0.65
+                              ? theme.success
+                              : s.avgConfidence >= 0.45
+                                ? theme.warning
+                                : theme.danger,
+                        }}
+                      />
+                    </div>
+                    <span
+                      style={{
+                        fontFamily: theme.fontMono,
+                        fontSize: '12px',
+                        color: theme.textMuted,
+                      }}
+                    >
+                      {(s.avgConfidence * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                ) : (
+                  <span style={{ color: theme.textMuted }}>—</span>
+                )}
+              </td>
+              <td
+                style={{
+                  padding: '10px 14px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  color:
+                    s.confidenceZone === 'high'
+                      ? theme.success
+                      : s.confidenceZone === 'medium'
+                        ? theme.warning
+                        : theme.textMuted,
+                }}
+              >
+                {s.confidenceZone || '—'}
+              </td>
+              <td
+                style={{
+                  padding: '10px 14px',
+                  color: theme.textMuted,
+                  fontFamily: theme.fontMono,
+                  fontSize: '12px',
+                }}
+              >
+                {s.firstSeenSec != null
+                  ? `${Math.floor(s.firstSeenSec / 60)}m ${Math.round(s.firstSeenSec % 60)}s`
+                  : '—'}
+              </td>
+              <td style={{ padding: '10px 14px' }}>
+                <span
+                  style={{
+                    padding: '3.5px 12px',
+                    borderRadius: '999px',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    fontFamily: theme.fontMono,
+                    background:
+                      s.finalStatus === 'P'
+                        ? theme.successDim
+                        : s.finalStatus === 'R'
+                          ? theme.warningDim
+                          : theme.dangerDim,
+                    color:
+                      s.finalStatus === 'P'
+                        ? theme.success
+                        : s.finalStatus === 'R'
+                          ? theme.warning
+                          : theme.danger,
+                  }}
+                >
+                  {s.finalStatus}
+                </span>
+              </td>
+              {!readOnly && (
+                <td style={{ padding: '10px 14px' }}>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    {['P', 'A', 'R'].map((st) => (
+                      <button
+                        key={st}
+                        onClick={() => onOverride(s.rollNo, st)}
+                        disabled={s.finalStatus === st}
+                        style={{
+                          padding: '3px 10px',
+                          borderRadius: '4px',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          border: 'none',
+                          fontFamily: theme.fontMono,
+                          opacity: s.finalStatus === st ? 0.3 : 1,
+                          background:
+                            st === 'P'
+                              ? theme.successDim
+                              : st === 'R'
+                                ? theme.warningDim
+                                : theme.dangerDim,
+                          color:
+                            st === 'P'
+                              ? theme.success
+                              : st === 'R'
+                                ? theme.warning
+                                : theme.danger,
+                        }}
+                      >
+                        {st}
+                      </button>
                     ))}
-                </tbody>
-            </table>
-        </div>
-    );
+                  </div>
+                </td>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
+      
