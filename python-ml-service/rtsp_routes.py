@@ -586,6 +586,7 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
     yield {"type": "stage", "message": f"Stream open {W}×{H} — recording {req.durationSec}s…"}
  
     all_embeddings, all_face_images, all_timestamps, all_quality = [], [], [], []
+    all_demographics = []  # [{"age": int|None, "gender": "M"|"F"|None}, ...] — parallel to all_embeddings
     CAMERA_SWITCH_SEC = 30
     cameras = [req.rtspUrl]
     if req.rtspUrl2:
@@ -653,8 +654,9 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
                 all_face_images.append(d["crop"])
                 all_timestamps.append(round(elapsed, 2))
                 all_quality.append(d["quality"])
+                all_demographics.append({"age": d.get("age"), "gender": d.get("gender")})
 
-            # ── Emit raw + annotated frame every SNAP_EVERY_SEC seconds ──────
+          # ── Emit raw + annotated frame every SNAP_EVERY_SEC seconds ──────
             # Encoded in-memory and shipped as a "frame_snapshot" event —
             # nothing is written to disk here (see note above).
             if elapsed - last_snap_t >= SNAP_EVERY_SEC:
@@ -663,19 +665,64 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
                 try:
                     ok_raw, raw_buf = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
 
+                    # Quick per-face roll number lookup for labelling
+                    snap_enrolled = enrolled_in_list if has_sir_list else enrolled
+                    snap_ids      = list(snap_enrolled.keys())
+                    snap_matrix   = (
+                        np.array([snap_enrolled[r] for r in snap_ids], dtype=np.float32)
+                        if snap_ids else None
+                    )
+                    face_labels = []
+                    if snap_matrix is not None and len(snap_matrix) > 0 and len(detections) > 0:
+                        # Build score matrix: (n_faces x n_enrolled)
+                        det_embs   = np.array([d["embedding"] for d in detections], dtype=np.float32)
+                        score_mat  = det_embs @ snap_matrix.T
+                        # One-to-one Hungarian assignment — no two faces get same roll no
+                        row_ind, col_ind = linear_sum_assignment(-score_mat)
+                        assigned = {}
+                        for r, c in zip(row_ind, col_ind):
+                            if float(score_mat[r, c]) >= req.reviewThreshold:
+                                assigned[r] = snap_ids[c]
+                        for i in range(len(detections)):
+                            face_labels.append(assigned.get(i, "?"))
+                    else:
+                        face_labels = ["?" for _ in detections]
+
                     annot = frame.copy()
-                    for d in detections:
+                    img_h, img_w = annot.shape[:2]
+                    for d, roll_label in zip(detections, face_labels):
                         x1, y1, x2, y2 = d["bbox"]
-                        cv2.rectangle(annot, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                        cv2.putText(annot, f"{d['det_score']:.2f}",
-                                    (x1, max(y1 - 6, 12)),
-                                    cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 255, 0), 1,
+                        color = (0, 255, 0) if roll_label != "?" else (0, 165, 255)
+                        cv2.rectangle(annot, (x1, y1), (x2, y2), color, 1)
+                        # Fixed font — consistent, readable at wide-angle distances
+                        font_scale = 0.35
+                        thickness  = 1
+                        pad = 2
+                        (tw, th), _ = cv2.getTextSize(roll_label, cv2.FONT_HERSHEY_SIMPLEX, font_scale, thickness)
+                        # Anchor label to left edge of face box; shift left if it goes off screen right
+                        lx1 = x1
+                        lx2 = lx1 + tw + pad * 2
+                        if lx2 > img_w:
+                            lx1 = max(0, img_w - tw - pad * 2)
+                            lx2 = img_w
+                        # Label above box; flip below only if touching top edge
+                        if y1 - th - pad * 2 >= 2:
+                            ly1 = y1 - th - pad * 2
+                            ly2 = y1
+                        else:
+                            ly1 = y2
+                            ly2 = y2 + th + pad * 2
+                        cv2.rectangle(annot, (lx1, ly1), (lx2, ly2), color, -1)
+                        cv2.putText(annot, roll_label,
+                                    (lx1 + pad, ly2 - pad),
+                                    cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 0), thickness,
                                     cv2.LINE_AA)
                     cv2.putText(annot,
                                 f"t={int(elapsed)}s  faces={faces_this_frame}  cam={cam_idx + 1}",
                                 (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8,
                                 (0, 200, 255), 2, cv2.LINE_AA)
                     ok_annot, annot_buf = cv2.imencode('.jpg', annot, [cv2.IMWRITE_JPEG_QUALITY, 85])
+            
 
                     if ok_raw and ok_annot:
                         yield {
@@ -779,6 +826,23 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
             rec["detections"]     = prev_n + n
             if rec["first_seen_sec"] is None:
                 rec["first_seen_sec"] = round(float(all_timestamps[indices[0]]), 1)
+
+            # ── Demographics: aggregate age/gender across this cluster's
+            # detections, so a single noisy frame doesn't decide the value.
+            # Gender → majority vote (most frequent value wins).
+            # Age    → median of all valid readings (robust to outliers).
+            cluster_demo = [all_demographics[i] for i in indices]
+            ages    = [d["age"]    for d in cluster_demo if d.get("age")    is not None]
+            genders = [d["gender"] for d in cluster_demo if d.get("gender") is not None]
+
+            if ages:
+                ages_sorted  = sorted(ages)
+                median_age   = ages_sorted[len(ages_sorted) // 2]
+                rec["age_samples"] = rec.get("age_samples", []) + ages
+                rec["age"] = sorted(rec["age_samples"])[len(rec["age_samples"]) // 2]
+            if genders:
+                rec["gender_samples"] = rec.get("gender_samples", []) + genders
+                rec["gender"] = max(set(rec["gender_samples"]), key=rec["gender_samples"].count)
  
     # ── Unmatched clusters ─────────────────────────────────────────────────
     unmatched_clusters = []
@@ -862,6 +926,16 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
                     }
  
     yield {"type": "stage", "message": f"✅ {len(unique_labels)} clusters matched against {len(enrolled)} enrolled students"}
+
+    # ── Strip internal working fields before emitting ───────────────────────
+    # age_samples/gender_samples were only needed to compute the running
+    # median/majority-vote during the assignment loop above.
+    for rec in attendance.values():
+        rec.pop("age_samples", None)
+        rec.pop("gender_samples", None)
+        rec.setdefault("age", None)
+        rec.setdefault("gender", None)
+
  
     # ── Final result event ─────────────────────────────────────────────────
     yield {

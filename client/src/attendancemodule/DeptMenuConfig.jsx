@@ -18,6 +18,8 @@ const ALL_MENUS = [
     { key: 'subjectEmbeddings', label: 'Subject Embeddings',    desc: 'Generate face embeddings per subject',   color: '#f59e0b' },
     { key: 'livePreview',       label: 'Live Preview',          desc: 'Live camera feed preview',               color: '#8b5cf6' },
     { key: 'confidenceMonitor', label: 'Confidence Monitor',    desc: 'Model confidence tracking',              color: '#ef4444' },
+    { key: 'recordStream',      label: 'Record Stream',         desc: 'Save and schedule RTSP recordings',      color: '#7c3aed' },  // ← ADD THIS
+
     { key: 'helpManual',        label: 'Help & Manual',         desc: 'Documentation and user guide',           color: '#64748b' },
 ];
 
