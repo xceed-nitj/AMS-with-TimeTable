@@ -14,7 +14,8 @@ const batchBelongsToDepartment = (batch, department) => {
 };
 
 const resolveAttendanceAccess = async (req, res, next) => {
-    if (req.user.roles?.includes('iams-admin')) {
+    const roles = Array.isArray(req.user.roles) ? req.user.roles : [req.user.roles].filter(Boolean);
+    if (roles.includes('iams-admin') || roles.includes('admin')) {
         req.attendanceFullAccess = true;
         req.attendanceDepartment = null;
         return next();
