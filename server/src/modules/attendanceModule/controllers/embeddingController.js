@@ -157,6 +157,110 @@ class EmbeddingController {
             res.status(500).json({ error: err.message });
         }
     }
+    // GET /attendancemodule/embeddings/list?session=2025-26&dept=Electronics_and_Communication_Engineering
+    // Scans ml-data/embeddings/<session>/<dept>/ and returns parsed PKL metadata
+    async listEmbeddingsInFolder(req, res) {
+        try {
+            const { session, dept } = req.query;
+            if (!session || !dept) {
+                return res.status(400).json({ error: 'session and dept are required' });
+            }
+            const deptSafe = safeSubject(dept);
+            const folder = path.join(EMBEDDINGS_DIR, session, deptSafe);
+
+            if (!fs.existsSync(folder)) {
+                return res.json({ session, dept: deptSafe, files: [] });
+            }
+
+            const files = fs.readdirSync(folder)
+                .filter(f => f.endsWith('.pkl'))
+                .map(filename => {
+                    // Parse "ECPC_306_DSP_G1_2025-26.pkl" → subCode + subject guess
+                    const base = filename.replace(/\.pkl$/i, '');
+                    const parts = base.split('_');
+                    const subCode = parts.slice(0, 2).join('_'); // e.g. "ECPC_306"
+                    const subjectGuess = parts.slice(2, -1).join('_'); // strips session at end
+                    return {
+                        filename,
+                        pklPath: path.join(folder, filename),
+                        subCode,
+                        subjectGuess,
+                        session,
+                        dept: deptSafe,
+                    };
+                });
+
+            res.json({ session, dept: deptSafe, files });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    }
+
+    // GET /attendancemodule/embeddings/check?dept=ECE&subject=Digital Signal Processing&session=2025-26
+    // Fuzzy-matches a subject string (or code) to an available PKL in the dept folder
+    async checkEmbeddingForSubject(req, res) {
+        try {
+            const { dept, subject, session, subCode } = req.query;
+            if (!dept || (!subject && !subCode)) {
+                return res.status(400).json({ error: 'dept and (subject or subCode) are required' });
+            }
+
+            const deptSafe = safeSubject(dept);
+            const sessionToUse = session || (() => {
+                const now = new Date();
+                const y = now.getFullYear();
+                const start = (now.getMonth() + 1) >= 8 ? y : y - 1;
+                return `${start}-${String(start + 1).slice(2)}`;
+            })();
+
+            const folder = path.join(EMBEDDINGS_DIR, sessionToUse, deptSafe);
+            if (!fs.existsSync(folder)) {
+                return res.json({ found: false, reason: 'No embeddings folder for this dept/session' });
+            }
+
+            const pklFiles = fs.readdirSync(folder).filter(f => f.endsWith('.pkl'));
+            if (pklFiles.length === 0) {
+                return res.json({ found: false, reason: 'No PKL files in dept folder' });
+            }
+
+            // 1. Exact subCode match (e.g. "ECPC_306")
+            if (subCode) {
+                const codeSafe = safeSubject(subCode).toLowerCase();
+                const exact = pklFiles.find(f => f.toLowerCase().startsWith(codeSafe.toLowerCase()));
+                if (exact) {
+                    return res.json({
+                        found: true, filename: exact,
+                        pklPath: path.join(folder, exact), matchType: 'subCode',
+                    });
+                }
+            }
+
+            // 2. Fuzzy subject-name match — normalize and look for token overlap
+            if (subject) {
+                const subjectTokens = safeSubject(subject).toLowerCase().split('_').filter(Boolean);
+                let best = null, bestScore = 0;
+                for (const f of pklFiles) {
+                    const fileTokens = f.replace(/\.pkl$/i, '').toLowerCase().split('_');
+                    const overlap = subjectTokens.filter(t => fileTokens.includes(t)).length;
+                    if (overlap > bestScore) {
+                        bestScore = overlap;
+                        best = f;
+                    }
+                }
+                if (best && bestScore > 0) {
+                    return res.json({
+                        found: true, filename: best,
+                        pklPath: path.join(folder, best), matchType: 'fuzzy', matchScore: bestScore,
+                    });
+                }
+            }
+
+            res.json({ found: false, reason: 'No matching PKL found', available: pklFiles });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    }
+
     async getHistoryByDept(req, res) {
     try {
         const { dept, sem, subject } = req.query;

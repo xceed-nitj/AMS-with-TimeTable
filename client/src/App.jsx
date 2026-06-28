@@ -215,6 +215,7 @@ import CameraPreview from './attendancemodule/cameraPreview';
 import FrameVerification from './attendancemodule/FrameVerification';
 import AcquisitionControl from './attendancemodule/AcquisitionControl';
 import UnknownFaces from './attendancemodule/UnknownFaces';
+import SchedulerPage from './attendancemodule/SchedulerPage';
 import RecordStream from './attendancemodule/RecordStream';
 
 import AMSDashboard from './attendancemodule/AMSDashboard';
@@ -224,6 +225,7 @@ import EditSessionDates from './attendancemodule/editSessionDates'; // 1. Added 
 import GpuMetrics from './attendancemodule/GpuMetrics';
 import AMSManual from './attendancemodule/manual';
 import TTManual from './timetableadmin/TTManual';
+
 
 // ─── Department Admin Module Imports ────────────────────────────
 import DeptAdminLayout from './deptadmin/DeptAdminLayout';
@@ -683,6 +685,7 @@ function App() {
           <Route path="acquisition-control" element={<AcquisitionControl />} />
           <Route path="gpu" element={<GpuMetrics />} />
           <Route path="dept-menu-config" element={<DeptMenuConfig />} />
+          <Route path="scheduler" element={<SchedulerPage />} />
           <Route path="view-mldata" element={<MLDataFolder />} />
         </Route>
 

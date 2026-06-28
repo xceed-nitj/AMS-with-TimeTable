@@ -122,6 +122,7 @@ class AttendanceReportController {
         locksemId,
         videoLink,
         mlResult,
+        subjectMeta, 
       } = req.body;
 
       if (!batch || !date || !mlResult) {
@@ -214,6 +215,7 @@ class AttendanceReportController {
         }
         // Allow appending even if status is 'live' (session is running)
         report.slotResults.push(slotResult);
+        if (subjectMeta) report.subjectMeta = subjectMeta;  
       } else {
         report = new AttendanceReport({
           batch,
@@ -225,6 +227,7 @@ class AttendanceReportController {
           date,
           timeSlot: slotKey,
           locksemId: locksemId || null,
+          subjectMeta: subjectMeta || undefined, 
           slotResults: [slotResult],
           status: "draft",
         });
