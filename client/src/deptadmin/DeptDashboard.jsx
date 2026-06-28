@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { CheckCircle2, Clock3, ScanFace, Users } from 'lucide-react';
 import getEnvironment from '../getenvironment';
 import { styles, theme } from '../attendancemodule/config';
+import DashboardProgress from '../attendancemodule/DashboardProgress';
 
 const apiUrl = getEnvironment();
 
@@ -103,6 +104,8 @@ export default function DeptDashboard() {
                 <StatCard icon={ScanFace} label="Match accuracy" value={displayPercent(stats.matchAccuracy)} detail="Average approved confidence" color={theme.success} />
                 <StatCard icon={CheckCircle2} label="Sessions today" value={stats.sessions} detail={`${stats.review} records need review`} color="#0ea5e9" />
             </div>
+
+            <DashboardProgress title="Acquisition and Roll Assignment Progress" compact />
 
             <section style={{ ...styles.card, marginTop: 18 }}>
                 <div style={{ ...styles.heading, fontSize: 17, marginBottom: 18 }}>Year-wise attendance</div>

@@ -20,6 +20,11 @@ router.get(
     deptAdminController.getTodayAttendanceStats,
 );
 router.get(
+    '/dept-admin/stats/progress',
+    ...attendanceRoleAccess,
+    deptAdminController.getDashboardProgress,
+);
+router.get(
     '/dept-admin/reports',
     ...attendanceRoleAccess,
     deptAdminController.getReports,

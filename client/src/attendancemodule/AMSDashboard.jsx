@@ -8,6 +8,7 @@ import {
 } from 'recharts';
 import getEnvironment from '../getenvironment';
 import HealthDashboard from './HealthDashboard';
+import DashboardProgress from './DashboardProgress';
 import { MLDataFolder } from './MLDataFolder';
 import { createPortal } from "react-dom";
 import { useRef } from "react";
@@ -685,7 +686,7 @@ export default function AMSDashboard() {
               transition: 'opacity .15s',
             }}
           >
-            {gtLoad ? '…' : '↻ Refresh'}
+            {gtLoad ? '...' : 'Refresh'}
           </button>
         </div>
         <div className="dash-stat-grid" style={{ marginBottom: 28 }}>
@@ -710,7 +711,7 @@ export default function AMSDashboard() {
               fontFamily: T.fontBody, fontWeight: 700,
             }}
           >
-            Manage →
+            Manage
           </button>
         </div>
         <div className="dash-stat-grid" style={{ marginBottom: 28 }}>
@@ -718,6 +719,10 @@ export default function AMSDashboard() {
           <StatCard label="Complete"         value={embFiles?.complete}      color={T.emerald} loading={embLoad} delay={40}  />
           <StatCard label="Incomplete"       value={embFiles?.incomplete}    color={T.red}     loading={embLoad} delay={80}  />
           <StatCard label="Students Covered" value={embFiles?.totalStudents} color={T.purple}  loading={embLoad} delay={120} />
+        </div>
+
+        <div style={{ marginBottom: 28 }}>
+          <DashboardProgress title="Acquisition and Roll Assignment Progress" compact />
         </div>
 
         {/* ── Charts ── */}

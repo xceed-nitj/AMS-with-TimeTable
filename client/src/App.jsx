@@ -697,6 +697,7 @@ function App() {
           <Route path="class-verification" element={<DeptClassVerification />} />
           <Route path="embeddings" element={<DeptSubjectEmbeddings />} />
           <Route path="confidence" element={<DeptConfidenceMonitor />} />
+          <Route path="stats/progress" element={<Navigate to="/dept-admin/dashboard" replace />} />
           <Route path="dept-reports-view" element={<DeptReports />} />
           <Route path="*" element={
             <div style={{ padding: 48, textAlign: 'center' }}>
