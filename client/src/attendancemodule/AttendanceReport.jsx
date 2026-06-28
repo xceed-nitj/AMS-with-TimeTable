@@ -1,5 +1,5 @@
 // client/src/attendancemodule/AttendanceReport.jsx
-// Input: room + slot → auto-lookup from LockSem + AcquisitionControl config → attendance report
+// Input: room + slot + RTSP URL → auto-lookup from LockSem → attendance report
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -14,6 +14,19 @@ const REPORT_API = `${apiUrl}/attendancemodule/reports`;
 const ML_API = `${apiUrl}/ml`;
 const pct = (a, b) => (b > 0 ? Math.round((a / b) * 100) : 0);
 const CAMERA_SWITCH_SEC = 30; // must match CAMERA_SWITCH_SEC in rtsp_routes.py
+// ── LT103 dual-camera preset (same as groundtruthgen_rtsp) ───────────────────
+//const LT103L_URL = 'rtsp://admin:Admin%401234%23@10.10.177.249:554/video/live?channel=1&subtype=0&rtsp_transport=tcp';
+//const LT103R_URL = 'rtsp://admin:Admin%401234%23@10.10.177.250:554/video/live?channel=1&subtype=0&rtsp_transport=tcp';
+const SLOT_LABELS = {
+  period1: 'Period 1 — 08:30',
+  period2: 'Period 2 — 09:30',
+  period3: 'Period 3 — 10:30',
+  period4: 'Period 4 — 11:30',
+  period5: 'Period 5 — 13:30',
+  period6: 'Period 6 — 14:30',
+  period7: 'Period 7 — 15:30',
+  period8: 'Period 8 — 16:30',
+};
 
 export default function AttendanceReport() {
   const navigate = useNavigate();
@@ -48,55 +61,32 @@ export default function AttendanceReport() {
       ? `${degree}_${sanitizeDept(department)}_${year}`
       : null;
 
-    // ── AcquisitionControl config ─────────────────────────────────
-    const [acqConfig, setAcqConfig] = useState(null);
+  // ── Run state ─────────────────────────────────────────────────
+  const [processing, setProcessing] = useState(false);
+  const [streamLog, setStreamLog] = useState([]);
+  const [liveStats, setLiveStats] = useState(null);
+  const [liveFrame, setLiveFrame] = useState(null);
+  const [activeCam, setActiveCam] = useState(null); // 1 | 2 | null
+  const [camSwitchAt, setCamSwitchAt] = useState(null); // timestamp when last switched
+  const [camCountdown, setCamCountdown] = useState(0); // seconds shown in banner
+  const camCountdownRef = useRef(null);
+  const activeCamRef = useRef(null);
+  const rtspUrl2Ref = useRef('');
 
-    useEffect(() => {
-        (async () => {
-            try {
-                const res  = await fetch(`${apiUrl}/attendancemodule/acquisitioncontrol`);
-                const data = await res.json();
-                setAcqConfig(data);
-            } catch { /* silently ignore */ }
-        })();
-    }, []);
+  const [jobId, setJobId] = useState(null);
+  const [snapshots, setSnapshots] = useState([]);
+  const [previewActive, setPreviewActive] = useState(false);
+  const [enrolledRollNos, setEnrolledRollNos] = useState('');
+  const [showRollInput, setShowRollInput] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [mlResult, setMlResult] = useState(null);
+  const [savedReport, setSavedReport] = useState(null);
+  const [derivedCtx, setDerivedCtx] = useState(null);
 
-    // Derive period config from AcquisitionControl whenever slot changes
-    useEffect(() => {
-        if (!acqConfig || !slot) return;
-        const periodCfg = acqConfig.periods?.find(p => p.periodKey === slot);
-        if (!periodCfg) return;
-        if (periodCfg.runDurationSec)   setDuration(periodCfg.runDurationSec);
-        if (periodCfg.checkIntervalMin) setCheckIntervalMin(periodCfg.checkIntervalMin);
-    }, [acqConfig, slot]);
-    useEffect(() => {
-        if (fixedDepartment) setDepartment(fixedDepartment);
-    }, [fixedDepartment]);
-
-    // ── Run state ─────────────────────────────────────────────────
-    const [processing,      setProcessing]      = useState(false);
-    const [streamLog,       setStreamLog]       = useState([]);
-    const [liveStats,       setLiveStats]       = useState(null);
-    const [liveFrame,       setLiveFrame]       = useState(null);
-    const [activeCam,       setActiveCam]       = useState(null);   // 1 | 2 | null
-    const [camSwitchAt,     setCamSwitchAt]     = useState(null);   // timestamp when last switched
-    const [camCountdown,    setCamCountdown]    = useState(0);       // seconds shown in banner
-    const camCountdownRef = useRef(null);
-    const activeCamRef = useRef(null);
-    const rtspUrl2Ref     = useRef('');
-
-    const [jobId,           setJobId]           = useState(null);
-    const [snapshots,       setSnapshots]       = useState([]);
-    const [previewActive,   setPreviewActive]   = useState(false);
-    const [saving,          setSaving]          = useState(false);
-    const [mlResult,        setMlResult]        = useState(null);
-    const [savedReport,     setSavedReport]     = useState(null);
-    const [derivedCtx,      setDerivedCtx]      = useState(null);
-
-    // ── Session state (multi-run) — kept for later ────────────────
-    const [sessionReportId, setSessionReportId] = useState(null);
-    const [sessionActive,   setSessionActive]   = useState(false);
-    const [sessionChecks,   setSessionChecks]   = useState(0);
+  // ── Session state (multi-run) ─────────────────────────────────
+  const [sessionReportId, setSessionReportId] = useState(null);
+  const [sessionActive, setSessionActive] = useState(false);
+  const [sessionChecks, setSessionChecks] = useState(0);
 
   // ── History ───────────────────────────────────────────────────
   const [reports, setReports] = useState([]);
@@ -108,11 +98,11 @@ export default function AttendanceReport() {
   const [detailReport, setDetailReport] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
-    // ── Camera status from DB ─────────────────────────────────────
-    const [cameraStatus,  setCameraStatus]  = useState(null); // null | 'ok' | 'inactive' | 'none'
-    const [cameraWarnAck, setCameraWarnAck] = useState(false);
-    const [showCameraWarn, setShowCameraWarn] = useState(false);
-    const [pendingAction,  setPendingAction]  = useState(null); // 'run'
+  // ── Camera status from DB ─────────────────────────────────────────────────
+  const [cameraStatus, setCameraStatus] = useState(null); // null | 'ok' | 'inactive' | 'none'
+  const [cameraWarnAck, setCameraWarnAck] = useState(false);
+  const [showCameraWarn, setShowCameraWarn] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null); // 'run' | 'session'
 
   const [toast, setToast] = useState(null);
   const showToast = (msg, type = 'success') => {
@@ -133,51 +123,34 @@ export default function AttendanceReport() {
     })();
   }, []);
 
-    // ── Timetable auto-lookup when room + slot + date change ──────
-    useEffect(() => {
-        if (!room || !slot) { setDerivedCtx(null); setTtStatus(null); return; }
-        const ctrl = new AbortController();
-        setTtStatus('loading');
-        (async () => {
-            try {
-                // 1. Try regular timetable
-                const params = new URLSearchParams({ room, slot });
-                const res = await fetch(
-                    `${apiUrl}/timetablemodule/lock/attendance-lookup?${params}`,
-                    { signal: ctrl.signal }
-                );
-                if (!res.ok) throw new Error('not found');
-                const data = await res.json();
-                setDerivedCtx(data);
-                setTtStatus('found');
-            } catch (e) {
-                if (e.name === 'AbortError') return;
-                // 2. Fallback — check extraClasses in AcquisitionControl
-                const match = acqConfig?.extraClasses?.find(ec =>
-                    ec.active &&
-                    ec.room?.toLowerCase().trim() === room.toLowerCase().trim() &&
-                    ec.periodKey === slot &&
-                    ec.date === date
-                );
-                if (match) {
-                    setDerivedCtx({
-                        batch:     match.batch,
-                        subject:   match.subject  || '',
-                        faculty:   match.faculty  || '',
-                        sem:       match.semester || '',
-                        dept:      '',
-                        locksemId: null,
-                        fromExtra: true,
-                    });
-                    setTtStatus('found');
-                } else {
-                    setDerivedCtx(null);
-                    setTtStatus('notfound');
-                }
-            }
-        })();
-        return () => ctrl.abort();
-    }, [room, slot, date, acqConfig]);
+  // ── Timetable auto-lookup when room + slot change ─────────────
+  useEffect(() => {
+    if (!room || !slot) {
+      setDerivedCtx(null);
+      setTtStatus(null);
+      return;
+    }
+    const ctrl = new AbortController();
+    setTtStatus('loading');
+    (async () => {
+      try {
+        const params = new URLSearchParams({ room, slot });
+        const res = await fetch(
+          `${apiUrl}/timetablemodule/lock/attendance-lookup?${params}`,
+          { signal: ctrl.signal },
+        );
+        if (!res.ok) throw new Error('not found');
+        const data = await res.json();
+        setDerivedCtx(data);
+        setTtStatus('found');
+      } catch (e) {
+        if (e.name === 'AbortError') return;
+        setDerivedCtx(null);
+        setTtStatus('notfound');
+      }
+    })();
+    return () => ctrl.abort();
+  }, [room, slot]);
 
   // ── Auto-fetch camera RTSPs for the selected room from Camera model ────────
   useEffect(() => {
@@ -241,85 +214,142 @@ export default function AttendanceReport() {
     if (tab === 'history') fetchReports();
   }, [tab, fetchReports]);
 
-    // ── Auto-poll detail report when session is live ──────────────
-    useEffect(() => {
-        if (detailReport?.status !== 'live') return;
-        const interval = setInterval(async () => {
-            try {
-                const res     = await fetch(`${REPORT_API}/${detailReport._id}`);
-                const updated = await res.json();
-                setDetailReport(updated);
-                setSessionChecks(updated.slotResults?.length || 0);
-            } catch { /* ignore */ }
-        }, 10000);
-        return () => clearInterval(interval);
-    }, [detailReport?._id, detailReport?.status]);
+  // ── Auto-poll detail report when session is live ──────────────
+  useEffect(() => {
+    if (detailReport?.status !== 'live') return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`${REPORT_API}/${detailReport._id}`);
+        const updated = await res.json();
+        setDetailReport(updated);
+        setSessionChecks(updated.slotResults?.length || 0);
+      } catch {
+        /* ignore */
+      }
+    }, 10000); // poll every 10 seconds
+    return () => clearInterval(interval);
+  }, [detailReport?._id, detailReport?.status]);
 
-    // ── Camera-switch countdown ticker ────────────────────────────
-    useEffect(() => {
-        const hasCam2 = rtspUrl2.trim().length > 0;
-        if (!processing || !activeCam || !hasCam2) {
-            if (camCountdownRef.current) { clearInterval(camCountdownRef.current); camCountdownRef.current = null; }
-            if (!processing || !activeCam) setCamCountdown(0);
-            return;
-        }
-        if (camCountdownRef.current) { clearInterval(camCountdownRef.current); camCountdownRef.current = null; }
-        const switchedAt = camSwitchAt || Date.now();
-        camCountdownRef.current = setInterval(() => {
-            const elapsed   = Math.floor((Date.now() - switchedAt) / 1000);
-            const remaining = Math.max(0, CAMERA_SWITCH_SEC - elapsed);
-            setCamCountdown(remaining);
-        }, 500);
-        return () => { if (camCountdownRef.current) { clearInterval(camCountdownRef.current); camCountdownRef.current = null; } };
-    }, [processing, activeCam, camSwitchAt, rtspUrl2]);
+  // ── Camera-switch countdown ticker ────────────────────────────────────────
+  // Python switches cameras every CAMERA_SWITCH_SEC (30s), not every `duration`.
+  // We count down from CAMERA_SWITCH_SEC using camSwitchAt as the reference point.
+  useEffect(() => {
+    // Only run countdown when processing AND a camera is active AND cam2 is configured
+    const hasCam2 = rtspUrl2.trim().length > 0;
+    if (!processing || !activeCam || !hasCam2) {
+      // Still clear the interval, but DO NOT clear camCountdown to 0 if activeCam is set
+      // (so the banner stays visible in single-cam mode without countdown)
+      if (camCountdownRef.current) {
+        clearInterval(camCountdownRef.current);
+        camCountdownRef.current = null;
+      }
+      if (!processing || !activeCam) setCamCountdown(0);
+      return;
+    }
+    // (Re)start the ticker whenever camSwitchAt changes (i.e. every real switch)
+    if (camCountdownRef.current) {
+      clearInterval(camCountdownRef.current);
+      camCountdownRef.current = null;
+    }
+    const switchedAt = camSwitchAt || Date.now();
+    camCountdownRef.current = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - switchedAt) / 1000);
+      const remaining = Math.max(0, CAMERA_SWITCH_SEC - elapsed);
+      setCamCountdown(remaining);
+    }, 500); // 500ms tick is more responsive than 1000ms
+    return () => {
+      if (camCountdownRef.current) {
+        clearInterval(camCountdownRef.current);
+        camCountdownRef.current = null;
+      }
+    };
+  }, [processing, activeCam, camSwitchAt, rtspUrl2]);
 
-    // ── Run attendance — SSE stream ───────────────────────────────
-    const runAttendance = async () => {
-        if (!room)  { showToast('Select a room', 'error'); return; }
-        if (!slot)  { showToast('Select a slot', 'error'); return; }
-        if (!rtspUrl.trim()) { showToast('No camera found for this room — check Camera Management', 'error'); return; }
+  // ── Run attendance — SSE stream ───────────────────────────────
+  const runAttendance = async () => {
+    if (!rtspUrl.trim()) {
+      showToast('Paste the RTSP URL', 'error');
+      return;
+    }
+    if (!room) {
+      showToast('Enter room number', 'error');
+      return;
+    }
+    if (!slot) {
+      showToast('Select a slot', 'error');
+      return;
+    }
 
-        const effectiveBatch = derivedCtx?.batch || manualBatch;
-        if (!effectiveBatch) {
-            showToast('Batch not found — expand "Batch override" and fill in Degree/Dept/Year', 'error');
-            return;
-        }
+    const effectiveBatch = derivedCtx?.batch || manualBatch;
+    if (!effectiveBatch) {
+      showToast(
+        'Batch not found — expand "Batch override" and fill in Degree/Dept/Year',
+        'error',
+      );
+      return;
+    }
+    // ── Camera inactive/none warning gate ────────────────────
+    if (
+      (cameraStatus === 'inactive' || cameraStatus === 'none') &&
+      !cameraWarnAck
+    ) {
+      setPendingAction('run');
+      setShowCameraWarn(true);
+      return;
+    }
 
-        // ── Camera inactive/none warning gate ────────────────────
-        if ((cameraStatus === 'inactive' || cameraStatus === 'none') && !cameraWarnAck) {
-            setPendingAction('run');
-            setShowCameraWarn(true);
-            return;
-        }
+    // ── Parse sir's roll number list ──────────────────────────
+    const parsedRollNos = enrolledRollNos.trim()
+      ? enrolledRollNos
+          .trim()
+          .split(/[\n,]+/)
+          .map((r) => r.trim())
+          .filter(Boolean)
+      : [];
 
-        setProcessing(true); setMlResult(null); setSavedReport(null);
-        setSnapshots([]); setLiveFrame(null); setPreviewActive(true);
-        setStreamLog([]); setLiveStats(null); setJobId(null);
-        setActiveCam(rtspUrl2.trim() ? 1 : null);
-        activeCamRef.current = rtspUrl2.trim() ? 1 : null;
-        setCamSwitchAt(Date.now());
-        setCamCountdown(CAMERA_SWITCH_SEC);
-        rtspUrl2Ref.current = rtspUrl2.trim();
+    setProcessing(true);
+    setMlResult(null);
+    setSavedReport(null);
+    setSnapshots([]);
+    setLiveFrame(null);
+    setPreviewActive(true);
+    setStreamLog([]);
+    setLiveStats(null);
+    setJobId(null);
+    setActiveCam(rtspUrl2.trim() ? 1 : null); // show cam 1 immediately if dual-cam
+    activeCamRef.current = rtspUrl2.trim() ? 1 : null;
+    setCamSwitchAt(Date.now()); // start countdown immediately
+    setCamCountdown(CAMERA_SWITCH_SEC);
+    rtspUrl2Ref.current = rtspUrl2.trim();
 
-        try {
-            const response = await fetch(`${ML_API}/run-attendance-rtsp`, {
-                method:  'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    rtspUrl:         rtspUrl.trim(),
-                    rtspUrl2:        rtspUrl2.trim(),
-                    batch:           effectiveBatch,
-                    room, slot,
-                    date,
-                    durationSec:     duration,
-                    frameSkip:       10,
-                    subject:         derivedCtx?.subject   || '',
-                    faculty:         derivedCtx?.faculty   || '',
-                    semester:        derivedCtx?.sem        || '',
-                    locksemId:       derivedCtx?.locksemId || '',
-                    enrolledRollNos: [],
-                }),
-            });
+    try {
+      const response = await fetch(`${ML_API}/run-attendance-rtsp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rtspUrl: rtspUrl.trim(),
+          rtspUrl2: rtspUrl2.trim(),
+          batch: effectiveBatch,
+          room,
+          slot,
+          date,
+          durationSec: duration,
+          frameSkip: 10,
+          subject: derivedCtx?.subject || '',
+          faculty: derivedCtx?.faculty || '',
+          semester: derivedCtx?.sem || '',
+          locksemId: derivedCtx?.locksemId || '',
+          enrolledRollNos: parsedRollNos, // ← sir's list sent to Python
+        }),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        showToast(errData.error || `Server error ${response.status}`, 'error');
+        setProcessing(false);
+        setPreviewActive(false);
+        return;
+      }
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
@@ -342,9 +372,23 @@ export default function AttendanceReport() {
             if (ev.type === 'stage') {
               setStreamLog((prev) => [...prev, ev.message]);
             }
+
             if (ev.type === 'frame') {
-              setLiveStats({ frames: ev.frame, faces: ev.total_embs, elapsed: ev.elapsed, remaining: ev.remaining });
-              setLiveFrame({ faces: ev.faces, camera: ev.camera, elapsed: ev.elapsed });
+              setLiveStats({
+                frames: ev.frame,
+                faces: ev.total_embs,
+                elapsed: ev.elapsed,
+                remaining: ev.remaining,
+              });
+              setLiveFrame({
+                faces: ev.faces,
+                camera: ev.camera,
+                elapsed: ev.elapsed,
+              });
+              // Camera switch tracking — use ref so the closure always sees
+              // the latest activeCam value, not the stale one from when
+              // runAttendance was first called.
+              // Always update activeCam on first frame (null → 1) and on real switches
               if (ev.camera != null && ev.camera !== activeCamRef.current) {
                 activeCamRef.current = ev.camera;
                 setActiveCam(ev.camera);
@@ -353,7 +397,9 @@ export default function AttendanceReport() {
             }
             if (ev.type === 'done') {
               setMlResult(ev.result);
-              if (ev.result?.metadata) setDerivedCtx(prev => ({ ...prev, ...ev.result.metadata }));
+              if (ev.result?.metadata) {
+                setDerivedCtx((prev) => ({ ...prev, ...ev.result.metadata }));
+              }
               setSnapshots(ev.result?.frame_snapshots || []);
               setPreviewActive(false);
               showToast('Processed — review and save');
@@ -373,111 +419,149 @@ export default function AttendanceReport() {
     }
   };
 
-    // ── Start multi-run session — kept for later ──────────────────
-    const startSession = async () => {
-        if (!room)  { showToast('Select a room', 'error'); return; }
-        if (!slot)  { showToast('Select a slot', 'error'); return; }
-        if (!rtspUrl.trim()) { showToast('No camera found for this room', 'error'); return; }
+  // ── Start multi-run session ───────────────────────────────────
+  const startSession = async () => {
+    if (!rtspUrl.trim()) {
+      showToast('Paste Camera 1 RTSP URL', 'error');
+      return;
+    }
+    if (!room) {
+      showToast('Enter room number', 'error');
+      return;
+    }
+    if (!slot) {
+      showToast('Select a slot', 'error');
+      return;
+    }
 
-        const effectiveBatch = derivedCtx?.batch || manualBatch;
-        if (!effectiveBatch) {
-            showToast('Batch not found — fill in Degree/Dept/Year', 'error');
-            return;
-        }
-        if ((cameraStatus === 'inactive' || cameraStatus === 'none') && !cameraWarnAck) {
-            setPendingAction('session');
-            setShowCameraWarn(true);
-            return;
-        }
+    const effectiveBatch = derivedCtx?.batch || manualBatch;
+    if (!effectiveBatch) {
+      showToast('Batch not found — fill in Degree/Dept/Year', 'error');
+      return;
+    }
+    // ── Camera inactive/none warning gate ────────────────────
+    if (
+      (cameraStatus === 'inactive' || cameraStatus === 'none') &&
+      !cameraWarnAck
+    ) {
+      setPendingAction('session');
+      setShowCameraWarn(true);
+      return;
+    }
 
-        try {
-            const res = await fetch(`${REPORT_API}/start-session`, {
-                method:  'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    room, slot, date,
-                    rtspUrl:         rtspUrl.trim(),
-                    rtspUrl2:        rtspUrl2.trim(),
-                    durationSec:     duration,
-                    checkIntervalMin,
-                    batch:           effectiveBatch,
-                    department:      derivedCtx?.dept       || department,
-                    subject:         derivedCtx?.subject    || '',
-                    faculty:         derivedCtx?.faculty    || '',
-                    semester:        derivedCtx?.sem         || '',
-                    locksemId:       derivedCtx?.locksemId  || '',
-                    enrolledRollNos: [],
-                }),
-            });
-            const data = await res.json();
-            if (data.error) { showToast(data.error, 'error'); return; }
-            setSessionReportId(data.reportId);
-            setSessionActive(true);
-            setActiveCam(rtspUrl2.trim() ? 1 : null);
-            activeCamRef.current = rtspUrl2.trim() ? 1 : null;
-            setCamSwitchAt(Date.now());
-            setCamCountdown(CAMERA_SWITCH_SEC);
-            rtspUrl2Ref.current = rtspUrl2.trim();
-            setSessionChecks(0);
-            showToast(`Session started — checks every ${checkIntervalMin} min`);
-            openDetail(data.reportId);
-        } catch (e) {
-            showToast('Failed to start session: ' + e.message, 'error');
-        }
-    };
+    const parsedRollNos = enrolledRollNos.trim()
+      ? enrolledRollNos
+          .trim()
+          .split(/[\n,]+/)
+          .map((r) => r.trim())
+          .filter(Boolean)
+      : [];
 
-    // ── Stop multi-run session ────────────────────────────────────
-    const stopSession = async (reportId) => {
-        try {
-            await fetch(`${REPORT_API}/stop-session/${reportId}`, { method: 'POST' });
-            setSessionActive(false);
-            setSessionReportId(null);
-            const res     = await fetch(`${REPORT_API}/${reportId}`);
-            const updated = await res.json();
-            setDetailReport(updated);
-            showToast('Session stopped');
-        } catch (e) {
-            showToast('Failed to stop session: ' + e.message, 'error');
-        }
-    };
+    try {
+      const res = await fetch(`${REPORT_API}/start-session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          room,
+          slot,
+          date,
+          rtspUrl: rtspUrl.trim(),
+          rtspUrl2: rtspUrl2.trim(),
+          durationSec: duration,
+          checkIntervalMin,
+          batch: effectiveBatch,
+          department: derivedCtx?.dept || department,
+          subject: derivedCtx?.subject || '',
+          faculty: derivedCtx?.faculty || '',
+          semester: derivedCtx?.sem || '',
+          locksemId: derivedCtx?.locksemId || '',
+          enrolledRollNos: parsedRollNos,
+        }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        showToast(data.error, 'error');
+        return;
+      }
+      setSessionReportId(data.reportId);
+      setSessionActive(true);
+      setActiveCam(rtspUrl2.trim() ? 1 : null);
+      activeCamRef.current = rtspUrl2.trim() ? 1 : null;
+      setCamSwitchAt(Date.now());
+      setCamCountdown(CAMERA_SWITCH_SEC);
+      rtspUrl2Ref.current = rtspUrl2.trim();
+      setSessionChecks(0);
+      showToast(`Session started — checks every ${checkIntervalMin} min`);
+      openDetail(data.reportId);
+    } catch (e) {
+      showToast('Failed to start session: ' + e.message, 'error');
+    }
+  };
 
-    // ── Save report ───────────────────────────────────────────────
-    const saveReport = async () => {
-        if (!mlResult) return;
-        setSaving(true);
-        const ctx = derivedCtx || {};
-        try {
-            const res = await fetch(`${REPORT_API}/save`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    batch:      ctx.batch      || manualBatch,
-                    department: ctx.dept       || department,
-                    semester:   ctx.sem        || '',
-                    subject:    ctx.subject    || '',
-                    faculty:    ctx.faculty    || '',
-                    room, date, timeSlot: slot,
-                    locksemId:  ctx.locksemId  || null,
-                    videoLink:  rtspUrl.trim(),
-                    mlResult,
-                }),
-            });
-            const data = await res.json();
-            if (data.error) {
-                showToast(data.error, 'error');
-                if (res.status === 409) {
-                    const listRes = await fetch(`${REPORT_API}?batch=${encodeURIComponent(ctx.batch || manualBatch)}&date=${date}`);
-                    const listData = await listRes.json();
-                    const existing = (listData.reports || []).find(r => r.timeSlot === slot);
-                    if (existing) openDetail(existing._id);
-                }
-            } else {
-                setSavedReport(data);
-                showToast(`✓ Saved & merged — ${data.summary?.present ?? 0}P / ${data.summary?.absent ?? 0}A / ${data.summary?.review ?? 0}R`);
-            }
-        } catch { showToast('Save failed', 'error'); }
-        setSaving(false);
-    };
+  // ── Stop multi-run session ────────────────────────────────────
+  const stopSession = async (reportId) => {
+    try {
+      await fetch(`${REPORT_API}/stop-session/${reportId}`, { method: 'POST' });
+      setSessionActive(false);
+      setSessionReportId(null);
+      // Refresh detail report to show draft status
+      const res = await fetch(`${REPORT_API}/${reportId}`);
+      const updated = await res.json();
+      setDetailReport(updated);
+      showToast('Session stopped');
+    } catch (e) {
+      showToast('Failed to stop session: ' + e.message, 'error');
+    }
+  };
+
+  // ── Save report ───────────────────────────────────────────────
+  const saveReport = async () => {
+    if (!mlResult) return;
+    setSaving(true);
+    const ctx = derivedCtx || {};
+    try {
+      const res = await fetch(`${REPORT_API}/save`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          batch: ctx.batch || manualBatch,
+          department: ctx.dept || department,
+          semester: ctx.sem || '',
+          subject: ctx.subject || '',
+          faculty: ctx.faculty || '',
+          room,
+          date,
+          timeSlot: slot,
+          locksemId: ctx.locksemId || null,
+          videoLink: rtspUrl.trim(),
+          mlResult,
+        }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        showToast(data.error, 'error');
+        // If a report already exists for this slot, fetch and open it
+        if (res.status === 409) {
+          const listRes = await fetch(
+            `${REPORT_API}?batch=${encodeURIComponent(ctx.batch || manualBatch)}&date=${date}`,
+          );
+          const listData = await listRes.json();
+          const existing = (listData.reports || []).find(
+            (r) => r.timeSlot === slot,
+          );
+          if (existing) openDetail(existing._id);
+        }
+      } else {
+        setSavedReport(data);
+        showToast(
+          `✓ Saved & merged — ${data.summary?.present ?? 0}P / ${data.summary?.absent ?? 0}A / ${data.summary?.review ?? 0}R`,
+        );
+      }
+    } catch {
+      showToast('Save failed', 'error');
+    }
+    setSaving(false);
+  };
 
   const openDetail = async (id) => {
     setTab('detail');
@@ -551,535 +635,1005 @@ export default function AttendanceReport() {
     }
   };
 
- // ── Derived period config for display ─────────────────────────
-    const slotLabel = (key) => {
-        const p = acqConfig?.periods?.find(p => p.periodKey === key);
-        return p ? `${p.label}${p.startTime ? ' — ' + p.startTime : ''}` : key;
-    };
-    const slotOptions = acqConfig?.periods?.filter(p => p.enabled) ?? [];
-    const activePeriodCfg = acqConfig?.periods?.find(p => p.periodKey === slot) ?? null;
+  return (
+    <div style={styles.page}>
+      <style>{cssReset}</style>
+      {/* ── Camera warning modal ── */}
+      <CameraWarningModal
+        status={showCameraWarn ? cameraStatus : null}
+        room={room}
+        onCancel={() => {
+          setShowCameraWarn(false);
+          setPendingAction(null);
+        }}
+        onProceed={() => {
+          setShowCameraWarn(false);
+          setCameraWarnAck(true);
+          if (pendingAction === 'run') runAttendance();
+          if (pendingAction === 'session') startSession();
+          setPendingAction(null);
+        }}
+      />
 
-    return (
-        <div style={styles.page}>
-            <style>{cssReset}</style>
+      {toast && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 96,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 9000,
+            padding: '12px 24px',
+            borderRadius: '8px',
+            fontSize: '13px',
+            fontWeight: 700,
+            animation: 'fadeIn 0.3s',
+            background: toast.type === 'error' ? theme.danger : theme.success,
+            color: '#ffffff',
+            border: 'none',
+          }}
+        >
+          {toast.msg}
+        </div>
+      )}
 
-            {/* ── Camera warning modal ── */}
-            <CameraWarningModal
-                status={showCameraWarn ? cameraStatus : null}
-                room={room}
-                onCancel={() => {
-                    setShowCameraWarn(false);
-                    setPendingAction(null);
+      <div style={{ marginBottom: 24 }}>
+        <div style={styles.heading}>Attendance Reports</div>
+        <div style={styles.subheading}>
+          Enter room + slot + RTSP URL — faculty, subject, batch auto-fetched
+          from timetable
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="ams-tabs">
+        {[
+          ['run', 'Run Attendance (Developers Only)'],
+          ['history', 'Saved Reports'],
+          ['unknown', 'Unknown Faces'],
+          ['export', 'Export Reports'],
+          ['detail', 'Report Detail'],
+        ].map(
+          ([id, label]) =>
+            (id !== 'detail' || detailReport) && (
+              <button
+                key={id}
+                className={`ams-tab${tab === id ? ' active' : ''}`}
+                onClick={() => setTab(id)}
+              >
+                {label}
+              </button>
+            ),
+        )}
+      </div>
+
+      {/* ════ RUN TAB ════ */}
+      {tab === 'run' && (
+        <div>
+          <div style={{ ...styles.card, marginBottom: 16 }}>
+            <div style={{ ...styles.sectionTitle, marginBottom: 14 }}>
+              Class Identification
+            </div>
+
+            {/* Room + Slot + Date */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr 1fr',
+                gap: 14,
+                marginBottom: 14,
+              }}
+            >
+              <div style={{ position: 'relative' }}>
+                <label style={styles.label}>Room No</label>
+                <input
+                  placeholder="Search room..."
+                  value={showRoomDrop ? roomSearch : room}
+                  onChange={(e) => {
+                    setRoomSearch(e.target.value);
+                    setShowRoomDrop(true);
+                  }}
+                  onFocus={() => {
+                    setRoomSearch('');
+                    setShowRoomDrop(true);
+                  }}
+                  onBlur={() => setTimeout(() => setShowRoomDrop(false), 150)}
+                  style={styles.input}
+                />
+                {showRoomDrop && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      right: 0,
+                      background: '#ffffff',
+                      border: `1px solid ${theme.border}`,
+                      borderRadius: '8px',
+                      zIndex: 100,
+                      maxHeight: 220,
+                      overflowY: 'auto',
+                      boxShadow: '0 8px 24px rgba(26,31,60,0.12)',
+                    }}
+                  >
+                    {rooms
+                      .filter((r) =>
+                        r.toLowerCase().includes(roomSearch.toLowerCase()),
+                      )
+                      .map((r) => (
+                        <div
+                          key={r}
+                          onMouseDown={() => {
+                            setRoom(r);
+                            setRoomSearch('');
+                            setShowRoomDrop(false);
+                          }}
+                          style={{
+                            padding: '9px 14px',
+                            cursor: 'pointer',
+                            fontSize: '13px',
+                            color: theme.text,
+                            borderBottom: `1px solid ${theme.border}`,
+                            background:
+                              r === room ? theme.accentDim : 'transparent',
+                          }}
+                          onMouseEnter={(e) =>
+                            (e.currentTarget.style.background = theme.accentDim)
+                          }
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.background =
+                              r === room ? theme.accentDim : 'transparent')
+                          }
+                        >
+                          {r}
+                        </div>
+                      ))}
+                    {rooms.filter((r) =>
+                      r.toLowerCase().includes(roomSearch.toLowerCase()),
+                    ).length === 0 && (
+                      <div
+                        style={{
+                          padding: '9px 14px',
+                          color: theme.textMuted,
+                          fontSize: '12px',
+                        }}
+                      >
+                        No rooms match "{roomSearch}"
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div>
+                <label style={styles.label}>Slot</label>
+                <select
+                  value={slot}
+                  onChange={(e) => setSlot(e.target.value)}
+                  style={styles.select}
+                >
+                  <option value="">Select slot...</option>
+                  {Object.entries(SLOT_LABELS).map(([val, label]) => (
+                    <option key={val} value={val}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={styles.label}>Date (for saving only)</label>
+                <input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  style={styles.input}
+                />
+              </div>
+            </div>
+
+            {/* Timetable lookup status banners */}
+            {ttStatus === 'loading' && (
+              <div
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: '6px',
+                  marginBottom: 14,
+                  background: theme.accentDim,
+                  border: `1px solid ${theme.accent}`,
+                  fontSize: '11px',
+                  color: theme.accent,
                 }}
-                onProceed={() => {
-                    setShowCameraWarn(false);
-                    setCameraWarnAck(true);
-                    if (pendingAction === 'run')     runAttendance();
-                    if (pendingAction === 'session') startSession();
-                    setPendingAction(null);
+              >
+                🔍 Looking up timetable for {room} / {SLOT_LABELS[slot]}…
+              </div>
+            )}
+            {ttStatus === 'notfound' && (
+              <div
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: '6px',
+                  marginBottom: 14,
+                  background: theme.warningDim,
+                  border: `1px solid ${theme.warning}`,
+                  fontSize: '12px',
+                  color: theme.warning,
                 }}
-            />
-
-            {toast && (
-                <div style={{
-                    position: 'fixed', top: 96, left: '50%', transform: 'translateX(-50%)', zIndex: 9000,
-                    padding: '12px 24px', borderRadius: '8px', fontSize: '13px', fontWeight: 700,
-                    animation: 'fadeIn 0.3s',
-                    background: toast.type === 'error' ? theme.danger : theme.success,
-                    color: '#ffffff',
-                    border: 'none',
-                }}>{toast.msg}</div>
+              >
+                ⚠️ No timetable entry found for this room/slot — expand "Batch
+                override" below and fill in manually.
+              </div>
             )}
 
-            <div style={{ marginBottom: 24 }}>
-                <div style={styles.heading}>Attendance Reports</div>
-                <div style={styles.subheading}>
-                    Select room + slot — camera, faculty, subject, and batch are auto-fetched from configuration
-                </div>
-            </div>
-
-            {/* Tabs */}
-            <div className="ams-tabs">
-                {[['run','Run Attendance (Developers Only)'],['history','Saved Reports'],['unknown','Unknown Faces'],['detail','Report Detail']].map(([id, label]) => (
-                    (id !== 'detail' || detailReport) && (
-                        <button key={id} className={`ams-tab${tab === id ? ' active' : ''}`} onClick={() => setTab(id)}>{label}</button>
-                    )
-                ))}
-            </div>
-
-            {/* ════ RUN TAB ════ */}
-            {tab === 'run' && (
-                <div>
-                    <div style={{ ...styles.card, marginBottom: 16 }}>
-                        <div style={{ ...styles.sectionTitle, marginBottom: 14 }}>Class Identification</div>
-
-                        {/* Room + Slot + Date */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 14 }}>
-                            <div style={{ position: 'relative' }}>
-                                <label style={styles.label}>Room No</label>
-                                <input
-                                    placeholder="Search room..."
-                                    value={showRoomDrop ? roomSearch : room}
-                                    onChange={e => { setRoomSearch(e.target.value); setShowRoomDrop(true); }}
-                                    onFocus={() => { setRoomSearch(''); setShowRoomDrop(true); }}
-                                    onBlur={() => setTimeout(() => setShowRoomDrop(false), 150)}
-                                    style={styles.input}
-                                />
-                                {showRoomDrop && (
-                                    <div style={{
-                                        position: 'absolute', top: '100%', left: 0, right: 0,
-                                        background: '#ffffff', border: `1px solid ${theme.border}`,
-                                        borderRadius: '8px', zIndex: 100,
-                                        maxHeight: 220, overflowY: 'auto',
-                                        boxShadow: '0 8px 24px rgba(26,31,60,0.12)',
-                                    }}>
-                                        {rooms
-                                            .filter(r => r.toLowerCase().includes(roomSearch.toLowerCase()))
-                                            .map(r => (
-                                                <div key={r}
-                                                    onMouseDown={() => { setRoom(r); setRoomSearch(''); setShowRoomDrop(false); }}
-                                                    style={{
-                                                        padding: '9px 14px', cursor: 'pointer',
-                                                        fontSize: '13px', color: theme.text,
-                                                        borderBottom: `1px solid ${theme.border}`,
-                                                        background: r === room ? theme.accentDim : 'transparent',
-                                                    }}
-                                                    onMouseEnter={e => e.currentTarget.style.background = theme.accentDim}
-                                                    onMouseLeave={e => e.currentTarget.style.background = r === room ? theme.accentDim : 'transparent'}
-                                                >{r}</div>
-                                            ))
-                                        }
-                                        {rooms.filter(r => r.toLowerCase().includes(roomSearch.toLowerCase())).length === 0 && (
-                                            <div style={{ padding: '9px 14px', color: theme.textMuted, fontSize: '12px' }}>
-                                                No rooms match "{roomSearch}"
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                            <div>
-                                <label style={styles.label}>Slot</label>
-                                <select value={slot} onChange={e => setSlot(e.target.value)} style={styles.select}>
-                                    <option value="">Select slot...</option>
-                                    {slotOptions.map(p => (
-    <option key={p.periodKey} value={p.periodKey}>
-        {p.label}{p.startTime ? ` — ${p.startTime}` : ''}
-    </option>
-))}
-                                </select>
-                            </div>
-                            <div>
-                                <label style={styles.label}>Date</label>
-                                <input type="date" value={date}
-                                    onChange={e => setDate(e.target.value)}
-                                    style={styles.input} />
-                            </div>
-                        </div>
-
-                        {/* Timetable lookup status banners */}
-                        {ttStatus === 'loading' && (
-                            <div style={{
-                                padding: '8px 14px', borderRadius: '6px', marginBottom: 14,
-                                background: theme.accentDim, border: `1px solid ${theme.accent}`,
-                                fontSize: '11px', color: theme.accent,
-                            }}>
-                                🔍 Looking up timetable for {room} / {slotLabel(slot)}…
-                            </div>
-                        )}
-                        {ttStatus === 'notfound' && (
-                            <div style={{
-                                padding: '12px 16px', borderRadius: '6px', marginBottom: 14,
-                                background: theme.warningDim, border: `1px solid ${theme.warning}`,
-                                fontSize: '12px', color: theme.warning,
-                            }}>
-                                <div style={{ fontWeight: 700, marginBottom: 4 }}>
-                                    ⚠️ No class scheduled for {room} / {slotLabel(slot)} on {date}
-                                </div>
-                                <div style={{ color: theme.textMuted }}>
-                                    No timetable entry and no extra class found. 
-                                    To run attendance here, go to <b>Acquisition Control → Extra / Lunch Classes</b> and add an entry for this room, slot, and date.
-                                    Or expand "Batch override" below to fill in manually.
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Derived context display after timetable lookup */}
-                        {derivedCtx && ttStatus === 'found' && (
-                            <div style={{
-                                padding: '10px 14px', borderRadius: '6px', marginBottom: 14,
-                                background: theme.successDim, border: `1px solid ${theme.success}`,
-                                fontSize: '12px', display: 'flex', gap: 20, flexWrap: 'wrap',
-                            }}>
-                                <span style={{ color: theme.success, fontWeight: 700 }}>
-    {derivedCtx?.fromExtra ? '✓ Extra Class matched' : '✓ Timetable matched'}
-</span>
-                                {[
-                                    ['Batch',   derivedCtx.batch],
-                                    ['Subject', derivedCtx.subject],
-                                    ['Faculty', derivedCtx.faculty],
-                                    ['Sem',     derivedCtx.sem],
-                                    ['Dept',    derivedCtx.dept],
-                                ].filter(([, v]) => v).map(([k, v]) => (
-                                    <span key={k} style={{ color: theme.textMuted }}>
-                                        <span style={{ textTransform: 'uppercase', fontSize: '10px' }}>{k}: </span>
-                                        <span style={{ color: theme.text, fontWeight: 600 }}>{v}</span>
-                                    </span>
-                                ))}
-                            </div>
-                        )}
-
-                        {/* Fallback batch selector */}
-                        <details style={{ marginBottom: 14 }}>
-                            <summary style={{ fontSize: '12px', color: theme.textMuted, cursor: 'pointer', marginBottom: 10 }}>
-                                ▶ Batch override (if timetable lookup fails)
-                            </summary>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginTop: 10 }}>
-                                <div>
-                                    <label style={styles.label}>Degree</label>
-                                    <select value={degree} onChange={e => setDegree(e.target.value)} style={styles.select}>
-                                        {DEGREES.map(d => <option key={d}>{d}</option>)}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label style={styles.label}>Department</label>
-                                    {fixedDepartment ? (
-                                        <div style={{ ...styles.select, display: 'flex', alignItems: 'center', background: theme.surfaceAlt, color: theme.textMuted, cursor: 'not-allowed' }}>
-                                            {fixedDepartment.replace(/_/g, ' ')}
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <select value={department} onChange={e => setDepartment(e.target.value)}
-                                                style={styles.select} disabled={deptLoading}>
-                                                <option value="">
-                                                    {deptLoading ? 'Loading…' : deptError ? 'Error' : 'Select...'}
-                                                </option>
-                                                {departments.map(d => <option key={d} value={d}>{d.replace(/_/g, ' ')}</option>)}
-                                            </select>
-                                            {deptError && (
-                                                <div style={{ fontSize: '11px', color: theme.danger, marginTop: 3 }}>{deptError}</div>
-                                            )}
-                                        </>
-                                    )}
-                                </div>
-                                <div>
-                                    <label style={styles.label}>Year</label>
-                                    <select value={year} onChange={e => setYear(e.target.value)} style={styles.select}>
-                                        <option value="">Select...</option>
-                                        {YEARS.map(y => <option key={y}>{y}</option>)}
-                                    </select>
-                                </div>
-                            </div>
-                            {manualBatch && (
-                                <div style={{ marginTop: 10, fontSize: '12px', color: theme.accent, fontFamily: theme.fontMono }}>
-                                    Fallback batch: {manualBatch}
-                                </div>
-                            )}
-                        </details>
-                        {/* AcquisitionControl config block — shown whenever slot is selected */}
-{slot && (
-    <div style={{
-        padding: '12px 16px', borderRadius: 8, marginBottom: 14,
-        background: acqConfig ? theme.accentDim : theme.bg,
-        border: `1px solid ${acqConfig ? theme.accent : theme.border}`,
-        display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'center',
-    }}>
-        {acqConfig === null ? (
-            <span style={{ fontSize: '12px', color: theme.textMuted }}>
-                ⏳ Loading acquisition config…
-            </span>
-        ) : activePeriodCfg ? (
-            <>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: theme.accent, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                    Run Config
+            {/* Derived context display after timetable lookup */}
+            {derivedCtx && ttStatus === 'found' && (
+              <div
+                style={{
+                  padding: '10px 14px',
+                  borderRadius: '6px',
+                  marginBottom: 14,
+                  background: theme.successDim,
+                  border: `1px solid ${theme.success}`,
+                  fontSize: '12px',
+                  display: 'flex',
+                  gap: 20,
+                  flexWrap: 'wrap',
+                }}
+              >
+                <span style={{ color: theme.success, fontWeight: 700 }}>
+                  ✓ Timetable matched
                 </span>
                 {[
-                    ['Duration',   `${activePeriodCfg.runDurationSec}s`],
-                    ['Interval',   `${activePeriodCfg.checkIntervalMin} min`],
-                    ['Runs',       `${activePeriodCfg.numRuns}`],
-                    ['Logic',      activePeriodCfg.presentLogic],
-                    ['Camera',     rtspUrl ? (rtspUrl2 ? 'Dual 📷📷' : 'Single 📷') : '⚠ None'],
-                ].map(([k, v]) => (
-                    <span key={k} style={{ fontSize: '12px', color: theme.textMuted, fontFamily: theme.fontMono }}>
-                        <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.07em' }}>{k}: </span>
-                        <span style={{
-                            color: k === 'Camera' && !rtspUrl ? theme.danger : theme.text,
-                            fontWeight: 600,
-                        }}>{v}</span>
+                  ['Batch', derivedCtx.batch],
+                  ['Subject', derivedCtx.subject],
+                  ['Faculty', derivedCtx.faculty],
+                  ['Sem', derivedCtx.sem],
+                  ['Dept', derivedCtx.dept],
+                ]
+                  .filter(([, v]) => v)
+                  .map(([k, v]) => (
+                    <span key={k} style={{ color: theme.textMuted }}>
+                      <span
+                        style={{ textTransform: 'uppercase', fontSize: '10px' }}
+                      >
+                        {k}:{' '}
+                      </span>
+                      <span style={{ color: theme.text, fontWeight: 600 }}>
+                        {v}
+                      </span>
                     </span>
-                ))}
-            </>
-        ) : (
-            <span style={{ fontSize: '12px', color: theme.warning }}>
-                ⚠ No config found for slot "{slot}" in Acquisition Control — using defaults (120s / 5min)
-            </span>
-        )}
-    </div>
-)}
-
-{/* Run button row */}
-<div style={{ display: 'flex', gap: 16, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }}>
-    <button
-        onClick={runAttendance}
-        disabled={processing || !room || !slot || (!derivedCtx?.batch && !manualBatch)}
-        style={{
-            ...styles.btnPrimary, minWidth: 160,
-            opacity: (processing || !room || !slot || (!derivedCtx?.batch && !manualBatch)) ? 0.5 : 1,
-        }}
-    >
-                        
-                                {processing ? (
-                                    <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                        <span style={{
-                                            width: 13, height: 13,
-                                            border: '2px solid rgba(0,0,0,0.3)',
-                                            borderTopColor: theme.accentText,
-                                            borderRadius: '50%', animation: 'spin 0.8s linear infinite',
-                                            display: 'inline-block',
-                                        }} />
-                                        {liveStats
-                                            ? `${liveStats.remaining}s left…`
-                                            : activeCam
-                                                ? `Cam ${activeCam} — starting…`
-                                                : 'Connecting…'}
-                                    </span>
-                                ) : 'Run Attendance'}
-                            </button>
-                        </div>
-
-                        {/* Live stream log while processing */}
-                        {processing && streamLog.length > 0 && (
-                            <div style={{
-                                marginTop: 14, padding: '10px 14px', background: theme.bg,
-                                borderRadius: 6, fontFamily: theme.fontMono, fontSize: '12px',
-                                color: theme.textMuted, maxHeight: 120, overflowY: 'auto',
-                            }}>
-                                {streamLog.map((msg, i) => <div key={i}>{msg}</div>)}
-                                {liveStats && (
-                                    <div style={{ color: theme.accent, marginTop: 4 }}>
-                                        Frame {liveStats.frames} | {liveStats.faces} faces | {liveStats.remaining}s remaining
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Live frame preview while processing */}
-                    {processing && (
-                        <div style={{ ...styles.card, marginBottom: 16 }}>
-                            <div style={{ position: 'relative', marginBottom: 12 }}>
-                                <img
-                                    src={previewActive && jobId ? `${ML_API.replace('/ml', '')}/ml/rtsp-frame-preview?jobId=${jobId}` : undefined}
-                                    alt="Live frame"
-                                    style={{
-                                        width: '100%', borderRadius: 8,
-                                        background: '#0d0f14', minHeight: 200,
-                                        display: 'block', objectFit: 'contain',
-                                    }}
-                                    onError={e => { e.target.style.display = 'none'; }}
-                                />
-                                {liveFrame?.camera && (
-                                    <div style={{
-                                        position: 'absolute', top: 10, left: 10,
-                                        background: 'rgba(0,0,0,0.7)',
-                                        color: theme.accent, fontSize: '11px',
-                                        fontWeight: 700, padding: '4px 10px',
-                                        borderRadius: 4, fontFamily: theme.fontMono,
-                                    }}>
-                                        CAM {liveFrame.camera}
-                                    </div>
-                                )}
-                                {liveFrame !== null && (
-                                    <div style={{
-                                        position: 'absolute', top: 10, right: 10,
-                                        background: liveFrame.faces > 0 ? 'rgba(0,200,100,0.85)' : 'rgba(200,60,60,0.8)',
-                                        color: '#fff', fontSize: '12px',
-                                        fontWeight: 700, padding: '4px 12px',
-                                        borderRadius: 4, fontFamily: theme.fontMono,
-                                    }}>
-                                        {liveFrame.faces} face{liveFrame.faces !== 1 ? 's' : ''} detected
-                                    </div>
-                                )}
-                            </div>
-                            <div style={{
-                                display: 'flex', gap: 20, fontSize: '12px',
-                                color: theme.textMuted, fontFamily: theme.fontMono,
-                                flexWrap: 'wrap', alignItems: 'center',
-                            }}>
-                                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                    <span style={{
-                                        width: 8, height: 8, borderRadius: '50%',
-                                        background: theme.accent,
-                                        animation: 'spin 1s linear infinite',
-                                        display: 'inline-block',
-                                    }} />
-                                    Processing…
-                                </span>
-                                {liveStats && (
-                                    <>
-                                        <span>Frame <b style={{ color: theme.text }}>{liveStats.frames}</b></span>
-                                        <span>Total faces <b style={{ color: theme.success }}>{liveStats.faces}</b></span>
-                                        <span>Elapsed <b style={{ color: theme.text }}>{liveStats.elapsed}s</b></span>
-                                        <span>Remaining <b style={{ color: theme.warning }}>{liveStats.remaining}s</b></span>
-                                    </>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* ── Camera switch banner ── */}
-                    {activeCam && (
-                        <div style={{
-                            marginTop: 12,
-                            display: 'flex', alignItems: 'center', gap: 12,
-                            padding: '10px 16px', borderRadius: 8,
-                            background: activeCam === 1 ? theme.accentDim : 'rgba(240,192,64,0.1)',
-                            border: `1px solid ${activeCam === 1 ? theme.accent : '#f0c040'}`,
-                        }}>
-                            <span style={{ fontSize: '20px', lineHeight: 1 }}>🎥</span>
-                            <div style={{ flex: 1 }}>
-                                <div style={{
-                                    fontSize: '13px', fontWeight: 700,
-                                    color: activeCam === 1 ? theme.accent : '#f0c040',
-                                }}>
-                                    Camera {activeCam} Active
-                                </div>
-                                {rtspUrl2.trim() && camCountdown > 0 && (
-                                    <div style={{ fontSize: '11px', color: theme.textMuted, marginTop: 2 }}>
-                                        Switching to Camera {activeCam === 1 ? 2 : 1} in{' '}
-                                        <span style={{
-                                            fontWeight: 700, fontFamily: theme.fontMono,
-                                            color: activeCam === 1 ? theme.accent : '#f0c040',
-                                        }}>
-                                            {String(Math.floor(camCountdown / 60)).padStart(2, '0')}:{String(camCountdown % 60).padStart(2, '0')}
-                                        </span>
-                                    </div>
-                                )}
-                                {!rtspUrl2.trim() && (
-                                    <div style={{ fontSize: '11px', color: theme.textMuted, marginTop: 2 }}>
-                                        Single camera mode
-                                    </div>
-                                )}
-                            </div>
-                            {rtspUrl2.trim() && (
-                                <div style={{ display: 'flex', gap: 6 }}>
-                                    {[1, 2].map(n => (
-                                        <span key={n} style={{
-                                            padding: '3px 12px', borderRadius: '999px',
-                                            fontSize: '12px', fontWeight: 700, fontFamily: theme.fontMono,
-                                            background: activeCam === n
-                                                ? (n === 1 ? theme.accent : '#f0c040')
-                                                : theme.border,
-                                            color: activeCam === n
-                                                ? (n === 1 ? (theme.accentText || '#fff') : '#000')
-                                                : theme.textMuted,
-                                            transition: 'all 0.3s',
-                                        }}>
-                                            CAM {n}
-                                        </span>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {mlResult && !processing && (() => {
-                        const arr = Object.values(mlResult.attendance || {});
-                        const stats = {
-                            present:  arr.filter(s => s.status === 'present').length,
-                            review:   arr.filter(s => s.status === 'review').length,
-                            absent:   arr.filter(s => s.status === 'absent').length,
-                            flagged:  arr.filter(s => s.flagged === true).length,
-                            total:    arr.length,
-                        };
-                        return (
-                            <div style={{ animation: 'fadeIn 0.4s' }}>
-                                <StatBar stats={[
-                                    { label: 'Total',   val: stats.total,   color: theme.text    },
-                                    { label: 'Present', val: stats.present, color: theme.success  },
-                                    { label: 'Review',  val: stats.review,  color: theme.warning  },
-                                    { label: 'Absent',  val: stats.absent,  color: theme.danger   },
-                                    ...(stats.flagged > 0 ? [{ label: 'Flagged 🚩', val: stats.flagged, color: theme.warning }] : []),
-                                ]} theme={theme} styles={styles} />
-
-                                {snapshots.length > 0 && (
-                                    <div style={{ ...styles.card, marginBottom: 16 }}>
-                                        <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: 10 }}>
-                                            Captured Frames ({snapshots.length})
-                                        </div>
-                                        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                                            {snapshots.map((snap, i) => (
-                                                <div key={i} style={{
-                                                    background: theme.bg, borderRadius: 6,
-                                                    padding: '8px 12px', fontSize: '11px',
-                                                    fontFamily: theme.fontMono, color: theme.textMuted,
-                                                    border: `1px solid ${theme.border}`,
-                                                }}>
-                                                    <div style={{ color: theme.accent, fontWeight: 700 }}>
-                                                        Cam {snap.cam} — {snap.elapsed_sec}s
-                                                    </div>
-                                                    <div style={{ color: snap.faces_count > 0 ? theme.success : theme.danger }}>
-                                                        {snap.faces_count} face{snap.faces_count !== 1 ? 's' : ''}
-                                                    </div>
-                                                    <div style={{ color: theme.textMuted, fontSize: '10px', marginTop: 2, wordBreak: 'break-all' }}>
-                                                        {snap.filename}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div style={{
-                                    ...styles.card, marginBottom: 16,
-                                    display: 'flex', alignItems: 'center',
-                                    justifyContent: 'space-between', gap: 12,
-                                }}>
-                                    <div>
-                                        <div style={{ fontSize: '14px', fontWeight: 600 }}>Save to Database</div>
-                                        <div style={{ fontSize: '12px', color: theme.textMuted, marginTop: 2 }}>
-                                            {derivedCtx
-                                                ? `${derivedCtx.batch} · ${derivedCtx.subject || '—'} · ${derivedCtx.faculty || '—'}`
-                                                : 'Persist for later review and finalization'}
-                                        </div>
-                                    </div>
-                                    <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                                        {savedReport && <span style={{ ...styles.badge('success'), fontSize: '12px' }}>Saved</span>}
-                                        <button onClick={saveReport} disabled={saving || !!savedReport}
-                                            style={{ ...styles.btnPrimary, opacity: (saving || !!savedReport) ? 0.5 : 1 }}>
-                                            {saving ? 'Saving...' : savedReport ? 'Saved' : 'Save Report'}
-                                        </button>
-                                        {savedReport && (
-                                            <button onClick={() => openDetail(savedReport.reportId)} style={styles.btnGhost}>
-                                                View Detail
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <AttendanceTable
-                                    rows={Object.entries(mlResult.attendance || {}).map(([rollNo, d]) => ({
-                                        rollNo,
-                                        status:         d.status,
-                                        avgConfidence:  d.avg_confidence,
-                                        confidenceZone: d.confidence_zone,
-                                        firstSeenSec:   d.first_seen_sec,
-                                        inList:         d.in_list,
-                                        flagged:        d.flagged,
-                                        finalStatus:    d.status === 'present' ? 'P'
-                                                      : d.status === 'review'  ? 'R' : 'A',
-                                    }))}
-                                    readOnly theme={theme} styles={styles}
-                                />
-                            </div>
-                        );
-                    })()}
-                </div>
+                  ))}
+              </div>
             )}
 
+            {/* Fallback batch selector */}
+            <details style={{ marginBottom: 14 }}>
+              <summary
+                style={{
+                  fontSize: '12px',
+                  color: theme.textMuted,
+                  cursor: 'pointer',
+                  marginBottom: 10,
+                }}
+              >
+                ▶ Batch override (if timetable lookup fails)
+              </summary>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3,1fr)',
+                  gap: 12,
+                  marginTop: 10,
+                }}
+              >
+                <div>
+                  <label style={styles.label}>Degree</label>
+                  <select
+                    value={degree}
+                    onChange={(e) => setDegree(e.target.value)}
+                    style={styles.select}
+                  >
+                    {DEGREES.map((d) => (
+                      <option key={d}>{d}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={styles.label}>Department</label>
+                  <select
+                    value={department}
+                    onChange={(e) => setDepartment(e.target.value)}
+                    style={styles.select}
+                    disabled={deptLoading}
+                  >
+                    <option value="">
+                      {deptLoading
+                        ? 'Loading…'
+                        : deptError
+                          ? 'Error'
+                          : 'Select...'}
+                    </option>
+                    {departments.map((d) => (
+                      <option key={d} value={d}>
+                        {d.replace(/_/g, ' ')}
+                      </option>
+                    ))}
+                  </select>
+                  {deptError && (
+                    <div
+                      style={{
+                        fontSize: '11px',
+                        color: theme.danger,
+                        marginTop: 3,
+                      }}
+                    >
+                      {deptError}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <label style={styles.label}>Year</label>
+                  <select
+                    value={year}
+                    onChange={(e) => setYear(e.target.value)}
+                    style={styles.select}
+                  >
+                    <option value="">Select...</option>
+                    {YEARS.map((y) => (
+                      <option key={y}>{y}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              {manualBatch && (
+                <div
+                  style={{
+                    marginTop: 10,
+                    fontSize: '12px',
+                    color: theme.accent,
+                    fontFamily: theme.fontMono,
+                  }}
+                >
+                  Fallback batch: {manualBatch}
+                </div>
+              )}
+            </details>
 
+            {/* ── Enrolled Roll Numbers — sir's list ── */}
+            <details
+              open={showRollInput}
+              style={{ marginBottom: 14 }}
+              onToggle={(e) => setShowRollInput(e.target.open)}
+            >
+              <summary
+                style={{
+                  fontSize: '12px',
+                  color: theme.accent,
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  marginBottom: 8,
+                }}
+              >
+                📋 Enrolled Roll Numbers (sir's list — optional but recommended)
+              </summary>
+              <div style={{ marginTop: 10 }}>
+                <label style={styles.label}>
+                  Paste roll numbers — one per line or comma separated. Only
+                  these appear in the report. Faces detected outside this list
+                  are flagged.
+                </label>
+                <textarea
+                  value={enrolledRollNos}
+                  onChange={(e) => setEnrolledRollNos(e.target.value)}
+                  placeholder={
+                    'CS001\nCS002\nCS003\n...\nor: CS001, CS002, CS003'
+                  }
+                  rows={6}
+                  style={{
+                    ...styles.input,
+                    fontFamily: theme.fontMono,
+                    resize: 'vertical',
+                    marginTop: 6,
+                  }}
+                />
+                {enrolledRollNos.trim() && (
+                  <div
+                    style={{
+                      fontSize: '11px',
+                      color: theme.accent,
+                      marginTop: 4,
+                      fontFamily: theme.fontMono,
+                    }}
+                  >
+                    {
+                      enrolledRollNos
+                        .trim()
+                        .split(/[\n,]+/)
+                        .filter((r) => r.trim()).length
+                    }{' '}
+                    roll numbers entered
+                  </div>
+                )}
+              </div>
+            </details>
 
-            {/* ════ HISTORY TAB ════ */}
-            {tab === 'history' && (
+            {/* Camera URLs + Interval + Duration + Run */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: 12,
+                marginBottom: 12,
+              }}
+            >
+              <div>
+                <label style={styles.label}>Camera 1 — RTSP URL</label>
+                <input
+                  placeholder="rtsp://...camera1..."
+                  value={rtspUrl}
+                  onChange={(e) => setRtspUrl(e.target.value)}
+                  style={{ ...styles.input, fontFamily: theme.fontMono }}
+                />
+              </div>
+              <div>
+                <label style={styles.label}>
+                  Camera 2 — RTSP URL (optional)
+                </label>
+                <input
+                  placeholder="rtsp://...camera2..."
+                  value={rtspUrl2}
+                  onChange={(e) => {
+                    setRtspUrl2(e.target.value);
+                    rtspUrl2Ref.current = e.target.value;
+                  }}
+                  style={{ ...styles.input, fontFamily: theme.fontMono }}
+                />
+              </div>
+            </div>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr auto',
+                gap: 12,
+                alignItems: 'flex-end',
+              }}
+            >
+              <div>
+                <label style={styles.label}>Check interval (mins)</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={30}
+                  value={checkIntervalMin}
+                  onChange={(e) => setCheckIntervalMin(Number(e.target.value))}
+                  style={styles.input}
+                  placeholder="e.g. 5"
+                />
+              </div>
+              <div>
+                <label style={styles.label}>Duration per check</label>
+                <select
+                  value={duration}
+                  onChange={(e) => setDuration(Number(e.target.value))}
+                  style={styles.select}
+                >
+                  <option value={30}>30 seconds</option>
+                  <option value={60}>60 seconds</option>
+                  <option value={120}>120 seconds</option>
+                  <option value={180}>180 seconds</option>
+                  <option value={300}>300 seconds</option>
+                </select>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  onClick={runAttendance}
+                  disabled={
+                    processing ||
+                    !rtspUrl.trim() ||
+                    !room ||
+                    !slot ||
+                    (!derivedCtx?.batch && !manualBatch)
+                  }
+                  style={{
+                    ...styles.btnPrimary,
+                    minWidth: 140,
+                    opacity:
+                      processing ||
+                      !rtspUrl.trim() ||
+                      !room ||
+                      !slot ||
+                      (!derivedCtx?.batch && !manualBatch)
+                        ? 0.5
+                        : 1,
+                  }}
+                >
+                  {processing ? (
+                    <span
+                      style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+                    >
+                      <span
+                        style={{
+                          width: 13,
+                          height: 13,
+                          border: '2px solid rgba(0,0,0,0.3)',
+                          borderTopColor: theme.accentText,
+                          borderRadius: '50%',
+                          animation: 'spin 0.8s linear infinite',
+                          display: 'inline-block',
+                        }}
+                      />
+                      {liveStats
+                        ? `${liveStats.remaining}s left…`
+                        : activeCam
+                          ? `Cam ${activeCam} — starting…`
+                          : 'Connecting…'}
+                    </span>
+                  ) : (
+                    'Run Once'
+                  )}
+                </button>
+
+                <button
+                  onClick={startSession}
+                  disabled={
+                    processing ||
+                    sessionActive ||
+                    !rtspUrl.trim() ||
+                    !room ||
+                    !slot ||
+                    (!derivedCtx?.batch && !manualBatch)
+                  }
+                  style={{
+                    ...styles.btnPrimary,
+                    minWidth: 140,
+                    background: theme.success,
+                    opacity:
+                      processing ||
+                      sessionActive ||
+                      !rtspUrl.trim() ||
+                      !room ||
+                      !slot ||
+                      (!derivedCtx?.batch && !manualBatch)
+                        ? 0.5
+                        : 1,
+                  }}
+                >
+                  {sessionActive ? `Session running…` : `Start Session`}
+                </button>
+              </div>
+            </div>
+
+            {/* Live stream log while processing */}
+            {processing && streamLog.length > 0 && (
+              <div
+                style={{
+                  marginTop: 14,
+                  padding: '10px 14px',
+                  background: theme.bg,
+                  borderRadius: 6,
+                  fontFamily: theme.fontMono,
+                  fontSize: '12px',
+                  color: theme.textMuted,
+                  maxHeight: 120,
+                  overflowY: 'auto',
+                }}
+              >
+                {streamLog.map((msg, i) => (
+                  <div key={i}>{msg}</div>
+                ))}
+                {liveStats && (
+                  <div style={{ color: theme.accent, marginTop: 4 }}>
+                    Frame {liveStats.frames} | {liveStats.faces} faces |{' '}
+                    {liveStats.remaining}s remaining
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Live frame preview while processing */}
+          {processing && (
+            <div style={{ ...styles.card, marginBottom: 16 }}>
+              <div style={{ position: 'relative', marginBottom: 12 }}>
+                <img
+                  src={
+                    previewActive && jobId
+                      ? `${ML_API.replace('/ml', '')}/ml/rtsp-frame-preview?jobId=${jobId}`
+                      : undefined
+                  }
+                  alt="Live frame"
+                  style={{
+                    width: '100%',
+                    borderRadius: 8,
+                    background: '#0d0f14',
+                    minHeight: 200,
+                    display: 'block',
+                    objectFit: 'contain',
+                  }}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                  }}
+                />
+                {liveFrame?.camera && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 10,
+                      left: 10,
+                      background: 'rgba(0,0,0,0.7)',
+                      color: theme.accent,
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      padding: '4px 10px',
+                      borderRadius: 4,
+                      fontFamily: theme.fontMono,
+                    }}
+                  >
+                    CAM {liveFrame.camera}
+                  </div>
+                )}
+                {liveFrame !== null && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 10,
+                      right: 10,
+                      background:
+                        liveFrame.faces > 0
+                          ? 'rgba(0,200,100,0.85)'
+                          : 'rgba(200,60,60,0.8)',
+                      color: '#fff',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      padding: '4px 12px',
+                      borderRadius: 4,
+                      fontFamily: theme.fontMono,
+                    }}
+                  >
+                    {liveFrame.faces} face{liveFrame.faces !== 1 ? 's' : ''}{' '}
+                    detected
+                  </div>
+                )}
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  gap: 20,
+                  fontSize: '12px',
+                  color: theme.textMuted,
+                  fontFamily: theme.fontMono,
+                  flexWrap: 'wrap',
+                  alignItems: 'center',
+                }}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      background: theme.accent,
+                      animation: 'spin 1s linear infinite',
+                      display: 'inline-block',
+                    }}
+                  />
+                  Processing…
+                </span>
+                {liveStats && (
+                  <>
+                    <span>
+                      Frame{' '}
+                      <b style={{ color: theme.text }}>{liveStats.frames}</b>
+                    </span>
+                    <span>
+                      Total faces{' '}
+                      <b style={{ color: theme.success }}>{liveStats.faces}</b>
+                    </span>
+                    <span>
+                      Elapsed{' '}
+                      <b style={{ color: theme.text }}>{liveStats.elapsed}s</b>
+                    </span>
+                    <span>
+                      Remaining{' '}
+                      <b style={{ color: theme.warning }}>
+                        {liveStats.remaining}s
+                      </b>
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+          {/* ── Camera switch banner (shown during and after processing) ── */}
+          {activeCam && (
+            <div
+              style={{
+                marginTop: 12,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                padding: '10px 16px',
+                borderRadius: 8,
+                background:
+                  activeCam === 1 ? theme.accentDim : 'rgba(240,192,64,0.1)',
+                border: `1px solid ${activeCam === 1 ? theme.accent : '#f0c040'}`,
+              }}
+            >
+              <span style={{ fontSize: '20px', lineHeight: 1 }}>🎥</span>
+              <div style={{ flex: 1 }}>
+                <div
+                  style={{
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    color: activeCam === 1 ? theme.accent : '#f0c040',
+                  }}
+                >
+                  Camera {activeCam} Active
+                </div>
+                {rtspUrl2.trim() && camCountdown > 0 && (
+                  <div
+                    style={{
+                      fontSize: '11px',
+                      color: theme.textMuted,
+                      marginTop: 2,
+                    }}
+                  >
+                    Switching to Camera {activeCam === 1 ? 2 : 1} in{' '}
+                    <span
+                      style={{
+                        fontWeight: 700,
+                        fontFamily: theme.fontMono,
+                        color: activeCam === 1 ? theme.accent : '#f0c040',
+                      }}
+                    >
+                      {String(Math.floor(camCountdown / 60)).padStart(2, '0')}:
+                      {String(camCountdown % 60).padStart(2, '0')}
+                    </span>
+                  </div>
+                )}
+                {!rtspUrl2.trim() && (
+                  <div
+                    style={{
+                      fontSize: '11px',
+                      color: theme.textMuted,
+                      marginTop: 2,
+                    }}
+                  >
+                    Single camera mode
+                  </div>
+                )}
+              </div>
+              {rtspUrl2.trim() && (
+                <div style={{ display: 'flex', gap: 6 }}>
+                  {[1, 2].map((n) => (
+                    <span
+                      key={n}
+                      style={{
+                        padding: '3px 12px',
+                        borderRadius: '999px',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        fontFamily: theme.fontMono,
+                        background:
+                          activeCam === n
+                            ? n === 1
+                              ? theme.accent
+                              : '#f0c040'
+                            : theme.border,
+                        color:
+                          activeCam === n
+                            ? n === 1
+                              ? theme.accentText || '#fff'
+                              : '#000'
+                            : theme.textMuted,
+                        transition: 'all 0.3s',
+                      }}
+                    >
+                      CAM {n}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {mlResult &&
+            !processing &&
+            (() => {
+              const arr = Object.values(mlResult.attendance || {});
+              const stats = {
+                present: arr.filter((s) => s.status === 'present').length,
+                review: arr.filter((s) => s.status === 'review').length,
+                absent: arr.filter((s) => s.status === 'absent').length,
+                flagged: arr.filter((s) => s.flagged === true).length,
+                total: arr.length,
+              };
+              return (
+                <div style={{ animation: 'fadeIn 0.4s' }}>
+                  <StatBar
+                    stats={[
+                      { label: 'Total', val: stats.total, color: theme.text },
+                      {
+                        label: 'Present',
+                        val: stats.present,
+                        color: theme.success,
+                      },
+                      {
+                        label: 'Review',
+                        val: stats.review,
+                        color: theme.warning,
+                      },
+                      {
+                        label: 'Absent',
+                        val: stats.absent,
+                        color: theme.danger,
+                      },
+                      ...(stats.flagged > 0
+                        ? [
+                            {
+                              label: 'Flagged 🚩',
+                              val: stats.flagged,
+                              color: theme.warning,
+                            },
+                          ]
+                        : []),
+                    ]}
+                    theme={theme}
+                    styles={styles}
+                  />
+
+                  {/* Saved frame snapshots */}
+                  {snapshots.length > 0 && (
+                    <div style={{ ...styles.card, marginBottom: 16 }}>
+                      <div
+                        style={{
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          marginBottom: 10,
+                        }}
+                      >
+                        Captured Frames ({snapshots.length})
+                      </div>
+                      <div
+                        style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}
+                      >
+                        {snapshots.map((snap, i) => (
+                          <div
+                            key={i}
+                            style={{
+                              background: theme.bg,
+                              borderRadius: 6,
+                              padding: '8px 12px',
+                              fontSize: '11px',
+                              fontFamily: theme.fontMono,
+                              color: theme.textMuted,
+                              border: `1px solid ${theme.border}`,
+                            }}
+                          >
+                            <div
+                              style={{ color: theme.accent, fontWeight: 700 }}
+                            >
+                              Cam {snap.cam} — {snap.elapsed_sec}s
+                            </div>
+                            <div
+                              style={{
+                                color:
+                                  snap.faces_count > 0
+                                    ? theme.success
+                                    : theme.danger,
+                              }}
+                            >
+                              {snap.faces_count} face
+                              {snap.faces_count !== 1 ? 's' : ''}
+                            </div>
+                            <div
+                              style={{
+                                color: theme.textMuted,
+                                fontSize: '10px',
+                                marginTop: 2,
+                                wordBreak: 'break-all',
+                              }}
+                            >
+                              {snap.filename}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div
+                    style={{
+                      ...styles.card,
+                      marginBottom: 16,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 12,
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontSize: '14px', fontWeight: 600 }}>
+                        Save to Database
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '12px',
+                          color: theme.textMuted,
+                          marginTop: 2,
+                        }}
+                      >
+                        {derivedCtx
+                          ? `${derivedCtx.batch} · ${derivedCtx.subject || '—'} · ${derivedCtx.faculty || '—'}`
+                          : 'Persist for later review and finalization'}
+                      </div>
+                    </div>
+                    <div
+                      style={{ display: 'flex', gap: 10, alignItems: 'center' }}
+                    >
+                      {savedReport && (
+                        <span
+                          style={{
+                            ...styles.badge('success'),
+                            fontSize: '12px',
+                          }}
+                        >
+                          Saved
+                        </span>
+                      )}
+                      <button
+                        onClick={saveReport}
+                        disabled={saving || !!savedReport}
+                        style={{
+                          ...styles.btnPrimary,
+                          opacity: saving || !!savedReport ? 0.5 : 1,
+                        }}
+                      >
+                        {saving
+                          ? 'Saving...'
+                          : savedReport
+                            ? 'Saved'
+                            : 'Save Report'}
+                      </button>
+                      {savedReport && (
+                        <button
+                          onClick={() => openDetail(savedReport.reportId)}
+                          style={styles.btnGhost}
+                        >
+                          View Detail
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <AttendanceTable
+                    rows={Object.entries(mlResult.attendance || {}).map(
+                      ([rollNo, d]) => ({
+                        rollNo,
+                        status: d.status,
+                        avgConfidence: d.avg_confidence,
+                        confidenceZone: d.confidence_zone,
+                        firstSeenSec: d.first_seen_sec,
+                        inList: d.in_list,
+                        flagged: d.flagged,
+                        finalStatus:
+                          d.status === 'present'
+                            ? 'P'
+                            : d.status === 'review'
+                              ? 'R'
+                              : 'A',
+                      }),
+                    )}
+                    readOnly
+                    theme={theme}
+                    styles={styles}
+                  />
+                </div>
+              );
+            })()}
+        </div>
+      )}
+
+      {/* ════ HISTORY TAB ════ */}
+      {tab === 'history' && (
         <div>
           <div
             style={{
@@ -1190,7 +1744,7 @@ export default function AttendanceReport() {
                       <td
                         style={{ padding: '11px 14px', color: theme.textMuted }}
                       >
-                        {slotLabel(r.timeSlot) || '—'}
+                        {SLOT_LABELS[r.timeSlot] || r.timeSlot || '—'}
                       </td>
                       <td style={{ padding: '11px 14px', color: theme.text }}>
                         {r.subject || '—'}
@@ -1260,92 +1814,234 @@ export default function AttendanceReport() {
       {tab === 'detail' && (
         <div>
           {detailLoading && (
-            <div style={{ textAlign: 'center', padding: 48, color: theme.textMuted }}>Loading...</div>
+            <div
+              style={{
+                textAlign: 'center',
+                padding: 48,
+                color: theme.textMuted,
+              }}
+            >
+              Loading...
+            </div>
           )}
           {detailReport && !detailLoading && (
             <div style={{ animation: 'fadeIn 0.3s' }}>
               <div style={{ ...styles.card, marginBottom: 16 }}>
+                {/* Live session banner */}
                 {detailReport.status === 'live' && (
-                  <div style={{
-                    padding: '12px 16px', borderRadius: 8, marginBottom: 16,
-                    background: theme.accentDim, border: `1px solid ${theme.accent}`,
-                    display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
-                  }}>
-                    <span style={{ width: 10, height: 10, borderRadius: '50%', background: theme.accent, display: 'inline-block', animation: 'spin 1.5s linear infinite' }} />
-                    <span style={{ color: theme.accent, fontWeight: 700, fontSize: '13px' }}>
-                      Live Session — {detailReport.slotResults?.length || 0} run(s) completed
+                  <div
+                    style={{
+                      padding: '12px 16px',
+                      borderRadius: 8,
+                      marginBottom: 16,
+                      background: theme.accentDim,
+                      border: `1px solid ${theme.accent}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 12,
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: '50%',
+                        background: theme.accent,
+                        display: 'inline-block',
+                        animation: 'spin 1.5s linear infinite',
+                      }}
+                    />
+                    <span
+                      style={{
+                        color: theme.accent,
+                        fontWeight: 700,
+                        fontSize: '13px',
+                      }}
+                    >
+                      Live Session — {detailReport.slotResults?.length || 0}{' '}
+                      run(s) completed
                     </span>
-                    <span style={{ fontSize: '12px', color: theme.textMuted }}>Auto-updating every 10 seconds</span>
-                    <button onClick={() => stopSession(detailReport._id)}
-                      style={{ ...styles.btnDanger, padding: '6px 14px', fontSize: '12px', marginLeft: 'auto' }}>
+                    <span style={{ fontSize: '12px', color: theme.textMuted }}>
+                      Auto-updating every 10 seconds
+                    </span>
+                    <button
+                      onClick={() => stopSession(detailReport._id)}
+                      style={{
+                        ...styles.btnDanger,
+                        padding: '6px 14px',
+                        fontSize: '12px',
+                        marginLeft: 'auto',
+                      }}
+                    >
                       Stop Session
                     </button>
                   </div>
                 )}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    flexWrap: 'wrap',
+                    gap: 12,
+                  }}
+                >
                   <div>
-                    <div style={{ fontFamily: theme.fontMono, fontSize: '18px', fontWeight: 700, marginBottom: 6 }}>
+                    <div
+                      style={{
+                        fontFamily: theme.fontMono,
+                        fontSize: '18px',
+                        fontWeight: 700,
+                        marginBottom: 6,
+                      }}
+                    >
                       {detailReport.batch}
                     </div>
-                    <div style={{ display: 'flex', gap: 20, fontSize: '13px', color: theme.textMuted, flexWrap: 'wrap' }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: 20,
+                        fontSize: '13px',
+                        color: theme.textMuted,
+                        flexWrap: 'wrap',
+                      }}
+                    >
                       {[
                         ['Date', detailReport.date],
-                        ['Slot', slotLabel(detailReport.timeSlot) || '—'],
+                        [
+                          'Slot',
+                          SLOT_LABELS[detailReport.timeSlot] ||
+                            detailReport.timeSlot ||
+                            '—',
+                        ],
                         ['Subject', detailReport.subject || '—'],
                         ['Faculty', detailReport.faculty || '—'],
                         ['Room', detailReport.room || '—'],
                         ['Sem', detailReport.semester || '—'],
                       ].map(([k, v]) => (
                         <span key={k}>
-                          <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{k}: </span>
-                          <span style={{ color: theme.text, fontWeight: 600 }}>{v}</span>
+                          <span
+                            style={{
+                              fontSize: '10px',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.08em',
+                            }}
+                          >
+                            {k}:{' '}
+                          </span>
+                          <span style={{ color: theme.text, fontWeight: 600 }}>
+                            {v}
+                          </span>
                         </span>
                       ))}
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <span style={styles.badge(detailReport.status === 'finalized' ? 'success' : 'warning')}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: 10,
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <span
+                      style={styles.badge(
+                        detailReport.status === 'finalized'
+                          ? 'success'
+                          : 'warning',
+                      )}
+                    >
                       {detailReport.status}
                     </span>
                     {detailReport.status !== 'finalized' && (
                       <>
-                        <button onClick={() => finalizeReport(detailReport._id)}
-                          style={{ ...styles.btnPrimary, padding: '8px 18px', fontSize: '13px' }}>
+                        <button
+                          onClick={() => finalizeReport(detailReport._id)}
+                          style={{
+                            ...styles.btnPrimary,
+                            padding: '8px 18px',
+                            fontSize: '13px',
+                          }}
+                        >
                           Finalize
                         </button>
-                        <button onClick={() => deleteReport(detailReport._id)}
-                          style={{ ...styles.btnDanger, padding: '8px 18px' }}>
+                        <button
+                          onClick={() => deleteReport(detailReport._id)}
+                          style={{ ...styles.btnDanger, padding: '8px 18px' }}
+                        >
                           Delete Draft
                         </button>
                       </>
                     )}
-                    <button onClick={() => setTab('unknown')}
-                      style={{ ...styles.btnPrimary, background: theme.accent, padding: '8px 18px', fontSize: '13px' }}>
-                      Review Unknown Faces ({detailReport.summary?.unknownFaceCount ?? 0})
+                    <button
+                      onClick={() => setTab('unknown')}
+                      style={{
+                        ...styles.btnPrimary,
+                        background: theme.accent,
+                        padding: '8px 18px',
+                        fontSize: '13px',
+                      }}
+                    >
+                      Review Unknown Faces (
+                      {detailReport.summary?.unknownFaceCount ?? 0})
                     </button>
                   </div>
                 </div>
               </div>
-              <StatBar stats={[
-                { label: 'Total',   val: detailReport.summary?.totalStudents ?? 0, color: theme.text },
-                { label: 'Present', val: detailReport.summary?.present ?? 0,       color: theme.success },
-                { label: 'Absent',  val: detailReport.summary?.absent ?? 0,        color: theme.danger },
-                { label: 'Att. %',  val: (detailReport.summary?.attendancePct ?? 0) + '%', color: theme.accent },
-                { label: 'Unknown', val: detailReport.summary?.unknownFaceCount ?? 0, color: theme.warning },
-              ]} theme={theme} styles={styles} />
+
+              <StatBar
+                stats={[
+                  {
+                    label: 'Total',
+                    val: detailReport.summary?.totalStudents ?? 0,
+                    color: theme.text,
+                  },
+                  {
+                    label: 'Present',
+                    val: detailReport.summary?.present ?? 0,
+                    color: theme.success,
+                  },
+                  {
+                    label: 'Absent',
+                    val: detailReport.summary?.absent ?? 0,
+                    color: theme.danger,
+                  },
+                  {
+                    label: 'Att. %',
+                    val: (detailReport.summary?.attendancePct ?? 0) + '%',
+                    color: theme.accent,
+                  },
+                  {
+                    label: 'Unknown',
+                    val: detailReport.summary?.unknownFaceCount ?? 0,
+                    color: theme.warning,
+                  },
+                ]}
+                theme={theme}
+                styles={styles}
+              />
+
               {detailReport.slotResults?.length > 0 ? (
                 <MultiRunTable
                   report={detailReport}
                   readOnly={detailReport.status === 'finalized'}
-                  onOverride={(rollNo, status) => overrideStatus(detailReport._id, rollNo, status)}
-                  theme={theme} styles={styles}
+                  onOverride={(rollNo, status) =>
+                    overrideStatus(detailReport._id, rollNo, status)
+                  }
+                  theme={theme}
+                  styles={styles}
                 />
               ) : (
                 <AttendanceTable
                   rows={detailReport.finalReport || []}
                   readOnly={detailReport.status === 'finalized'}
-                  onOverride={(rollNo, status) => overrideStatus(detailReport._id, rollNo, status)}
-                  theme={theme} styles={styles}
+                  onOverride={(rollNo, status) =>
+                    overrideStatus(detailReport._id, rollNo, status)
+                  }
+                  theme={theme}
+                  styles={styles}
                 />
               )}
             </div>
@@ -1353,6 +2049,7 @@ export default function AttendanceReport() {
         </div>
       )}
       {tab === 'export' && <ExportReportsTab />}
+      {/* ════ UNKNOWN FACES TAB ════ */}
       {tab === 'unknown' && (
         <div style={{ marginTop: 16 }}>
           <UnknownFaces
@@ -1391,108 +2088,220 @@ function MultiRunTable({ report, readOnly, onOverride, theme, styles }) {
     }
   }
 
-   
+  const cellStyle = (status) => ({
+    padding: '2px 6px',
+    borderRadius: 4,
+    fontSize: '11px',
+    fontWeight: 600,
+    background:
+      status === 'present'
+        ? theme.successDim
+        : status === 'review'
+          ? theme.warningDim
+          : status === 'absent'
+            ? theme.dangerDim
+            : theme.accentDim,
+    color:
+      status === 'present'
+        ? theme.success
+        : status === 'review'
+          ? theme.warning
+          : status === 'absent'
+            ? theme.danger
+            : theme.accent,
+  });
 
-    const cellStyle = (status) => ({
-        padding: '2px 6px', borderRadius: 4, fontSize: '11px', fontWeight: 600,
-        background: status === 'present' ? theme.successDim
-                  : status === 'review'  ? theme.warningDim
-                  : status === 'absent'  ? theme.dangerDim
-                  : theme.accentDim,
-        color:      status === 'present' ? theme.success
-                  : status === 'review'  ? theme.warning
-                  : status === 'absent'  ? theme.danger
-                  : theme.accent,
-    });
-
-    return (
-        <div style={{ ...styles.card, padding: 0, overflowX: 'auto' }}>
-            <table className="ams-table" style={{ minWidth: 600, fontSize: '12px' }}>
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Roll No</th>
-                        {runs.map((r, i) => (
-                            <th key={i} style={{ textAlign: 'center', color: theme.accent, borderLeft: '1px solid #e4e8f5' }}>
-                                Run {i + 1}
-                                <div style={{ fontSize: '9px', color: theme.textMuted, fontWeight: 400, marginTop: 2 }}>
-                                    {r.processedAt ? new Date(r.processedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
-                                </div>
-                                <div style={{ fontSize: '9px', color: theme.textMuted, fontWeight: 400 }}>
-                                    P:{r.summary?.present ?? 0} A:{r.summary?.absent ?? 0} R:{r.summary?.review ?? 0}
-                                </div>
-                            </th>
-                        ))}
-                        <th style={{ textAlign: 'center', borderLeft: '2px solid #e4e8f5' }}>Final</th>
-                        {!readOnly && <th>Override</th>}
-                    </tr>
-                </thead>
-                <tbody>
-                    {allRollNos.map((rollNo, idx) => {
-                        const final = finalLookup[rollNo];
-                        return (
-                            <tr key={rollNo} style={{
-                                background: final?.finalStatus === 'R' ? theme.warningDim : 'transparent',
-                            }}>
-                                <td style={{ padding: '9px 12px', color: theme.textMuted }}>{idx + 1}</td>
-                                <td style={{ padding: '9px 12px', fontFamily: theme.fontMono, fontWeight: 600, color: '#111' }}>{rollNo}</td>
-                                {runs.map((_, ri) => {
-                                    const s = runLookup[rollNo][ri];
-                                    return (
-                                        <td key={ri} style={{ textAlign: 'center', borderLeft: '1px solid #e4e8f5' }}>
-                                            {s ? (
-                                                <span style={cellStyle(s.status)}>
-                                                    {s.status === 'present' ? '✓' : s.status === 'review' ? '?' : s.status === 'absent' ? '✗' : '—'}
-                                                    {s.avgConfidence > 0 && (
-                                                        <span style={{ marginLeft: 4, fontWeight: 400 }}>
-                                                            {(s.avgConfidence * 100).toFixed(0)}%
-                                                        </span>
-                                                    )}
-                                                </span>
-                                            ) : (
-                                                <span style={{ color: theme.textMuted, fontSize: '11px' }}>—</span>
-                                            )}
-                                        </td>
-                                    );
-                                })}
-                                <td style={{ textAlign: 'center', borderLeft: '2px solid #e4e8f5' }}>
-                                    {final ? (
-                                        <span style={{
-                                            padding: '3px 10px', borderRadius: '999px', fontSize: '12px', fontWeight: 700, fontFamily: theme.fontMono,
-                                            background: final.finalStatus === 'P' ? theme.successDim : final.finalStatus === 'R' ? theme.warningDim : theme.dangerDim,
-                                            color:      final.finalStatus === 'P' ? theme.success    : final.finalStatus === 'R' ? theme.warning    : theme.danger,
-                                        }}>
-                                            {final.finalStatus}
-                                        </span>
-                                    ) : <span style={{ color: theme.textMuted }}>—</span>}
-                                </td>
-                                {!readOnly && (
-                                    <td style={{ padding: '9px 12px' }}>
-                                        <div style={{ display: 'flex', gap: 4 }}>
-                                            {['P', 'A', 'R'].map(st => (
-                                                <button key={st} onClick={() => onOverride(rollNo, st)}
-                                                    disabled={final?.finalStatus === st}
-                                                    style={{
-                                                        padding: '2px 8px', borderRadius: 4, fontSize: '10px',
-                                                        fontWeight: 700, cursor: 'pointer', border: 'none',
-                                                        fontFamily: theme.fontMono,
-                                                        opacity: final?.finalStatus === st ? 0.3 : 1,
-                                                        background: st === 'P' ? theme.successDim : st === 'R' ? theme.warningDim : theme.dangerDim,
-                                                        color:      st === 'P' ? theme.success    : st === 'R' ? theme.warning    : theme.danger,
-                                                    }}>
-                                                    {st}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </td>
-                                )}
-                            </tr>
-                        );
-                    })}
-                </tbody>
-            </table>
-        </div>
-    );
+  return (
+    <div style={{ ...styles.card, padding: 0, overflowX: 'auto' }}>
+      <table className="ams-table" style={{ minWidth: 600, fontSize: '12px' }}>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Roll No</th>
+            {runs.map((r, i) => (
+              <th
+                key={i}
+                style={{
+                  textAlign: 'center',
+                  color: theme.accent,
+                  borderLeft: '1px solid #e4e8f5',
+                }}
+              >
+                Run {i + 1}
+                <div
+                  style={{
+                    fontSize: '9px',
+                    color: theme.textMuted,
+                    fontWeight: 400,
+                    marginTop: 2,
+                  }}
+                >
+                  {r.processedAt
+                    ? new Date(r.processedAt).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })
+                    : '—'}
+                </div>
+                <div
+                  style={{
+                    fontSize: '9px',
+                    color: theme.textMuted,
+                    fontWeight: 400,
+                  }}
+                >
+                  P:{r.summary?.present ?? 0} A:{r.summary?.absent ?? 0} R:
+                  {r.summary?.review ?? 0}
+                </div>
+              </th>
+            ))}
+            <th
+              style={{ textAlign: 'center', borderLeft: '2px solid #e4e8f5' }}
+            >
+              Final
+            </th>
+            {!readOnly && <th>Override</th>}
+          </tr>
+        </thead>
+        <tbody>
+          {allRollNos.map((rollNo, idx) => {
+            const final = finalLookup[rollNo];
+            return (
+              <tr
+                key={rollNo}
+                style={{
+                  background:
+                    final?.finalStatus === 'R'
+                      ? theme.warningDim
+                      : 'transparent',
+                }}
+              >
+                <td style={{ padding: '9px 12px', color: theme.textMuted }}>
+                  {idx + 1}
+                </td>
+                <td
+                  style={{
+                    padding: '9px 12px',
+                    fontFamily: theme.fontMono,
+                    fontWeight: 600,
+                    color: '#111',
+                  }}
+                >
+                  {rollNo}
+                </td>
+                {runs.map((_, ri) => {
+                  const s = runLookup[rollNo][ri];
+                  return (
+                    <td
+                      key={ri}
+                      style={{
+                        textAlign: 'center',
+                        borderLeft: '1px solid #e4e8f5',
+                      }}
+                    >
+                      {s ? (
+                        <span style={cellStyle(s.status)}>
+                          {s.status === 'present'
+                            ? '✓'
+                            : s.status === 'review'
+                              ? '?'
+                              : s.status === 'absent'
+                                ? '✗'
+                                : '—'}
+                          {s.avgConfidence > 0 && (
+                            <span style={{ marginLeft: 4, fontWeight: 400 }}>
+                              {(s.avgConfidence * 100).toFixed(0)}%
+                            </span>
+                          )}
+                        </span>
+                      ) : (
+                        <span
+                          style={{ color: theme.textMuted, fontSize: '11px' }}
+                        >
+                          —
+                        </span>
+                      )}
+                    </td>
+                  );
+                })}
+                <td
+                  style={{
+                    textAlign: 'center',
+                    borderLeft: '2px solid #e4e8f5',
+                  }}
+                >
+                  {final ? (
+                    <span
+                      style={{
+                        padding: '3px 10px',
+                        borderRadius: '999px',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        fontFamily: theme.fontMono,
+                        background:
+                          final.finalStatus === 'P'
+                            ? theme.successDim
+                            : final.finalStatus === 'R'
+                              ? theme.warningDim
+                              : theme.dangerDim,
+                        color:
+                          final.finalStatus === 'P'
+                            ? theme.success
+                            : final.finalStatus === 'R'
+                              ? theme.warning
+                              : theme.danger,
+                      }}
+                    >
+                      {final.finalStatus}
+                    </span>
+                  ) : (
+                    <span style={{ color: theme.textMuted }}>—</span>
+                  )}
+                </td>
+                {!readOnly && (
+                  <td style={{ padding: '9px 12px' }}>
+                    <div style={{ display: 'flex', gap: 4 }}>
+                      {['P', 'A', 'R'].map((st) => (
+                        <button
+                          key={st}
+                          onClick={() => onOverride(rollNo, st)}
+                          disabled={final?.finalStatus === st}
+                          style={{
+                            padding: '2px 8px',
+                            borderRadius: 4,
+                            fontSize: '10px',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            border: 'none',
+                            fontFamily: theme.fontMono,
+                            opacity: final?.finalStatus === st ? 0.3 : 1,
+                            background:
+                              st === 'P'
+                                ? theme.successDim
+                                : st === 'R'
+                                  ? theme.warningDim
+                                  : theme.dangerDim,
+                            color:
+                              st === 'P'
+                                ? theme.success
+                                : st === 'R'
+                                  ? theme.warning
+                                  : theme.danger,
+                          }}
+                        >
+                          {st}
+                        </button>
+                      ))}
+                    </div>
+                  </td>
+                )}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
 function StatBar({ stats, theme, styles }) {
@@ -1645,7 +2454,6 @@ function CameraWarningModal({ status, room, onProceed, onCancel }) {
     </div>
   );
 }
-
 function AttendanceTable({ rows, readOnly, onOverride, theme, styles }) {
   return (
     <div style={{ ...styles.card, padding: 0, overflow: 'hidden' }}>
@@ -1695,20 +2503,35 @@ function AttendanceTable({ rows, readOnly, onOverride, theme, styles }) {
                 {s.rollNo}
               </td>
 
-                            <td style={{ padding: '10px 14px' }}>
-                                {s.flagged === true ? (
-                                    <span style={{
-                                        padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 700,
-                                        background: 'rgba(251,191,36,0.15)', color: theme.warning,
-                                    }}>
-                                        🚩 Flagged
-                                    </span>
-                                ) : s.inList === true ? (
-                                    <span style={{ fontSize: '12.5px', color: theme.success }}>✓</span>
-                                ) : (
-                                    <span style={{ fontSize: '11px', color: theme.textMuted }}>—</span>
-                                )}
-                            </td>
+              {/* ── In List column ── */}
+              <td style={{ padding: '10px 14px' }}>
+                {s.flagged === true ? (
+                  <span
+                    style={{
+                      padding: '2px 8px',
+                      borderRadius: '4px',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      background: 'rgba(251,191,36,0.15)',
+                      color: theme.warning,
+                    }}
+                  >
+                    🚩 Flagged
+                  </span>
+                ) : s.inList === true ? (
+                  <span style={{ fontSize: '12.5px', color: theme.success }}>
+                    ✓
+                  </span>
+                ) : s.inList === false ? (
+                  <span style={{ fontSize: '11px', color: theme.textMuted }}>
+                    —
+                  </span>
+                ) : (
+                  <span style={{ fontSize: '11px', color: theme.textMuted }}>
+                    —
+                  </span>
+                )}
+              </td>
 
               <td style={{ padding: '10px 14px' }}>
                 <span
@@ -1875,4 +2698,3 @@ function AttendanceTable({ rows, readOnly, onOverride, theme, styles }) {
     </div>
   );
 }
-      
