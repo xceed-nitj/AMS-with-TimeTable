@@ -24,6 +24,7 @@ const NAV = [
     label: 'ERP Upload',
   },
   { id: 'reports', route: '/attendance/reports', label: 'Attendance Reports' },
+  { id: 'livereport', route: '/attendance/live-report', label: 'Live Report' },
   {
     id: 'verify',
     route: '/attendance/frame-verification',
@@ -47,6 +48,7 @@ const COLORS = {
   assign: '#10b981',
   upload: '#f472b6',
   reports: '#14b8a6',
+  livereport: '#22c55e',
   verify: '#ec4899',
   cameras: '#f97316',
   embeddings: '#f59e0b',
