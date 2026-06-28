@@ -483,3 +483,102 @@ exports.preview = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+// ── GET /attendancemodule/scheduler/live-status ────────────────────────────
+// Fetch real-time progress for classrooms without triggering ML runs.
+// Used by the Live Report page.
+exports.liveStatus = async (req, res) => {
+  try {
+    const config = await AcquisitionControl.findOne({ profileName: 'default' }).lean();
+    if (!config) return res.status(404).json({ error: 'AcquisitionControl config not found' });
+
+    let { slot } = req.query;
+    let date = req.query.date;
+
+    if (!date) {
+      date = todayStr();
+    }
+
+    if (!slot) {
+      const now = new Date();
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      
+      const activePeriod = (config.periods || []).find(p => {
+        if (!p.startTime || !p.endTime) return false;
+        const [sH, sM] = p.startTime.split(':').map(Number);
+        const [eH, eM] = p.endTime.split(':').map(Number);
+        const sMins = sH * 60 + sM;
+        const eMins = eH * 60 + eM;
+          return currentMinutes >= sMins && currentMinutes <= eMins;
+      });
+
+      if (activePeriod) {
+        slot = activePeriod.periodKey;
+      } else {
+        return res.json({ 
+          slot: null, 
+          date, 
+          acquisitionActive: config.active, 
+          rooms: []
+        });
+      }
+    }
+
+    const enabledRooms = await getEnabledRooms(config);
+    const periodCfg = (config.periods || []).find((p) => p.periodKey === slot) || {};
+    const targetRuns = periodCfg.numRuns ?? config.globalNumRuns ?? 1;
+
+    const rooms = await Promise.all(
+      enabledRooms.map(async (roomOverride) => {
+        const room = roomOverride.room;
+        if ((config.stoppedDays || []).includes(date)) {
+          return { room, status: 'skipped', reason: 'Stopped Day' };
+        }
+        const ctx = await resolveRoomContext(room, slot, date, config);
+        if (!ctx) return { room, status: 'skipped', reason: 'No Class Scheduled' };
+
+        // Find report for this batch + date + slot
+        const report = await AttendanceReport.findOne({ batch: ctx.batch, date, timeSlot: slot }).lean();
+        
+        let runsCompleted = 0;
+        let lastRecord = null;
+        let reportStatus = 'pending';
+        let reportId = null;
+
+        if (report) {
+          runsCompleted = (report.slotResults || []).length;
+          reportStatus = report.status || 'draft';
+          reportId = report._id;
+          
+          if (reportStatus === 'draft' && report.slotResults && report.slotResults.length > 0) {
+            const lastCheck = report.slotResults[report.slotResults.length - 1].summary;
+            lastRecord = lastCheck ? {
+              present: lastCheck.present || 0,
+              absent: lastCheck.absent || 0,
+              review: lastCheck.review || 0,
+              totalStudents: lastCheck.total || 0,
+              attendancePct: lastCheck.total > 0 ? Math.round(((lastCheck.present || 0) / lastCheck.total) * 100) : 0
+            } : null;
+          } else {
+            lastRecord = report.summary || null;
+          }
+        }
+
+        return {
+          room,
+          status: reportStatus,
+          runsCompleted,
+          targetRuns,
+          ctx,
+          reportId,
+          lastRecord,
+          reason: null
+        };
+      })
+    );
+
+    res.json({ slot, date, acquisitionActive: config.active, rooms });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

@@ -554,6 +554,16 @@ export default function SchedulerPage() {
               {config?.active ? '✅ Scheduler ACTIVE' : '⛔ Scheduler STOPPED'}
             </span>
           </div>
+          <button 
+            onClick={() => window.open('/attendance/live-report', '_blank')}
+            style={{
+              ...styles.btnPrimary,
+              padding: '10px 20px',
+              borderRadius: 10,
+            }}
+          >
+            📊 View Live Dashboard
+          </button>
         </div>
 
         {isTodayStopped && (

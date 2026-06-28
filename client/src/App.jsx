@@ -216,6 +216,7 @@ import FrameVerification from './attendancemodule/FrameVerification';
 import AcquisitionControl from './attendancemodule/AcquisitionControl';
 import UnknownFaces from './attendancemodule/UnknownFaces';
 import SchedulerPage from './attendancemodule/SchedulerPage';
+import LiveReportPage from './attendancemodule/LiveReportPage';
 import RecordStream from './attendancemodule/RecordStream';
 
 import AMSDashboard from './attendancemodule/AMSDashboard';
@@ -688,6 +689,7 @@ function App() {
           <Route path="gpu" element={<GpuMetrics />} />
           <Route path="dept-menu-config" element={<DeptMenuConfig />} />
           <Route path="scheduler" element={<SchedulerPage />} />
+          <Route path="live-report" element={<LiveReportPage />} />
           <Route path="view-mldata" element={<MLDataFolder />} />
         </Route>
 
