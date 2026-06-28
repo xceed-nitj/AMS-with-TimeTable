@@ -30,6 +30,10 @@ from clustering_routes   import router as cluster_router
 from ground_truth_routes import router as gt_router
 from rtsp_routes         import router as rtsp_router
 
+# ADDED — new router for /run-attendance-rtsp-tracked (live DeepSort-tracked
+# attendance against the FAISS index). Does not replace rtsp_router above.
+from tracked_routes      import router as tracked_router
+
 LOG_BUFFER = deque(maxlen=int(os.environ.get("ML_LOG_BUFFER_LINES", "500")))
 LOG_LOCK = threading.Lock()
 LOG_FORMATTER = logging.Formatter()
@@ -110,51 +114,6 @@ def load_model(det_size: int = INSIGHTFACE_DET_SIZE):
     logger.info("Model loaded.")
 
 
-def load_liveness_model():
-    """
-    Optional: load a dedicated ONNX liveness/anti-spoofing classifier
-    (e.g. MiniFASNet) if a model file is present.
-
-    Looks for the path in LIVENESS_MODEL_PATH env var, falling back to
-    python-ml-service/models/liveness.onnx. If nothing is found, this is
-    NOT an error — clustering_service.py falls back to the always-available
-    heuristic scorer in face_utils.compute_liveness_score(), so liveness
-    checking still works, just with lower accuracy than a trained model.
-
-    See python-ml-service/README_LIVENESS.md for where to download a
-    compatible model (MiniFASNet ONNX export, 3-class softmax: live /
-    print-attack / replay-attack) and drop it in.
-    """
-    model_path = os.environ.get(
-        "LIVENESS_MODEL_PATH",
-        os.path.join(BASE_DIR, "models", "liveness.onnx"),
-    )
-    if not os.path.exists(model_path):
-        logger.info(
-            f"[Liveness] No ONNX model found at {model_path} — "
-            f"using heuristic anti-spoofing fallback (see README_LIVENESS.md "
-            f"to enable the higher-accuracy model)."
-        )
-        state.liveness_session = None
-        state.liveness_input_name = None
-        return
-
-    try:
-        import onnxruntime as ort
-        state.liveness_session = ort.InferenceSession(
-            model_path, providers=["CPUExecutionProvider"]
-        )
-        state.liveness_input_name = state.liveness_session.get_inputs()[0].name
-        logger.info(f"[Liveness] Loaded ONNX anti-spoofing model from {model_path}")
-    except Exception as e:
-        logger.warning(
-            f"[Liveness] Failed to load {model_path}: {e} — "
-            f"falling back to heuristic anti-spoofing."
-        )
-        state.liveness_session = None
-        state.liveness_input_name = None
-
-
 def _migrate_folder(old_path, new_path, label):
     """One-time move of a data folder from its old location to server/ml-data/."""
     import shutil
@@ -185,6 +144,32 @@ def load_embeddings():
     else:
         logger.warning("No embeddings_db.pkl found — run /build-embeddings to enroll students.")
 
+# ADDED — FAISS index loader for tracked_routes.py.
+FAISS_INDEX_PATH = os.path.join(ROOT_DIR, "server", "ml-data", "embeddings", "faiss.index")
+FAISS_DB_PATH    = os.path.join(ROOT_DIR, "server", "ml-data", "embeddings", "metadata.db")
+
+
+def load_faiss_index():
+    if not os.path.exists(FAISS_INDEX_PATH) or not os.path.exists(FAISS_DB_PATH):
+        logger.warning(
+            "No FAISS index found at %s — run Generate_embeddings.py first if "
+            "you want to use /run-attendance-rtsp-tracked.", FAISS_INDEX_PATH
+        )
+        return
+
+    import faiss
+    import sqlite3
+
+    state.faiss_index = faiss.read_index(FAISS_INDEX_PATH)
+
+    with sqlite3.connect(FAISS_DB_PATH) as conn:
+        rows = conn.execute("SELECT vector_id, roll FROM embeddings").fetchall()
+    state.vid_to_roll = {vid: roll for vid, roll in rows}
+
+    logger.info(
+        f"Loaded FAISS index: {state.faiss_index.ntotal} vectors, "
+        f"{len(set(state.vid_to_roll.values()))} students."
+    )
 
 # ─── Lifespan ─────────────────────────────────────────────────────────────────
 
@@ -216,6 +201,10 @@ app.include_router(cluster_router)
 app.include_router(gt_router)
 # app.include_router(rtsp_router)
 app.include_router(rtsp_router)
+
+# ADDED — register the new tracked-attendance router and load the FAISS
+app.include_router(tracked_router)
+load_faiss_index()
 
 # Serve ground-truth photos as static files
 if os.path.exists(CLIENT_GROUND_TRUTH):

@@ -11,3 +11,5 @@ filelock
  
  
  
+faiss-cpu==1.8.0
+deep-sort-realtime==1.3.2
