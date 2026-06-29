@@ -30,6 +30,10 @@ from clustering_routes   import router as cluster_router
 from ground_truth_routes import router as gt_router
 from rtsp_routes         import router as rtsp_router
 
+# ADDED — new router for /run-attendance-rtsp-tracked (live DeepSort-tracked
+# attendance against the FAISS index). Does not replace rtsp_router above.
+from tracked_routes      import router as tracked_router
+
 LOG_BUFFER = deque(maxlen=int(os.environ.get("ML_LOG_BUFFER_LINES", "500")))
 LOG_LOCK = threading.Lock()
 LOG_FORMATTER = logging.Formatter()
@@ -185,6 +189,32 @@ def load_embeddings():
     else:
         logger.warning("No embeddings_db.pkl found — run /build-embeddings to enroll students.")
 
+# ADDED — FAISS index loader for tracked_routes.py.
+FAISS_INDEX_PATH = os.path.join(ROOT_DIR, "server", "ml-data", "embeddings", "faiss.index")
+FAISS_DB_PATH    = os.path.join(ROOT_DIR, "server", "ml-data", "embeddings", "metadata.db")
+
+
+def load_faiss_index():
+    if not os.path.exists(FAISS_INDEX_PATH) or not os.path.exists(FAISS_DB_PATH):
+        logger.warning(
+            "No FAISS index found at %s — run Generate_embeddings.py first if "
+            "you want to use /run-attendance-rtsp-tracked.", FAISS_INDEX_PATH
+        )
+        return
+
+    import faiss
+    import sqlite3
+
+    state.faiss_index = faiss.read_index(FAISS_INDEX_PATH)
+
+    with sqlite3.connect(FAISS_DB_PATH) as conn:
+        rows = conn.execute("SELECT vector_id, roll FROM embeddings").fetchall()
+    state.vid_to_roll = {vid: roll for vid, roll in rows}
+
+    logger.info(
+        f"Loaded FAISS index: {state.faiss_index.ntotal} vectors, "
+        f"{len(set(state.vid_to_roll.values()))} students."
+    )
 
 # ─── Lifespan ─────────────────────────────────────────────────────────────────
 
@@ -216,6 +246,10 @@ app.include_router(cluster_router)
 app.include_router(gt_router)
 # app.include_router(rtsp_router)
 app.include_router(rtsp_router)
+
+# ADDED — register the new tracked-attendance router and load the FAISS
+app.include_router(tracked_router)
+load_faiss_index()
 
 # Serve ground-truth photos as static files
 if os.path.exists(CLIENT_GROUND_TRUTH):

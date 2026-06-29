@@ -47,3 +47,14 @@ liveness_config = {
     "save_rejected_crops":   True,   # write rejected crops to ml-data/liveness_rejected/
 }
 liveness_config_lock = threading.Lock()  # guards reads/writes to the dict above
+
+# faiss.Index instance holding every enrolled student's embedding vector(s),
+# built by Generate_embeddings.py. None until that script has been run and
+# ml_service.py has loaded its output.
+faiss_index = None
+
+# Maps a FAISS vector row id (int) -> roll number (str). Built from
+# metadata.db (written by Generate_embeddings.py) so
+# faiss_utils._recognize_face()/_topk_roll_scores() can translate a
+# similarity-search hit back into a roll number.
+vid_to_roll: dict = {}

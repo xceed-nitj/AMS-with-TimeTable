@@ -121,3 +121,16 @@ class TestPipelineRequest(BaseModel):
     ground_truth_file: str = ""
     threshold: float = 0.45
     frame_skip: int = 3
+
+class RTSPTrackedAttendanceRequest(BaseModel):
+    rtspUrl:          str
+    frameSkip:        int   = 5
+    durationSec:      int   = 0      # 0 = no auto-stop; caller hits /stop-rtsp-stream
+    recogThreshold:   float = 0.35
+    iouMin:           float = 0.30
+    driftThresholdPx: float = 40.0
+    trackExpirySec:   float = 30.0
+    # Roster for this specific session — used only to flag in_roster:true/false
+    # on "marked" events. Recognition itself always searches the FULL FAISS
+    # index (all departments), matching tracked_routes.py's existing docstring.
+    enrolledRollNos:  List[str] = []

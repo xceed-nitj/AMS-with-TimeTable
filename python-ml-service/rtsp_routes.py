@@ -27,6 +27,7 @@ from clustering_service import (
     _detect_faces_tiled, _build_ui_mask,
     reset_liveness_rejection_count, get_liveness_rejection_count,
 )
+from clustering_service import _detect_faces_tiled, _build_ui_mask
 
 logger = logging.getLogger("ml_service.rtsp_routes")
 router = APIRouter()
@@ -122,11 +123,29 @@ class _RTSPReader:
         self._cap.release()
 
 
+# def _open_capture(rtsp_url: str) -> cv2.VideoCapture:
+#     url = rtsp_url if "rtsp_transport" in rtsp_url else rtsp_url + "?rtsp_transport=tcp"
+#     # Force FFmpeg to use 1 decode thread — the default multi-thread
+#     # decode spawns internal pthreads that race on macOS ARM64 and
+#     # trigger a SIGSEGV inside av_read_frame.
+#     os.environ.setdefault("OPENCV_FFMPEG_CAPTURE_OPTIONS",
+#                           "threads;1|rtsp_transport;tcp")
+#     cap = cv2.VideoCapture(url, cv2.CAP_FFMPEG)
+#     cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+#     return cap
+
+
 def _open_capture(rtsp_url: str) -> cv2.VideoCapture:
     url = rtsp_url if "rtsp_transport" in rtsp_url else rtsp_url + "?rtsp_transport=tcp"
     # Force FFmpeg to use 1 decode thread — the default multi-thread
     # decode spawns internal pthreads that race on macOS ARM64 and
     # trigger a SIGSEGV inside av_read_frame.
+
+    is_file = rtsp_url.startswith("/") or rtsp_url.startswith("./")
+    if is_file:
+        url = rtsp_url
+    else:
+        url = rtsp_url if "rtsp_transport" in rtsp_url else rtsp_url + "?rtsp_transport=tcp"
     os.environ.setdefault("OPENCV_FFMPEG_CAPTURE_OPTIONS",
                           "threads;1|rtsp_transport;tcp")
     cap = cv2.VideoCapture(url, cv2.CAP_FFMPEG)
