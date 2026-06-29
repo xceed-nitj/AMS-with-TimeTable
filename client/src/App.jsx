@@ -213,7 +213,6 @@ import EmbeddingGeneration from './attendancemodule/EmbeddingGeneration';
 import Camera from './attendancemodule/camera';
 import CameraPreview from './attendancemodule/cameraPreview';
 import FrameVerification from './attendancemodule/FrameVerification';
-import AcquisitionControl from './attendancemodule/AcquisitionControl';
 import UnknownFaces from './attendancemodule/UnknownFaces';
 import SchedulerPage from './attendancemodule/SchedulerPage';
 import LiveReportPage from './attendancemodule/LiveReportPage';
@@ -685,7 +684,7 @@ function App() {
           <Route path="frame-verification" element={<FrameVerification />} />
           <Route path="confidence" element={<ConfidenceMonitor />} />
           <Route path="ml-fine-tuning" element={<MLFineTuning />} />
-          <Route path="acquisition-control" element={<AcquisitionControl />} />
+          <Route path="acquisition-control" element={<SchedulerPage />} />
           <Route path="gpu" element={<GpuMetrics />} />
           <Route path="dept-menu-config" element={<DeptMenuConfig />} />
           <Route path="scheduler" element={<SchedulerPage />} />

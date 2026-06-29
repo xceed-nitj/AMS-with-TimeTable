@@ -22,6 +22,8 @@ const studentAttendanceSchema = new Schema({
     genderMismatch:  { type: Boolean, default: false },  // true if detectedGender != Student.gender
     // logic merge: if multiple time slots
     finalStatus:     { type: String, enum: ['P', 'A', 'R'], default: 'A' },
+    // ERP override: set to true when ERP system changes a student's finalStatus
+    isOverridden:    { type: Boolean, default: false },
 }, { _id: false });
 
 // Per-time-slot sub-document (matches notebook: 8:45, 9:00, 9:15 columns)

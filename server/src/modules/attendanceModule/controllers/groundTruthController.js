@@ -5,9 +5,10 @@ const fs         = require('fs');
 const fsPromises = require('fs').promises;
 const axios      = require('axios');
 
-const LockSem  = require('../../../models/locksem');
-const TimeTable = require('../../../models/timetable');
-const AddSem    = require('../../../models/addsem');
+const LockSem             = require('../../../models/locksem');
+const TimeTable           = require('../../../models/timetable');
+const AddSem              = require('../../../models/addsem');
+const AcquisitionControl  = require('../../../models/acquisitionControl');
 const {
     updateStudentEmbedding: syncUpdateStudentEmbedding,
     buildBatchEmbeddingsPkl,
@@ -700,19 +701,22 @@ try {
             // ── STEP 5 : run ML face recognition ────────────────────────────
             const videoPath = videoLink.trim().replace(/^["']+|["']+$/g, '').trim();
 
+            const acqConfig = await AcquisitionControl.findOne({ profileName: 'default' }).lean();
+            const t = acqConfig?.attendanceThresholds || {};
+
             const mlResp = await axios.post(
                 `${ML_SERVICE_URL}/process-video-with-rolllist`,
                 {
                     videoPath,
-                    threshold:              0.45,
+                    threshold:              t.threshold              ?? 0.45,
                     frame_skip:             10,
                     roll_list:              [],
-                    auto_present_threshold: 0.6,
-                    review_threshold:       0.4,
-                    min_detections:         3,
+                    auto_present_threshold: t.auto_present_threshold ?? 0.60,
+                    review_threshold:       t.review_threshold       ?? 0.40,
+                    min_detections:         t.min_detections         ?? 3,
                     batch_name:             batch,
                     auto_enroll:            true,
-                    auto_enroll_threshold:  0.6,
+                    auto_enroll_threshold:  t.auto_enroll_threshold  ?? 0.75,
                     max_gt_images:          10,
                 },
                 { timeout: 600000 }

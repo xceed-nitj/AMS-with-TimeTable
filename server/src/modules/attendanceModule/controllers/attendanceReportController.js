@@ -395,13 +395,13 @@ class AttendanceReportController {
     }
   }
 
-  // Update final status of a student manually
+  // Update final status of a student (called by ERP system or manually)
   // PATCH /attendancemodule/reports/:id/student/:rollNo
-  // Body: { finalStatus: 'P' | 'A' | 'R' }
+  // Body: { finalStatus: 'P' | 'A' | 'R', isOverridden?: boolean }
   async updateStudentStatus(req, res) {
     try {
       const { id, rollNo } = req.params;
-      const { finalStatus } = req.body;
+      const { finalStatus, isOverridden } = req.body;
 
       if (!["P", "A", "R"].includes(finalStatus)) {
         return res
@@ -411,17 +411,17 @@ class AttendanceReportController {
 
       const report = await AttendanceReport.findById(id);
       if (!report) return res.status(404).json({ error: "Report not found" });
-      if (report.status === "finalized") {
-        return res
-          .status(400)
-          .json({ error: "Cannot edit a finalized report" });
-      }
 
       const student = report.finalReport.find((s) => s.rollNo === rollNo);
       if (!student)
         return res.status(404).json({ error: "Student not found in report" });
 
       student.finalStatus = finalStatus;
+      if (isOverridden !== undefined) {
+        student.isOverridden = Boolean(isOverridden);
+      } else {
+        student.isOverridden = true;
+      }
       report.summary = buildSummary(report.finalReport);
       await report.save();
 

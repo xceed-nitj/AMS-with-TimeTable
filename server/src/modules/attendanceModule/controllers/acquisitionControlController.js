@@ -229,3 +229,32 @@ exports.deleteExtraClass = async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 };
+
+// ── GET /acquisitioncontrol/attendance-thresholds ────────────────────────────
+exports.getAttendanceThresholds = async (req, res) => {
+  try {
+    const doc = await getOrCreateDefault();
+    res.json(doc.attendanceThresholds);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+};
+
+// ── PATCH /acquisitioncontrol/attendance-thresholds ──────────────────────────
+exports.updateAttendanceThresholds = async (req, res) => {
+  try {
+    const doc = await getOrCreateDefault();
+    const allowed = [
+      'threshold', 'auto_present_threshold', 'review_threshold',
+      'min_detections', 'auto_enroll_threshold', 'alert_confidence',
+    ];
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) doc.attendanceThresholds[key] = Number(req.body[key]);
+    }
+    doc.markModified('attendanceThresholds');
+    await doc.save();
+    res.json(doc.attendanceThresholds);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+};

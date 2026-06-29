@@ -1,6 +1,6 @@
 // client/src/attendancemodule/AMSDashboard.jsx
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -13,8 +13,17 @@ import { MLDataFolder } from './MLDataFolder';
 import { createPortal } from "react-dom";
 import { useRef } from "react";
 
-const apiUrl     = getEnvironment();
-const CAM_API    = `${apiUrl}/attendancemodule/cameras`;
+const apiUrl          = getEnvironment();
+const CAM_API         = `${apiUrl}/attendancemodule/cameras`;
+const LIVE_STATUS_API = `${apiUrl}/attendancemodule/scheduler/live-status`;
+const NOTIF_API       = `${apiUrl}/attendancemodule/settings/notifications`;
+
+const SLOT_LABELS = {
+  period1: 'Period 1 — 08:30', period2: 'Period 2 — 09:30',
+  period3: 'Period 3 — 10:30', period4: 'Period 4 — 11:30',
+  period5: 'Period 5 — 13:30', period6: 'Period 6 — 14:30',
+  period7: 'Period 7 — 15:30', period8: 'Period 8 — 16:30',
+};
 const REPORT_API = `${apiUrl}/attendancemodule/reports`;
 const USER_API   = `${apiUrl}/user/getuser`;
 const ML_DATA_API   = `${apiUrl}/attendancemodule/mldatafoldertree`;
@@ -98,6 +107,92 @@ function StatCard({ label, value, color, loading, delay = 0, suffix = '' }) {
         textTransform: 'uppercase', letterSpacing: '.07em', fontWeight: 700,
       }}>
         {label}
+      </div>
+    </div>
+  );
+}
+
+/* ── live report panel ── */
+function LivePanel({ rooms, loading, open, acquisitionActive, slot, date, lastUpdated, onRefresh, onViewFull }) {
+  return (
+    <div style={{
+      overflow: 'hidden',
+      maxHeight: open ? 600 : 0,
+      opacity: open ? 1 : 0,
+      transition: 'max-height .28s ease, opacity .2s ease',
+      marginTop: open ? 8 : 0,
+    }}>
+      <div style={{
+        background: T.surface, border: `1px solid ${T.border}`,
+        borderRadius: 12, overflow: 'hidden',
+        boxShadow: '0 4px 20px rgba(26,31,60,0.10)',
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', borderBottom: `1px solid ${T.border}`, background: T.surfaceAlt, flexWrap: 'wrap', gap: 8 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: T.text }}>
+            {slot && date ? `${SLOT_LABELS[slot] || slot} — ${date}` : <span style={{ color: T.textMuted }}>No active period</span>}
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <span style={{ fontSize: 11, color: T.textMuted }}>Updated: {lastUpdated || '—'}</span>
+            <button onClick={onRefresh} style={{ fontSize: 11, padding: '3px 9px', borderRadius: 6, background: T.indigoDim, color: T.indigo, border: `1px solid ${T.indigo}30`, cursor: 'pointer', fontFamily: T.fontBody, fontWeight: 700 }}>↻</button>
+            <button onClick={onViewFull} style={{ fontSize: 11, padding: '3px 9px', borderRadius: 6, background: T.emeraldDim, color: T.emerald, border: `1px solid ${T.emerald}30`, cursor: 'pointer', fontFamily: T.fontBody, fontWeight: 700 }}>Full Report →</button>
+          </div>
+        </div>
+
+        {!acquisitionActive && (
+          <div style={{ padding: '8px 16px', fontSize: 12, color: T.red, background: 'rgba(239,68,68,0.06)', borderBottom: `1px solid ${T.border}` }}>
+            ⚠ Global Acquisition is OFF — no new ML runs will execute.
+          </div>
+        )}
+
+        <div style={{ maxHeight: 340, overflowY: 'auto', padding: 14 }}>
+          {loading ? (
+            <div style={{ padding: 18, fontSize: 12, color: T.textMuted, textAlign: 'center' }}>Loading…</div>
+          ) : rooms.length === 0 ? (
+            <div style={{ padding: 18, fontSize: 12, color: T.textMuted, textAlign: 'center' }}>
+              {slot ? 'No classrooms found for this period.' : 'No active lecture period at this time.'}
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 10 }}>
+              {rooms.map((r, i) => {
+                const isSkipped  = r.status === 'skipped';
+                const hasCtx     = !!r.ctx;
+                const isComplete = hasCtx && r.runsCompleted >= r.targetRuns;
+                const isDone     = r.status === 'finalized' || isComplete;
+                const color      = isSkipped ? T.textMuted : isDone ? T.emerald : T.indigo;
+                const pct        = r.lastRecord ? r.lastRecord.attendancePct : 0;
+                return (
+                  <div key={i} style={{ border: `1px solid ${color}28`, borderTop: `2px solid ${color}`, borderRadius: 10, padding: '12px 14px', background: T.surface }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                      <div style={{ fontWeight: 700, fontSize: 13, color: T.text }}>{r.room}</div>
+                      <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 99, fontWeight: 700, background: `${color}18`, color, textTransform: 'uppercase', flexShrink: 0 }}>
+                        {isSkipped ? 'Skip' : isDone ? 'Done' : 'Live'}
+                      </span>
+                    </div>
+                    {isSkipped ? (
+                      <div style={{ fontSize: 11, color: T.red }}>{r.reason || 'No Class Scheduled'}</div>
+                    ) : hasCtx ? (
+                      <>
+                        <div style={{ fontSize: 11, color: T.textMuted, marginBottom: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.ctx.subject}</div>
+                        {r.lastRecord && (
+                          <div style={{ fontSize: 11, display: 'flex', gap: 8, marginBottom: 6 }}>
+                            <span style={{ color: T.emerald }}>P: {r.lastRecord.present}</span>
+                            <span style={{ color: T.red }}>A: {r.lastRecord.absent}</span>
+                            <span style={{ fontWeight: 700, color: T.text }}>{pct}%</span>
+                          </div>
+                        )}
+                        <div style={{ width: '100%', height: 3, background: T.border, borderRadius: 2, overflow: 'hidden' }}>
+                          <div style={{ width: `${Math.min(100, (r.runsCompleted / (r.targetRuns || 1)) * 100)}%`, height: '100%', background: color, transition: 'width .3s' }} />
+                        </div>
+                      </>
+                    ) : (
+                      <div style={{ fontSize: 11, color: T.textMuted }}>Initializing…</div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -317,6 +412,9 @@ export default function AMSDashboard() {
   const [userRoles,   setUserRoles] = useState([]);
   const [chartData,   setChartData] = useState(null);
   const [camOpen,     setCamOpen]   = useState(false);
+  const [liveRooms,      setLiveRooms]      = useState([]);
+  const [liveAcqActive,  setLiveAcqActive]  = useState(true);
+  const [notifEnabled,   setNotifEnabled]   = useState(null);
   const [showML, setShowML] = useState(false);
   const [mlFolderLoad, setMLFolderLoad] = useState(true);
   const [mlFoldertree, setMlFolderTree] = useState({});
@@ -377,6 +475,29 @@ export default function AMSDashboard() {
       .finally(() => setCamLoad(false));
   }, []);
 
+  const fetchLiveStatus = useCallback(async () => {
+    try {
+      const res  = await fetch(`${LIVE_STATUS_API}?_t=${Date.now()}`, { cache: 'no-store', credentials: 'include' });
+      if (!res.ok) return;
+      const data = await res.json();
+      setLiveRooms(data.rooms || []);
+      setLiveAcqActive(data.acquisitionActive !== false);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    fetchLiveStatus();
+    const id = setInterval(fetchLiveStatus, 15000);
+    return () => clearInterval(id);
+  }, [fetchLiveStatus]);
+
+  useEffect(() => {
+    fetch(NOTIF_API, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.settings) setNotifEnabled(d.settings.enabled !== false); })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     fetch(`${REPORT_API}/stats`, { credentials: 'include' })
       .then(r => r.ok ? r.json() : null)
@@ -401,20 +522,79 @@ export default function AMSDashboard() {
 
         {/* ── Header ── */}
         <div style={{ marginBottom: camOpen ? 0 : 24, animation: 'fadeUp .4s ease both' }}>
-          <div style={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            flexWrap: 'wrap', gap: 12,
-          }}>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 'clamp(17px,2.5vw,22px)', letterSpacing: '-0.03em', marginBottom: 3, color: T.text }}>
+          <div>
+            {/* Row 1: title + status chips + icon buttons */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <div style={{ fontWeight: 700, fontSize: 'clamp(17px,2.5vw,22px)', letterSpacing: '-0.03em', color: T.text }}>
                 Attendance Management
               </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {/* Acquisition status chip */}
+                <button
+                  onClick={() => navigate('/attendance/acquisition-control')}
+                  title="Acquisition Control — click to manage"
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0,
+                    background: T.surface, border: `1px solid ${liveAcqActive ? T.emerald + '55' : T.red + '55'}`,
+                    borderRadius: 8, padding: '4px 10px',
+                    cursor: 'pointer', fontFamily: T.fontBody,
+                  }}
+                >
+                  <Dot color={liveAcqActive ? T.emerald : T.red} blink={liveAcqActive} />
+                  <span style={{ fontSize: 11, fontWeight: 600, color: liveAcqActive ? T.emerald : T.red }}>
+                    Acq {liveAcqActive ? 'ON' : 'OFF'}
+                  </span>
+                </button>
+
+                {/* Email notification status chip */}
+                {notifEnabled !== null && (
+                  <button
+                    onClick={() => navigate('/attendance/edit-session-dates')}
+                    title="Email Notifications — click to manage"
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0,
+                      background: T.surface, border: `1px solid ${notifEnabled ? T.sky + '55' : T.textMuted + '35'}`,
+                      borderRadius: 8, padding: '4px 10px',
+                      cursor: 'pointer', fontFamily: T.fontBody,
+                    }}
+                  >
+                    <Dot color={notifEnabled ? T.sky : T.textMuted} />
+                    <span style={{ fontSize: 11, fontWeight: 600, color: notifEnabled ? T.sky : T.textMuted }}>
+                      Email {notifEnabled ? 'ON' : 'OFF'}
+                    </span>
+                  </button>
+                )}
+
+                {/* separator */}
+                <div style={{ width: 1, height: 20, background: T.border, flexShrink: 0 }} />
+
+                <IconNavButton title="Acquisition Control" onClick={() => navigate('/attendance/acquisition-control')}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={T.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+                  </svg>
+                </IconNavButton>
+                <IconNavButton title="ML Fine Tuning" onClick={() => navigate('/attendance/ml-fine-tuning')}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={T.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="4" y1="21" x2="4" y2="14" /><line x1="4" y1="10" x2="4" y2="3" />
+                    <line x1="12" y1="21" x2="12" y2="12" /><line x1="12" y1="8" x2="12" y2="3" />
+                    <line x1="20" y1="21" x2="20" y2="16" /><line x1="20" y1="12" x2="20" y2="3" />
+                    <line x1="1" y1="14" x2="7" y2="14" /><line x1="9" y1="8" x2="15" y2="8" /><line x1="17" y1="16" x2="23" y2="16" />
+                  </svg>
+                </IconNavButton>
+                <IconNavButton title="Session Setup" onClick={() => navigate('/attendance/edit-session-dates')}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={T.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                  </svg>
+                </IconNavButton>
+              </div>
+            </div>
+            {/* Row 2: subtitle + badge buttons */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
               <div style={{ fontSize: 12, color: T.textMuted }}>
                 {userRoles.length > 0 ? userRoles.join(' · ') : 'Attendance Management System'}
               </div>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <HealthDashboard />
             <div>
               <button ref={mlBtnRef} onClick={handleMLClick}
@@ -570,6 +750,32 @@ export default function AMSDashboard() {
                 )}
             </div>
 
+            {/* live report badge → navigates to live-report page */}
+            <button
+              onClick={() => navigate('/attendance/live-report')}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0,
+                background: T.surface,
+                border: `1px solid ${liveRooms.filter(r => r.status !== 'skipped').length > 0 ? '#22c55e80' : T.border}`,
+                borderRadius: 9, padding: '7px 13px',
+                boxShadow: '0 1px 4px rgba(26,31,60,0.06)',
+                cursor: 'pointer', fontFamily: T.fontBody,
+                transition: 'border-color .15s',
+              }}
+            >
+              {liveRooms.filter(r => r.status !== 'skipped').length > 0 ? (
+                <>
+                  <Dot color="#22c55e" blink />
+                  <span style={{ fontSize: 12, fontWeight: 600, color: T.text }}>
+                    <span style={{ color: '#22c55e' }}>{liveRooms.filter(r => r.status !== 'skipped').length}</span>
+                    <span style={{ color: T.textMuted }}> live</span>
+                  </span>
+                </>
+              ) : (
+                <span style={{ fontSize: 12, color: T.textMuted }}>No active session</span>
+              )}
+            </button>
+
             {/* camera toggle badge */}
             <button
               onClick={() => setCamOpen(o => !o)}
@@ -602,35 +808,7 @@ export default function AMSDashboard() {
               }}>▾</span>
             </button>
 
-            {/* tools button → Acquisition Control */}
-            <IconNavButton title="Acquisition Control" onClick={() => navigate('/attendance/acquisition-control')}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={T.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
-              </svg>
-            </IconNavButton>
-
-            {/* ML Fine Tuning button */}
-            <IconNavButton title="ML Fine Tuning" onClick={() => navigate('/attendance/ml-fine-tuning')}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={T.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="4" y1="21" x2="4" y2="14" />
-                <line x1="4" y1="10" x2="4" y2="3" />
-                <line x1="12" y1="21" x2="12" y2="12" />
-                <line x1="12" y1="8" x2="12" y2="3" />
-                <line x1="20" y1="21" x2="20" y2="16" />
-                <line x1="20" y1="12" x2="20" y2="3" />
-                <line x1="1" y1="14" x2="7" y2="14" />
-                <line x1="9" y1="8" x2="15" y2="8" />
-                <line x1="17" y1="16" x2="23" y2="16" />
-              </svg>
-            </IconNavButton>
-
-            {/* settings button */}
-            <IconNavButton title="Session Setup" onClick={() => navigate('/attendance/edit-session-dates')}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={T.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="3" />
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-              </svg>
-            </IconNavButton>
+              </div>
             </div>
           </div>
 

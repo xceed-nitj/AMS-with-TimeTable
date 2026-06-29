@@ -8,6 +8,7 @@ const path = require('path');
 const axios = require('axios');
 
 const AcquisitionControl = require('../../../models/acquisitionControl');
+const Allotment = require('../../../models/allotment');
 const LockSem = require('../../../models/locksem');
 const TimeTable = require('../../../models/timetable');
 const Camera = require('../../../models/attendanceModule/camera');
@@ -38,6 +39,12 @@ function currentSession() {
   const month = now.getMonth() + 1;
   const start = month >= 8 ? year : year - 1;
   return `${start}-${String(start + 1).slice(2)}`;
+}
+
+function timeStrToMin(t) {
+  if (!t) return 0;
+  const [h, m] = (t || '').split(':').map(Number);
+  return (h || 0) * 60 + (m || 0);
 }
 
 // ── Step: resolve slot context for a room (LockSem primary, ExtraClass fallback) ──
@@ -220,6 +227,11 @@ async function runRoom({ room, roomOverride, slot, date, config }) {
   if ((config.stoppedDays || []).includes(date)) {
     return { room, status: 'skipped', reason: 'Stopped Day', log };
   }
+  const allotmentEntry = await Allotment.findOne({ 'nonWorkingDays.date': date }).lean();
+  if (allotmentEntry) {
+    const nwd = allotmentEntry.nonWorkingDays.find(d => d.date === date);
+    return { room, status: 'skipped', reason: `Non-working day: ${nwd?.remark || 'Holiday'}`, log };
+  }
   if (roomOverride && roomOverride.enabled === false) {
     return { room, status: 'skipped', reason: 'Room disabled', log };
   }
@@ -253,12 +265,15 @@ async function runRoom({ room, roomOverride, slot, date, config }) {
   }
   push(`Embeddings found: ${pkl.filename}`);
 
- // 5. Run settings — now actually used (was previously computed and ignored)
+ // 5. Run settings — use global params; interval computed from period timing (like auto-scheduler)
   const periodCfg = (config.periods || []).find((p) => p.periodKey === slot) || {};
-  const numRuns = periodCfg.numRuns ?? config.globalNumRuns ?? 1;
-  const runDurationSec = periodCfg.runDurationSec ?? config.globalRunDurationSec ?? 120;
-  const checkIntervalMin = periodCfg.checkIntervalMin ?? config.globalCheckIntervalMin ?? 5;
-  const presentLogic = periodCfg.presentLogic ?? config.globalPresentLogic ?? 'majority';
+  const numRuns = config.globalNumRuns ?? 1;
+  const runDurationSec = config.globalRunDurationSec ?? 120;
+  const presentLogic = config.globalPresentLogic ?? 'majority';
+  const startMin = timeStrToMin(periodCfg.startTime);
+  const endMin   = timeStrToMin(periodCfg.endTime);
+  const periodDurationMin = endMin > startMin ? endMin - startMin : 50;
+  const checkIntervalMin = numRuns > 1 ? Math.max(1, Math.floor(periodDurationMin / numRuns)) : 0;
 
   // 6. Call Python ML service — numRuns times, checkIntervalMin apart
   push(`Plan: ${numRuns} run(s), ${runDurationSec}s each, ${checkIntervalMin}min apart, logic=${presentLogic}`);
@@ -457,12 +472,17 @@ exports.preview = async (req, res) => {
 
     const enabledRooms = await getEnabledRooms(config);
 
+    const isStopped = (config.stoppedDays || []).includes(date);
+    const allotEntry = await Allotment.findOne({ 'nonWorkingDays.date': date }).lean();
+    const nwdRemark = allotEntry
+      ? (allotEntry.nonWorkingDays.find(d => d.date === date)?.remark || 'Holiday')
+      : null;
+
     const rooms = await Promise.all(
       enabledRooms.map(async (roomOverride) => {
         const room = roomOverride.room;
-        if ((config.stoppedDays || []).includes(date)) {
-          return { room, status: 'skipped', reason: 'Stopped Day' };
-        }
+        if (isStopped) return { room, status: 'skipped', reason: 'Stopped Day' };
+        if (nwdRemark) return { room, status: 'skipped', reason: `Non-working day: ${nwdRemark}` };
         const ctx = await resolveRoomContext(room, slot, date, config);
         if (!ctx) return { room, status: 'skipped', reason: 'No Class Scheduled' };
         const cameras = await resolveCameras(room, roomOverride);
@@ -486,7 +506,7 @@ exports.preview = async (req, res) => {
 
 // ── GET /attendancemodule/scheduler/live-status ────────────────────────────
 // Fetch real-time progress for classrooms without triggering ML runs.
-// Used by the Live Report page.
+// Includes camera status, working day flag, and all configured periods.
 exports.liveStatus = async (req, res) => {
   try {
     const config = await AcquisitionControl.findOne({ profileName: 'default' }).lean();
@@ -494,32 +514,40 @@ exports.liveStatus = async (req, res) => {
 
     let { slot } = req.query;
     let date = req.query.date;
+    if (!date) date = todayStr();
 
-    if (!date) {
-      date = todayStr();
-    }
+    // ── Working day check ──────────────────────────────────────────────────
+    const isStopped = (config.stoppedDays || []).includes(date);
+    const allotEntry = await Allotment.findOne({ 'nonWorkingDays.date': date }).lean();
+    const nwd = (allotEntry?.nonWorkingDays || []).find(d => d.date === date);
+    const isWorkingDay = !isStopped && !nwd;
+    const workingDayReason = isStopped
+      ? 'Manually stopped'
+      : nwd ? (nwd.remark || 'Non-working day') : null;
+    const workingDaySource = isStopped ? 'stoppedDays' : nwd ? 'allotment' : null;
 
+    // ── Auto-detect current period ─────────────────────────────────────────
     if (!slot) {
       const now = new Date();
       const currentMinutes = now.getHours() * 60 + now.getMinutes();
-      
       const activePeriod = (config.periods || []).find(p => {
         if (!p.startTime || !p.endTime) return false;
         const [sH, sM] = p.startTime.split(':').map(Number);
         const [eH, eM] = p.endTime.split(':').map(Number);
-        const sMins = sH * 60 + sM;
-        const eMins = eH * 60 + eM;
-          return currentMinutes >= sMins && currentMinutes <= eMins;
+        return currentMinutes >= sH * 60 + sM && currentMinutes <= eH * 60 + eM;
       });
-
       if (activePeriod) {
         slot = activePeriod.periodKey;
       } else {
-        return res.json({ 
-          slot: null, 
-          date, 
-          acquisitionActive: config.active, 
-          rooms: []
+        return res.json({
+          slot: null,
+          date,
+          isWorkingDay,
+          workingDayReason,
+          workingDaySource,
+          acquisitionActive: config.active,
+          periods: config.periods || [],
+          rooms: [],
         });
       }
     }
@@ -528,18 +556,40 @@ exports.liveStatus = async (req, res) => {
     const periodCfg = (config.periods || []).find((p) => p.periodKey === slot) || {};
     const targetRuns = periodCfg.numRuns ?? config.globalNumRuns ?? 1;
 
+    // ── Bulk camera fetch ──────────────────────────────────────────────────
+    const allRoomIds = enabledRooms.map(r => r.room.toUpperCase());
+    const allCameras = await Camera.find({ roomId: { $in: allRoomIds } }).lean();
+    const camerasByRoom = {};
+    for (const c of allCameras) {
+      const rid = (c.roomId || '').toUpperCase();
+      if (!camerasByRoom[rid]) camerasByRoom[rid] = [];
+      camerasByRoom[rid].push(c);
+    }
+
     const rooms = await Promise.all(
       enabledRooms.map(async (roomOverride) => {
         const room = roomOverride.room;
-        if ((config.stoppedDays || []).includes(date)) {
-          return { room, status: 'skipped', reason: 'Stopped Day' };
+
+        // Camera info
+        const cams = camerasByRoom[room.toUpperCase()] || [];
+        const activeCams = cams.filter(c => c.isActive !== false);
+        const onlineCams = activeCams.filter(c => c.status === 'online');
+        const cameraInfo = {
+          total: activeCams.length,
+          online: onlineCams.length,
+          status: activeCams.length === 0 ? 'no_camera' : onlineCams.length > 0 ? 'online' : 'offline',
+        };
+
+        if (!isWorkingDay) {
+          return { room, status: 'skipped', reason: workingDayReason || 'Non-working day', cameraInfo };
         }
+
         const ctx = await resolveRoomContext(room, slot, date, config);
-        if (!ctx) return { room, status: 'skipped', reason: 'No Class Scheduled' };
+        if (!ctx) return { room, status: 'skipped', reason: 'No Class Scheduled', cameraInfo };
 
         // Find report for this batch + date + slot
         const report = await AttendanceReport.findOne({ batch: ctx.batch, date, timeSlot: slot }).lean();
-        
+
         let runsCompleted = 0;
         let lastRecord = null;
         let reportStatus = 'pending';
@@ -549,7 +599,7 @@ exports.liveStatus = async (req, res) => {
           runsCompleted = (report.slotResults || []).length;
           reportStatus = report.status || 'draft';
           reportId = report._id;
-          
+
           if (reportStatus === 'draft' && report.slotResults && report.slotResults.length > 0) {
             const lastCheck = report.slotResults[report.slotResults.length - 1].summary;
             lastRecord = lastCheck ? {
@@ -557,7 +607,8 @@ exports.liveStatus = async (req, res) => {
               absent: lastCheck.absent || 0,
               review: lastCheck.review || 0,
               totalStudents: lastCheck.total || 0,
-              attendancePct: lastCheck.total > 0 ? Math.round(((lastCheck.present || 0) / lastCheck.total) * 100) : 0
+              attendancePct: lastCheck.total > 0
+                ? Math.round(((lastCheck.present || 0) / lastCheck.total) * 100) : 0,
             } : null;
           } else {
             lastRecord = report.summary || null;
@@ -572,12 +623,69 @@ exports.liveStatus = async (req, res) => {
           ctx,
           reportId,
           lastRecord,
-          reason: null
+          cameraInfo,
+          reason: null,
         };
       })
     );
 
-    res.json({ slot, date, acquisitionActive: config.active, rooms });
+    res.json({
+      slot,
+      date,
+      isWorkingDay,
+      workingDayReason,
+      workingDaySource,
+      acquisitionActive: config.active,
+      periods: config.periods || [],
+      rooms,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// ── GET /attendancemodule/scheduler/working-day?date=YYYY-MM-DD ──────────────
+// Returns whether the given date (defaults to today) is a working day.
+// Checks: (1) AcquisitionControl.stoppedDays (manual), (2) Allotment.nonWorkingDays (institutional).
+exports.workingDayCheck = async (req, res) => {
+  try {
+    const date = req.query.date || todayStr();
+
+    const config = await AcquisitionControl.findOne({ profileName: 'default' }).lean();
+    if (!config) return res.status(404).json({ error: 'Config not found' });
+
+    if ((config.stoppedDays || []).includes(date)) {
+      return res.json({ date, isWorkingDay: false, reason: 'Manually stopped', source: 'stoppedDays', acquisitionActive: config.active });
+    }
+
+    const allotmentEntry = await Allotment.findOne({ 'nonWorkingDays.date': date }).lean();
+    if (allotmentEntry) {
+      const nwd = allotmentEntry.nonWorkingDays.find(d => d.date === date);
+      return res.json({ date, isWorkingDay: false, reason: nwd?.remark || 'Non-working day', source: 'allotment', acquisitionActive: config.active });
+    }
+
+    res.json({ date, isWorkingDay: true, reason: null, source: null, acquisitionActive: config.active });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// ── GET /attendancemodule/scheduler/non-working-days ─────────────────────────
+// All non-working days from the Allotment DB (read-only, institutional calendar).
+exports.nonWorkingDaysList = async (req, res) => {
+  try {
+    const allotments = await Allotment.find(
+      { 'nonWorkingDays.0': { $exists: true } },
+      { nonWorkingDays: 1, session: 1 }
+    ).lean();
+    const days = [];
+    for (const a of allotments) {
+      for (const nwd of (a.nonWorkingDays || [])) {
+        days.push({ date: nwd.date, remark: nwd.remark || '', session: a.session || '' });
+      }
+    }
+    days.sort((a, b) => a.date.localeCompare(b.date));
+    res.json({ days });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
