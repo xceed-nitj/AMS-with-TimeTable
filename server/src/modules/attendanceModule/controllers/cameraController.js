@@ -357,12 +357,12 @@ class CameraController {
         }
     }
     async startRecording(req, res) {
-    const { rtspUrl, label } = req.body;
+    const { rtspUrl, label, format } = req.body;
     if (!rtspUrl || !label)
         return res.status(400).json({ error: 'rtspUrl and label required' });
     try {
         const result = await axios.post(`${ML_URL}/start-recording`,
-            { rtspUrl, label }, { timeout: 10000 });
+            { rtspUrl, label, format }, { timeout: 10000 });
         return res.json(result.data);
     } catch (error) {
         return sendKnownError(res, error);
@@ -433,7 +433,7 @@ async downloadAudio(req, res) {
 //   scheduledDate, startMin, endMin, status, activeRecordingId, timers[] }
 
 scheduleRecording(req, res) {
-    const { rtspUrl, label, period, scheduledDate } = req.body;
+    const { rtspUrl, label, period, scheduledDate, format } = req.body;
     if (!rtspUrl || !label || !period || !scheduledDate)
         return res.status(400).json({ error: 'rtspUrl, label, period and scheduledDate are required' });
 
@@ -461,6 +461,7 @@ scheduleRecording(req, res) {
         startMin: slot.startMin,
         endMin:   slot.endMin,
         status:   'scheduled',
+        format:   format || 'video+audio',
         activeRecordingId: null,
         timers: [],
     };
@@ -485,7 +486,7 @@ scheduleRecording(req, res) {
             const axios = require('axios');
             const ML_URL = process.env.ML_SERVICE_URL || 'http://localhost:8500';
             const result = await axios.post(`${ML_URL}/start-recording`,
-                { rtspUrl, label }, { timeout: 10000 });
+                { rtspUrl, label, format: entry.format }, { timeout: 10000 });
             entry.activeRecordingId = result.data.recordingId;
             entry.status = 'recording';
             console.log(`[RecordScheduler] Auto-started recording for ${label} period=${period} id=${entry.activeRecordingId}`);
@@ -536,6 +537,7 @@ listScheduledRecordings(req, res) {
         startTime: `${String(Math.floor(e.startMin / 60)).padStart(2,'0')}:${String(e.startMin % 60).padStart(2,'0')}`,
         endTime:   `${String(Math.floor(e.endMin / 60)).padStart(2,'0')}:${String(e.endMin % 60).padStart(2,'0')}`,
         status:    e.status,
+        format:    e.format || 'video+audio',
         activeRecordingId: e.activeRecordingId,
     }));
     return res.json(list);

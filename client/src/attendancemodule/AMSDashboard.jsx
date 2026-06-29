@@ -16,8 +16,6 @@ import { useRef } from "react";
 const apiUrl     = getEnvironment();
 const CAM_API    = `${apiUrl}/attendancemodule/cameras`;
 const REPORT_API = `${apiUrl}/attendancemodule/reports`;
-const GT_API     = `${apiUrl}/attendancemodule/ground-truth`;
-const EMB_API    = `${apiUrl}/attendancemodule/embeddings`;
 const USER_API   = `${apiUrl}/user/getuser`;
 const ML_DATA_API   = `${apiUrl}/attendancemodule/mldatafoldertree`;
 
@@ -317,10 +315,6 @@ export default function AMSDashboard() {
   const [cameras,     setCameras]   = useState([]);
   const [camLoad,     setCamLoad]   = useState(true);
   const [userRoles,   setUserRoles] = useState([]);
-  const [gtStats,     setGtStats]   = useState(null);
-  const [gtLoad,      setGtLoad]    = useState(true);
-  const [embFiles,    setEmbFiles]  = useState(null);
-  const [embLoad,     setEmbLoad]   = useState(true);
   const [chartData,   setChartData] = useState(null);
   const [camOpen,     setCamOpen]   = useState(false);
   const [showML, setShowML] = useState(false);
@@ -375,16 +369,6 @@ export default function AMSDashboard() {
 
     setShowML(prev => !prev);
   };
-  function fetchGtStats() {
-    setGtLoad(true);
-    fetch(`${GT_API}/stats`, { credentials: 'include' })
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { setGtStats(d); setGtLoad(false); })
-      .catch(() => setGtLoad(false));
-  }
-
-  useEffect(() => { fetchGtStats(); }, []);
-
   useEffect(() => {
     fetch(CAM_API, { credentials: 'include' })
       .then(r => r.ok ? r.json() : [])
@@ -405,20 +389,6 @@ export default function AMSDashboard() {
       .then(r => r.ok ? r.json() : null)
       .then(d => setChartData(d))
       .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    fetch(`${EMB_API}/list-files`, { credentials: 'include' })
-      .then(r => r.ok ? r.json() : null)
-      .then(d => {
-        const files = d?.files || [];
-        const complete   = files.filter(f => !(f.missedRollNos?.length > 0)).length;
-        const incomplete = files.filter(f =>   f.missedRollNos?.length > 0 ).length;
-        const totalStudents = files.reduce((sum, f) => sum + (f.rollNos?.length || 0), 0);
-        setEmbFiles({ total: files.length, complete, incomplete, totalStudents });
-      })
-      .catch(() => setEmbFiles(null))
-      .finally(() => setEmbLoad(false));
   }, []);
 
   const onlineCams = cameras.filter(c => c.status === 'online').length;
@@ -639,6 +609,21 @@ export default function AMSDashboard() {
               </svg>
             </IconNavButton>
 
+            {/* ML Fine Tuning button */}
+            <IconNavButton title="ML Fine Tuning" onClick={() => navigate('/attendance/ml-fine-tuning')}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={T.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="4" y1="21" x2="4" y2="14" />
+                <line x1="4" y1="10" x2="4" y2="3" />
+                <line x1="12" y1="21" x2="12" y2="12" />
+                <line x1="12" y1="8" x2="12" y2="3" />
+                <line x1="20" y1="21" x2="20" y2="16" />
+                <line x1="20" y1="12" x2="20" y2="3" />
+                <line x1="1" y1="14" x2="7" y2="14" />
+                <line x1="9" y1="8" x2="15" y2="8" />
+                <line x1="17" y1="16" x2="23" y2="16" />
+              </svg>
+            </IconNavButton>
+
             {/* settings button */}
             <IconNavButton title="Session Setup" onClick={() => navigate('/attendance/edit-session-dates')}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={T.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -668,57 +653,6 @@ export default function AMSDashboard() {
           <StatCard label="Avg Attendance"  value={stats?.avgAttendancePct} color={T.teal}    loading={statsLoad} delay={120} suffix="%" />
           <StatCard label="Present"         value={stats?.totalPresent}     color={T.emerald} loading={statsLoad} delay={160} />
           <StatCard label="Absent"          value={stats?.totalAbsent}      color={T.red}     loading={statsLoad} delay={200} />
-        </div>
-
-        {/* ── Ground truth stats ── */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, marginTop: 8 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '.09em' }}>
-            Ground Truth
-          </div>
-          <button
-            onClick={fetchGtStats}
-            disabled={gtLoad}
-            style={{
-              fontSize: 10, padding: '3px 9px', borderRadius: 6,
-              background: T.orangeDim, color: T.orange,
-              border: `1px solid ${T.orange}30`, cursor: gtLoad ? 'default' : 'pointer',
-              fontFamily: T.fontBody, fontWeight: 700, opacity: gtLoad ? 0.5 : 1,
-              transition: 'opacity .15s',
-            }}
-          >
-            {gtLoad ? '...' : 'Refresh'}
-          </button>
-        </div>
-        <div className="dash-stat-grid" style={{ marginBottom: 28 }}>
-          <StatCard label="Clusters"        value={gtStats?.totalClusters} color={T.orange}  loading={gtLoad} delay={0}   />
-          <StatCard label="Images"          value={gtStats?.totalImages}   color={T.sky}     loading={gtLoad} delay={40}  />
-          <StatCard label="Embeddings"      value={gtStats?.withEmbedding} color={T.purple}  loading={gtLoad} delay={80}  />
-          <StatCard label="Approved"        value={gtStats?.approved}      color={T.emerald} loading={gtLoad} delay={120} />
-          <StatCard label="Matched"         value={gtStats?.matched}       color={T.teal}    loading={gtLoad} delay={160} />
-        </div>
-
-        {/* ── Embedding stats ── */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, marginTop: 8 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '.09em' }}>
-            Subject Embeddings
-          </div>
-          <button
-            onClick={() => navigate('/attendance/embeddings')}
-            style={{
-              fontSize: 10, padding: '3px 9px', borderRadius: 6,
-              background: T.amberDim, color: T.amber,
-              border: `1px solid ${T.amber}30`, cursor: 'pointer',
-              fontFamily: T.fontBody, fontWeight: 700,
-            }}
-          >
-            Manage
-          </button>
-        </div>
-        <div className="dash-stat-grid" style={{ marginBottom: 28 }}>
-          <StatCard label="Total Files"      value={embFiles?.total}         color={T.amber}   loading={embLoad} delay={0}   />
-          <StatCard label="Complete"         value={embFiles?.complete}      color={T.emerald} loading={embLoad} delay={40}  />
-          <StatCard label="Incomplete"       value={embFiles?.incomplete}    color={T.red}     loading={embLoad} delay={80}  />
-          <StatCard label="Students Covered" value={embFiles?.totalStudents} color={T.purple}  loading={embLoad} delay={120} />
         </div>
 
         <div style={{ marginBottom: 28 }}>

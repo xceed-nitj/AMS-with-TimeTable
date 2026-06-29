@@ -283,6 +283,26 @@ router.get('/logs', async (req, res) => {
     }
 });
 
+// ─── GT Acquisition Config (ML Fine Tuning page) ─────────────
+router.get('/gt-config', async (req, res) => {
+    try {
+        const result = await axios.get(`${ML_URL}/gt-config`, { timeout: 5000 });
+        res.json(result.data);
+    } catch (e) {
+        res.status(503).json({ error: e.response?.data?.error || e.message || 'GT config unavailable' });
+    }
+});
+
+router.post('/gt-config', async (req, res) => {
+    try {
+        const result = await axios.post(`${ML_URL}/gt-config`, req.body, { timeout: 5000 });
+        res.json(result.data);
+    } catch (e) {
+        const status = e.response?.status || 503;
+        res.status(status).json({ error: e.response?.data?.error || e.message || 'Failed to update GT config' });
+    }
+});
+
 // ─── Liveness / Anti-Spoofing Config (ML Fine Tuning page) ───
 router.get('/liveness-config', async (req, res) => {
     try {

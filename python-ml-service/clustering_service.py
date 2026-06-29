@@ -348,6 +348,7 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
                         lap_threshold: float = None,
                         debug_dir: str = None,
                         debug_frame_id: int = 0,
+                        dept: str = "",
                         ) -> list:
  
     _min_face_px   = min_face_px   if min_face_px   is not None else MIN_FACE_PX
@@ -475,7 +476,7 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
             iy    = max(0, min(y1+h, ky+kh) - max(y1, ky))
             inter = ix * iy
             union = w*h + kw*kh - inter
-            if union > 0 and inter / union > NMS_IOU_THRESH:
+            if union > 0 and inter / union > state.gt_config.get("nms_iou_thresh", NMS_IOU_THRESH):
                 dup = True
                 break
         if not dup:
@@ -576,7 +577,8 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
                     try:
                         os.makedirs(LIVENESS_REJECTED_DIR, exist_ok=True)
                         ts_ms = int(time.time() * 1000)
-                        fname = (f"{ts_ms}_{live_method}{live_score:.2f}_"
+                        dept_prefix = f"{dept}_" if dept else ""
+                        fname = (f"{ts_ms}_{dept_prefix}{live_method}{live_score:.2f}_"
                                  f"det{det_score:.2f}.jpg")
                         cv2.imwrite(os.path.join(LIVENESS_REJECTED_DIR, fname), crop,
                                     [cv2.IMWRITE_JPEG_QUALITY, 90])
@@ -753,7 +755,8 @@ def cluster_faces(embeddings: list,
     labels = clustering.labels_
 
     # FIX-G: merge clusters that are the same person
-    labels = _merge_split_clusters(labels, embeddings)
+    labels = _merge_split_clusters(labels, embeddings,
+                                    merge_threshold=state.gt_config.get("merge_threshold", MERGE_THRESHOLD))
 
     unique_labels = sorted(set(labels) - {-1})
     logger.info(f"[cluster_faces] {len(unique_labels)} final clusters from "

@@ -48,6 +48,30 @@ liveness_config = {
 }
 liveness_config_lock = threading.Lock()  # guards reads/writes to the dict above
 
+# ─── GT Acquisition tuning knobs ──────────────────────────────────────────────
+# Editable at runtime via GET/POST /gt-config (mlRoutes.js → rtsp_routes.py).
+# Python functions read directly from this dict so a change on the ML Fine
+# Tuning page takes effect on the next acquisition run — no restart needed.
+gt_config = {
+    # --- Per-session parameters (defaults for RTSPRequest fields) ---
+    "frame_skip":              10,    # process 1 in N frames
+    "target_imgs_per_person":  10,    # stop collecting once this many saved per person
+    "cluster_threshold":       0.45,  # DBSCAN cosine-similarity eps
+    "min_samples":             3,     # DBSCAN minimum cluster size
+    "det_size":                320,   # InsightFace detection grid (320 or 640)
+    # --- Clustering quality ---
+    "merge_threshold":         0.75,  # post-DBSCAN cluster-merge threshold
+    "nms_iou_thresh":          0.35,  # NMS IoU overlap threshold
+    # --- Embedding quality ---
+    "det_score_floor":         0.5,   # minimum InsightFace det_score to accept a face
+    # --- Session behaviour ---
+    "new_person_timeout":      60,    # auto-stop after N seconds with no new person
+    # --- Image storage ---
+    "top_n":                   10,    # max images kept per person folder
+    "embed_n":                 5,     # of top_n, how many are used for embeddings
+}
+gt_config_lock = threading.Lock()
+
 # faiss.Index instance holding every enrolled student's embedding vector(s),
 # built by Generate_embeddings.py. None until that script has been run and
 # ml_service.py has loaded its output.

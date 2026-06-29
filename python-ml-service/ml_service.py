@@ -3,6 +3,18 @@
 # All business logic lives in the route modules imported below.
 
 import os
+
+# Load .env from this directory before any module-level env reads (e.g. RECORDINGS_DIR).
+# Simple parser — no extra dependency needed.
+_env_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+if os.path.exists(_env_file):
+    with open(_env_file) as _ef:
+        for _line in _ef:
+            _line = _line.strip()
+            if _line and not _line.startswith('#') and '=' in _line:
+                _k, _, _v = _line.partition('=')
+                os.environ.setdefault(_k.strip(), _v.strip())
+
 import pickle
 import logging
 import subprocess

@@ -591,108 +591,110 @@ export default function DashboardProgress({ title = 'Dashboard Progress', compac
     const summary = buildSummary(groundTruthRows, embeddingRows);
 
     return (
-        <section style={{ ...styles.card, marginTop: compact ? 18 : 0, padding: compact ? 18 : 24 }}>
-            <div style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                justifyContent: 'space-between',
-                gap: 14,
-                flexWrap: 'wrap',
-                marginBottom: 16,
-            }}>
-                <div style={{ minWidth: 220 }}>
-                    <div style={{ fontSize: compact ? 16 : 18, fontWeight: 700, color: theme.text }}>
-                        {title}
-                    </div>
-                    <div style={{ marginTop: 4, fontSize: 12, color: theme.textMuted }}>
-                        {state.refreshing
-                            ? `Refreshing ${selectedDepartmentLabel} progress...`
-                            : `${selectedDepartmentLabel} progress`}
-                    </div>
-                    {state.error && (
-                        <div style={{ marginTop: 6, color: theme.danger, fontSize: 12 }}>{state.error}</div>
-                    )}
-                </div>
+        <>
+            {data.fullAccess && departments.length > 0 && (
+                <BranchOverviewChart
+                    rows={overviewRows}
+                    selectedDepartment={activeDepartment}
+                    onSelectDepartment={setSelectedDepartment}
+                />
+            )}
 
-                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, flexWrap: 'wrap' }}>
-                    <div style={{ minWidth: 260 }}>
-                        <label style={{ ...styles.label, marginBottom: 5, letterSpacing: 0 }}>Department</label>
-                        <select
-                            value={activeDepartment}
-                            onChange={(event) => setSelectedDepartment(event.target.value)}
-                            disabled={!data.fullAccess || state.refreshing || !departments.length}
+            <section style={{ ...styles.card, marginTop: compact ? 18 : 0, padding: compact ? 18 : 24 }}>
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    justifyContent: 'space-between',
+                    gap: 14,
+                    flexWrap: 'wrap',
+                    marginBottom: 16,
+                }}>
+                    <div style={{ minWidth: 220 }}>
+                        <div style={{ fontSize: compact ? 16 : 18, fontWeight: 700, color: theme.text }}>
+                            {title}
+                        </div>
+                        <div style={{ marginTop: 4, fontSize: 12, color: theme.textMuted }}>
+                            {state.refreshing
+                                ? `Refreshing ${selectedDepartmentLabel} progress...`
+                                : `${selectedDepartmentLabel} progress`}
+                        </div>
+                        {state.error && (
+                            <div style={{ marginTop: 6, color: theme.danger, fontSize: 12 }}>{state.error}</div>
+                        )}
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, flexWrap: 'wrap' }}>
+                        <div style={{ minWidth: 260 }}>
+                            <label style={{ ...styles.label, marginBottom: 5, letterSpacing: 0 }}>Department</label>
+                            <select
+                                value={activeDepartment}
+                                onChange={(event) => setSelectedDepartment(event.target.value)}
+                                disabled={!data.fullAccess || state.refreshing || !departments.length}
+                                style={{
+                                    ...styles.select,
+                                    padding: '8px 12px',
+                                    fontSize: 12,
+                                    background: !data.fullAccess ? theme.surfaceAlt : styles.select.background,
+                                    cursor: !data.fullAccess || state.refreshing ? 'default' : 'pointer',
+                                }}
+                            >
+                                {departments.length ? departments.map((department) => (
+                                    <option key={department.key} value={department.key}>
+                                        {department.label}
+                                    </option>
+                                )) : (
+                                    <option value="">No ERP departments found</option>
+                                )}
+                            </select>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => loadProgress(true)}
+                            disabled={state.refreshing}
                             style={{
-                                ...styles.select,
-                                padding: '8px 12px',
+                                ...styles.btnGhost,
+                                padding: '8px 14px',
                                 fontSize: 12,
-                                background: !data.fullAccess ? theme.surfaceAlt : styles.select.background,
-                                cursor: !data.fullAccess || state.refreshing ? 'default' : 'pointer',
+                                opacity: state.refreshing ? 0.65 : 1,
+                                cursor: state.refreshing ? 'default' : 'pointer',
                             }}
                         >
-                            {departments.length ? departments.map((department) => (
-                                <option key={department.key} value={department.key}>
-                                    {department.label}
-                                </option>
-                            )) : (
-                                <option value="">No ERP departments found</option>
-                            )}
-                        </select>
+                            {state.refreshing ? 'Refreshing progress...' : 'Refresh'}
+                        </button>
                     </div>
-                    <button
-                        type="button"
-                        onClick={() => loadProgress(true)}
-                        disabled={state.refreshing}
-                        style={{
-                            ...styles.btnGhost,
-                            padding: '8px 14px',
-                            fontSize: 12,
-                            opacity: state.refreshing ? 0.65 : 1,
-                            cursor: state.refreshing ? 'default' : 'pointer',
-                        }}
-                    >
-                        {state.refreshing ? 'Refreshing progress...' : 'Refresh'}
-                    </button>
                 </div>
-            </div>
 
-            {!departments.length ? (
-                <EmptyState>No ERP-backed department batches were found on the backend.</EmptyState>
-            ) : (
-                <>
-                    {data.fullAccess && (
-                        <BranchOverviewChart
-                            rows={overviewRows}
-                            selectedDepartment={activeDepartment}
-                            onSelectDepartment={setSelectedDepartment}
-                        />
-                    )}
+                {!departments.length ? (
+                    <EmptyState>No ERP-backed department batches were found on the backend.</EmptyState>
+                ) : (
+                    <>
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                            gap: 12,
+                            marginBottom: 14,
+                        }}>
+                            <MetricPanel
+                                color={theme.success}
+                                label="Roll Assignment"
+                                value={summary.groundTruthProgressPct}
+                                detail={`${formatCount(summary.approvedAssignments)} approved of ${formatCount(summary.erpPhotoCount)} ERP photos`}
+                            />
+                            <MetricPanel
+                                color={theme.warning}
+                                label="Subject Embeddings"
+                                value={summary.embeddingProgressPct}
+                                detail={`${formatCount(summary.completedSubjectEmbeddings)} completed of ${formatCount(summary.theorySubjects)} theory subjects`}
+                            />
+                        </div>
 
-                    <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-                        gap: 12,
-                        marginBottom: 14,
-                    }}>
-                        <MetricPanel
-                            color={theme.success}
-                            label="Roll Assignment"
-                            value={summary.groundTruthProgressPct}
-                            detail={`${formatCount(summary.approvedAssignments)} approved of ${formatCount(summary.erpPhotoCount)} ERP photos`}
-                        />
-                        <MetricPanel
-                            color={theme.warning}
-                            label="Subject Embeddings"
-                            value={summary.embeddingProgressPct}
-                            detail={`${formatCount(summary.completedSubjectEmbeddings)} completed of ${formatCount(summary.theorySubjects)} theory subjects`}
-                        />
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: compact ? '1fr' : '1fr 1fr', gap: 14 }}>
-                        <BatchChart rows={groundTruthRows} />
-                        <SemesterChart rows={embeddingRows} />
-                    </div>
-                </>
-            )}
-        </section>
+                        <div style={{ display: 'grid', gridTemplateColumns: compact ? '1fr' : '1fr 1fr', gap: 14 }}>
+                            <BatchChart rows={groundTruthRows} />
+                            <SemesterChart rows={embeddingRows} />
+                        </div>
+                    </>
+                )}
+            </section>
+        </>
     );
 }

@@ -39,12 +39,6 @@ const NAV = [
     route: '/attendance/confidence',
     label: 'Confidence Monitor',
   },
-  {
-    id: 'mltuning',
-    route: '/attendance/ml-fine-tuning',
-    label: 'ML Fine Tuning',
-  },
-
   { id: 'manual', route: '/ams-manual', label: 'Help & Manual', newTab: true },
 ];
 
@@ -60,7 +54,6 @@ const COLORS = {
   embeddings: '#f59e0b',
   preview: '#8b5cf6',
   confidence: '#ef4444',
-  mltuning: '#0891b2',
   record: '#ef4444',
   manual: '#64748b',
 };

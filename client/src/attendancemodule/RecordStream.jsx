@@ -84,6 +84,7 @@ export default function RecordStream() {
 
     const [recordings,   setRecordings]   = useState([]);
     const [activeRecId,  setActiveRecId]  = useState(null);
+    const [recFormat,    setRecFormat]    = useState('video+audio');
 
     const [sessionRecIds, setSessionRecIds] = useState(new Set());
     const [history, setHistory] = useState(() => {
@@ -95,10 +96,21 @@ useEffect(() => {
 }, [history]);
 
   const [activeTab, setActiveTab] = useState('Recordings');
+  const [mainTab,   setMainTab]   = useState('Recording');
   const [scheduleDate,      setScheduleDate]      = useState('');
 const [schedules,         setSchedules]         = useState([]);
 const [scheduleLoading,   setScheduleLoading]   = useState(false);
 const [showScheduleModal, setShowScheduleModal] = useState(false);
+
+// ── Scheduler tab state ────────────────────────────────────────────────────
+const [schedDay,         setSchedDay]         = useState('');
+const [schedRoom,        setSchedRoom]        = useState('');
+const [schedPeriod,      setSchedPeriod]      = useState('');
+const [schedAllDay,      setSchedAllDay]      = useState(false);
+const [schedFormat,      setSchedFormat]      = useState('video+audio');
+const [schedCamsByRoom,  setSchedCamsByRoom]  = useState({});
+const [schedCamsLoading, setSchedCamsLoading] = useState(false);
+const [schedSubmitting,  setSchedSubmitting]  = useState(false);
 
     const [toasts, setToasts] = useState([]);
     const toastId = useRef(0);
@@ -249,6 +261,28 @@ useEffect(() => {
     return () => clearInterval(t);
 }, [refreshSchedules]);
 
+const loadAllCameras = useCallback(async () => {
+    setSchedCamsLoading(true);
+    try {
+        const res = await apiFetch(CAM_API);
+        const data = res.ok ? await res.json() : [];
+        const cams = Array.isArray(data) ? data : [];
+        const byRoom = {};
+        cams.forEach(c => {
+            if (c.roomId && c.streamUrl) {
+                if (!byRoom[c.roomId]) byRoom[c.roomId] = [];
+                byRoom[c.roomId].push(c);
+            }
+        });
+        setSchedCamsByRoom(byRoom);
+    } catch {}
+    setSchedCamsLoading(false);
+}, []);
+
+useEffect(() => {
+    if (mainTab === 'Scheduler') loadAllCameras();
+}, [mainTab, loadAllCameras]);
+
     // ── Build label string ─────────────────────────────────────────────────
     const label = [degree, department, year, selectedRoom, period]
         .filter(Boolean).join('_').toUpperCase().replace(/\s+/g,'_');
@@ -259,7 +293,7 @@ useEffect(() => {
         const res = await apiFetch(`${REC_API}/start`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ rtspUrl: selectedCam.streamUrl, label }),
+            body: JSON.stringify({ rtspUrl: selectedCam.streamUrl, label, format: recFormat }),
         });
         if (res.ok) {
             const data = await res.json();
@@ -281,7 +315,7 @@ useEffect(() => {
         if (stoppedRec) {
             const stoppedAt = new Date().toLocaleString();
             const duration = stoppedRec.started ? elapsed(stoppedRec.started) : '—';
-            setHistory(prev => [{ label: stoppedRec.label, stoppedAt, duration, filename: stoppedRec.filename, department, year, selectedRoom }, ...prev]);
+            setHistory(prev => [{ label: stoppedRec.label, stoppedAt, duration, filename: stoppedRec.filename, format: stoppedRec.format, department, year, selectedRoom }, ...prev]);
         }
         setActiveRecId(null);
         showToast('Recording stopped', 'info');
@@ -324,6 +358,63 @@ async function handleCancelSchedule(scheduleId) {
     refreshSchedules();
 }
 
+async function handleSchedulerSubmit() {
+    if (!schedDay || !schedRoom) return;
+    const periods = schedAllDay ? Object.keys(SLOT_SCHEDULE) : [schedPeriod];
+    if (!schedAllDay && !schedPeriod) return;
+
+    const cam = (schedCamsByRoom[schedRoom] || [])[0];
+    if (!cam?.streamUrl) {
+        showToast('No camera registered for this room', 'error');
+        return;
+    }
+
+    setSchedSubmitting(true);
+    let ok = 0;
+    for (const p of periods) {
+        try {
+            const lbl = `ROOM_${schedRoom}_${p}`.toUpperCase().replace(/\s+/g, '_');
+            const res = await apiFetch(SCHEDULE_API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ rtspUrl: cam.streamUrl, label: lbl, period: p, scheduledDate: schedDay, format: schedFormat }),
+            });
+            if (res.ok) { ok++; }
+            else { const e = await res.json(); showToast(e.error || `Failed for ${p}`, 'error'); }
+        } catch { showToast(`Failed to schedule ${p}`, 'error'); }
+    }
+    if (ok > 0) {
+        showToast(schedAllDay ? `All-day: ${ok} periods scheduled` : 'Recording scheduled ✓', 'success');
+        if (!schedAllDay) setSchedPeriod('');
+        refreshSchedules();
+    }
+    setSchedSubmitting(false);
+}
+
+    async function handleDownload(url, suggestedName, type) {
+        showToast(type === 'audio' ? 'Preparing audio…' : 'Downloading video…', 'info');
+        try {
+            const res = await apiFetch(url);
+            if (!res.ok) {
+                let errMsg = `Download failed (${res.status})`;
+                try { const d = await res.json(); errMsg = d.error || errMsg; } catch {}
+                showToast(errMsg, 'error');
+                return;
+            }
+            const blob = await res.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = suggestedName || '';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+        } catch {
+            showToast('Download failed — check server connection', 'error');
+        }
+    }
+
     const isRecording = Boolean(activeRecId);
     const T = theme;
 
@@ -338,6 +429,27 @@ async function handleCancelSchedule(scheduleId) {
                     Save an RTSP camera stream for a class period — download video or audio 
                 </div>
             </div>
+
+            {/* ── Top-level tabs ── */}
+            <div style={{ display: 'flex', borderBottom: `2px solid ${T.border}`, marginBottom: 24 }}>
+                {[{ id: 'Recording', icon: '⏺' }, { id: 'Scheduler', icon: '🗓' }].map(({ id, icon }) => (
+                    <button
+                        key={id}
+                        onClick={() => setMainTab(id)}
+                        style={{
+                            padding: '12px 32px', fontSize: 14, fontWeight: 700,
+                            background: 'transparent', border: 'none', cursor: 'pointer',
+                            color: mainTab === id ? T.accent : T.textMuted,
+                            borderBottom: mainTab === id ? `2px solid ${T.accent}` : '2px solid transparent',
+                            marginBottom: -2, display: 'flex', alignItems: 'center', gap: 7,
+                        }}
+                    >
+                        <span>{icon}</span> {id}
+                    </button>
+                ))}
+            </div>
+
+            {mainTab === 'Recording' && (<>
 
             {/* ── Selection Card ── */}
             <div style={{ ...styles.card, marginBottom: 24, opacity: isRecording ? 0.55 : 1, pointerEvents: isRecording ? 'none' : 'auto' }}>
@@ -429,140 +541,66 @@ async function handleCancelSchedule(scheduleId) {
 
   
 
-            {/* ── Card 2: Actions + Schedule ── */}
+            {/* ── Actions ── */}
             <div style={{ ...styles.card, marginBottom: 24 }}>
-
-                {/* Top row: Start/Stop + Schedule button */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-                    <div style={{ display: 'flex', gap: 10 }}>
-                        <button
-                            onClick={handleStart}
-                            disabled={isRecording || !selectedCam?.streamUrl || !period || !selectedRoom || !department || !year}
-                            style={{
-                                ...styles.btnPrimary,
-                                opacity: (isRecording || !selectedCam?.streamUrl || !period || !selectedRoom || !department || !year) ? 0.45 : 1,
-                                minWidth: 160,
-                                display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center',
-                            }}
-                        >
-                            {isRecording ? (
-                                <>
-                                    <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#fff', animation: 'pulse 1s infinite', display: 'inline-block' }} />
-                                    Recording…
-                                </>
-                            ) : '⏺ Start Recording'}
-                        </button>
-                        <button
-                            onClick={handleStop}
-                            disabled={!isRecording}
-                            style={{
-                                padding: '10px 22px', borderRadius: 8, cursor: isRecording ? 'pointer' : 'default',
-                                fontSize: 14, fontWeight: 700, border: 'none',
-                                background: isRecording ? '#ef4444' : '#fca5a5',
-                                color: '#fff', opacity: isRecording ? 1 : 0.45,
-                            }}
-                        >
-                            ⏹ Stop
-                        </button>
+                {/* Format selector */}
+                <div style={{ marginBottom: 14 }}>
+                    <label style={styles.label}>Recording Format</label>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+                        {[
+                            { id: 'video+audio', label: '🎬 Video + Audio' },
+                            { id: 'video',       label: '📹 Video Only' },
+                            { id: 'audio',       label: '🎵 Audio Only' },
+                        ].map(opt => (
+                            <button
+                                key={opt.id}
+                                onClick={() => setRecFormat(opt.id)}
+                                disabled={isRecording}
+                                style={{
+                                    padding: '7px 14px', borderRadius: 7, fontSize: 12, fontWeight: 600,
+                                    cursor: isRecording ? 'not-allowed' : 'pointer',
+                                    border: `1px solid ${recFormat === opt.id ? T.accent : T.border}`,
+                                    background: recFormat === opt.id ? T.accentDim : 'transparent',
+                                    color: recFormat === opt.id ? T.accent : T.textMuted,
+                                    opacity: isRecording ? 0.55 : 1,
+                                }}
+                            >
+                                {opt.label}
+                            </button>
+                        ))}
                     </div>
-
+                </div>
+                <div style={{ display: 'flex', gap: 10 }}>
                     <button
-                        onClick={() => setShowScheduleModal(true)}
-                        disabled={!selectedCam?.streamUrl || !period || !department || !year || !selectedRoom}
+                        onClick={handleStart}
+                        disabled={isRecording || !selectedCam?.streamUrl || !period || !selectedRoom || !department || !year}
                         style={{
-                            padding: '9px 18px', borderRadius: 8, border: `1px solid #7c3aed`,
-                            background: 'rgba(124,58,237,0.06)', color: '#7c3aed',
-                            fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                            opacity: (!selectedCam?.streamUrl || !period || !department || !year || !selectedRoom) ? 0.4 : 1,
+                            ...styles.btnPrimary,
+                            opacity: (isRecording || !selectedCam?.streamUrl || !period || !selectedRoom || !department || !year) ? 0.45 : 1,
+                            minWidth: 160,
+                            display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center',
                         }}
                     >
-                        🗓 + Schedule
+                        {isRecording ? (
+                            <>
+                                <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#fff', animation: 'pulse 1s infinite', display: 'inline-block' }} />
+                                Recording…
+                            </>
+                        ) : '⏺ Start Recording'}
+                    </button>
+                    <button
+                        onClick={handleStop}
+                        disabled={!isRecording}
+                        style={{
+                            padding: '10px 22px', borderRadius: 8, cursor: isRecording ? 'pointer' : 'default',
+                            fontSize: 14, fontWeight: 700, border: 'none',
+                            background: isRecording ? '#ef4444' : '#fca5a5',
+                            color: '#fff', opacity: isRecording ? 1 : 0.45,
+                        }}
+                    >
+                        ⏹ Stop
                     </button>
                 </div>
-
-                {/* Scheduled list — only shown if any exist */}
-{department && year && selectedRoom &&  schedules.filter(s => {
-    if (s.status !== 'done' && s.status !== 'error') return true;
-    // Also show today's done/error ones
-    const today = new Date().toISOString().split('T')[0];
-    return s.scheduledDate === today;
-}).length > 0 && (
-                    <div style={{ marginTop: 20, borderTop: `1px solid ${T.border}`, paddingTop: 16 }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
-                       Scheduled ({schedules.filter(s => s.status === 'scheduled' || s.status === 'recording').length} pending · {schedules.filter(s => s.status === 'done').length} done today)
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 220, overflowY: 'auto', paddingRight: 4 }}>
-                            {schedules.filter(s => {
-    if (s.status !== 'done' && s.status !== 'error') return true;
-    const today = new Date().toISOString().split('T')[0];
-    return s.scheduledDate === today;
-}).sort((a, b) => {
-    // Active/scheduled first, done last
-    const order = { recording: 0, scheduled: 1, done: 2, error: 3 };
-    return (order[a.status] ?? 9) - (order[b.status] ?? 9);
-}).map(s => (
-                                <div key={s.scheduleId} style={{
-                                    display: 'flex', alignItems: 'center', gap: 12,
-                                    padding: '10px 14px', borderRadius: 8,
-                                    background: s.status === 'done' ? 'rgba(16,185,129,0.06)' : s.status === 'recording' ? 'rgba(239,68,68,0.06)' : T.bg,
-                                    border: `1px solid ${s.status === 'done' ? 'rgba(16,185,129,0.3)' : s.status === 'recording' ? 'rgba(239,68,68,0.3)' : T.border}`,
-                                }}>
-                                    <span style={{
-                                        width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
-                                        background: s.status === 'recording' ? '#ef4444' : s.status === 'done' ? '#10b981' : s.status === 'error' ? '#ef4444' : '#7c3aed',
-                                    }} />
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ fontSize: 12, fontWeight: 700, color: T.text, wordBreak: 'break-all' }}>{s.label}</div>
-                                        <div style={{ fontSize: 11, color: T.textMuted, fontFamily: T.fontMono, marginTop: 2 }}>
-                                            {s.scheduledDate} · {s.startTime}–{s.endTime} · <span style={{ textTransform: 'capitalize', color: s.status === 'recording' ? '#ef4444' : s.status === 'done' ? '#10b981' : T.textMuted }}>{s.status}</span>
-                                        </div>
-                                    </div>
-                                    <div style={{ flexShrink: 0 }}>
-    {s.status === 'scheduled' && (
-        <button onClick={() => handleCancelSchedule(s.scheduleId)} style={{
-            padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700,
-            background: 'rgba(239,68,68,0.08)', color: '#ef4444',
-            border: '1px solid rgba(239,68,68,0.25)', cursor: 'pointer',
-        }}>
-            ✕ Cancel
-        </button>
-    )}
-    {s.status === 'done' && (
-        <span style={{
-            padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700,
-            background: 'rgba(16,185,129,0.08)', color: '#10b981',
-            border: '1px solid rgba(16,185,129,0.25)',
-            display: 'inline-block',
-        }}>
-            ✓ Done
-        </span>
-    )}
-    {s.status === 'recording' && (
-        <span style={{
-            padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700,
-            background: 'rgba(239,68,68,0.08)', color: '#ef4444',
-            border: '1px solid rgba(239,68,68,0.25)',
-            display: 'inline-block',
-        }}>
-            ● Recording
-        </span>
-    )}
-    {s.status === 'error' && (
-        <span style={{
-            padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700,
-            background: 'rgba(239,68,68,0.08)', color: '#ef4444',
-            border: '1px solid rgba(239,68,68,0.25)',
-            display: 'inline-block',
-        }}>
-            ✕ Error
-        </span>
-    )}
-</div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
             </div>
         
 
@@ -644,15 +682,24 @@ if (recDate !== today) return false;
                                 </div>
                             </div>
                             {!isActive && rec.status === 'done' && (
-                                <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                                    <button onClick={() => { showToast('Downloading video…', 'info'); window.location.href = `${REC_API}/download/${encodeURIComponent(rec.filename)}`; }}
-                                        style={{ padding: '7px 14px', borderRadius: 7, fontSize: 12, fontWeight: 700, background: T.accentDim, color: T.accent, border: `1px solid ${T.accent}30`, cursor: 'pointer' }}>
-                                        ⬇ Video
-                                    </button>
-                                    <button onClick={() => { showToast('Downloading audio…', 'info'); window.location.href = `${REC_API}/audio/${encodeURIComponent(rec.filename)}`; }}
-                                        style={{ padding: '7px 14px', borderRadius: 7, fontSize: 12, fontWeight: 700, background: 'rgba(16,185,129,0.09)', color: T.success, border: '1px solid rgba(16,185,129,0.3)', cursor: 'pointer' }}>
-                                        🎵 Audio
-                                    </button>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
+                                    <div style={{ fontSize: 10, color: T.textMuted, textAlign: 'right' }}>
+                                        {rec.format === 'video' ? '📹 Video Only' : rec.format === 'audio' ? '🎵 Audio Only' : '🎬 Video + Audio'}
+                                    </div>
+                                    <div style={{ display: 'flex', gap: 8 }}>
+                                        {rec.format !== 'audio' && (
+                                            <button onClick={() => handleDownload(`${REC_API}/download/${encodeURIComponent(rec.filename)}`, rec.filename, 'video')}
+                                                style={{ padding: '7px 14px', borderRadius: 7, fontSize: 12, fontWeight: 700, background: T.accentDim, color: T.accent, border: `1px solid ${T.accent}30`, cursor: 'pointer' }}>
+                                                ⬇ Video
+                                            </button>
+                                        )}
+                                        {rec.format !== 'video' && (
+                                            <button onClick={() => handleDownload(`${REC_API}/audio/${encodeURIComponent(rec.filename)}`, rec.filename.replace(/\.mp4$/i, '.mp3'), 'audio')}
+                                                style={{ padding: '7px 14px', borderRadius: 7, fontSize: 12, fontWeight: 700, background: 'rgba(16,185,129,0.09)', color: T.success, border: '1px solid rgba(16,185,129,0.3)', cursor: 'pointer' }}>
+                                                🎵 Audio
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             )}
                             {isActive && (
@@ -700,8 +747,12 @@ if (recDate !== today) return false;
                                 recordings.find(r => r.label === h.label && r.status === 'done')?.filename;
                             return fname ? (
                                 <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                                    <button onClick={() => { window.location.href = `${REC_API}/download/${encodeURIComponent(fname)}`; }} style={{ padding: '5px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: T.accentDim, color: T.accent, border: `1px solid ${T.accent}30`, cursor: 'pointer' }}>⬇ Video</button>
-                                    <button onClick={() => { window.location.href = `${REC_API}/audio/${encodeURIComponent(fname)}`; }} style={{ padding: '5px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: 'rgba(16,185,129,0.09)', color: T.success, border: '1px solid rgba(16,185,129,0.3)', cursor: 'pointer' }}>🎵 Audio</button>
+                                    {h.format !== 'audio' && (
+                                        <button onClick={() => handleDownload(`${REC_API}/download/${encodeURIComponent(fname)}`, fname, 'video')} style={{ padding: '5px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: T.accentDim, color: T.accent, border: `1px solid ${T.accent}30`, cursor: 'pointer' }}>⬇ Video</button>
+                                    )}
+                                    {h.format !== 'video' && (
+                                        <button onClick={() => handleDownload(`${REC_API}/audio/${encodeURIComponent(fname)}`, fname.replace(/\.mp4$/i, '.mp3'), 'audio')} style={{ padding: '5px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: 'rgba(16,185,129,0.09)', color: T.success, border: '1px solid rgba(16,185,129,0.3)', cursor: 'pointer' }}>🎵 Audio</button>
+                                    )}
                                 </div>
                             ) : (
                                 <span style={{ fontSize: 11, color: T.textMuted, fontStyle: 'italic' }}>file unavailable</span>
@@ -715,89 +766,193 @@ if (recDate !== today) return false;
     
 </div>
 
-{/* ── Schedule Modal ── */}
-            {showScheduleModal && (
-                <div style={{
-                    position: 'fixed', inset: 0, zIndex: 1000,
-                    background: 'rgba(0,0,0,0.35)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
-                    onClick={() => setShowScheduleModal(false)}
-                >
-                    <div style={{
-                        background: '#fff', borderRadius: 14, padding: 28,
-                        width: '100%', maxWidth: 480, boxShadow: '0 8px 40px rgba(0,0,0,0.18)',
-                        position: 'relative',
-                    }}
-                        onClick={e => e.stopPropagation()}
-                    >
-                        {/* Header */}
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-                            <div style={{ fontSize: 15, fontWeight: 700, color: T.text }}>🗓 Schedule Recording</div>
-                            <button onClick={() => setShowScheduleModal(false)} style={{
-                                background: 'none', border: 'none', fontSize: 18,
-                                cursor: 'pointer', color: T.textMuted, lineHeight: 1,
-                            }}>✕</button>
-                        </div>
+        </>)}
 
-                        {/* Label preview */}
-                        <div style={{ padding: '8px 12px', background: T.bg, borderRadius: 6, fontSize: 12, fontFamily: T.fontMono, color: T.accent, fontWeight: 600, marginBottom: 20, wordBreak: 'break-all' }}>
-                            {label}
-                        </div>
-
-                        {/* Date */}
-                        <div style={{ marginBottom: 14 }}>
-                            <label style={styles.label}>Date</label>
-                            <input
-                                type="date"
-                                value={scheduleDate}
-                                onChange={e => setScheduleDate(e.target.value)}
-                                min={new Date().toISOString().split('T')[0]}
-                                style={styles.input}
-                            />
-                        </div>
-
-                        {/* Period */}
-                        <div style={{ marginBottom: 20 }}>
-                            <label style={styles.label}>Period</label>
-                            <select value={period} onChange={e => setPeriod(e.target.value)} style={styles.select}>
-                                <option value="">Select period…</option>
-                                <option value="period1">Period 1 (8:30 – 9:30)</option>
-                                <option value="period2">Period 2 (9:30 – 10:30)</option>
-                                <option value="period3">Period 3 (10:30 – 11:30)</option>
-                                <option value="period4">Period 4 (11:30 – 12:30)</option>
-                                <option value="period5">Period 5 (1:30 – 2:30)</option>
-                                <option value="period6">Period 6 (2:30 – 3:30)</option>
-                                <option value="period7">Period 7 (3:30 – 4:30)</option>
-                                <option value="period8">Period 8 (4:30 – 5:30)</option>
+        {/* ── Scheduler tab ── */}
+        {mainTab === 'Scheduler' && (
+            <div style={styles.card}>
+                {/* Form row */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 20 }}>
+                    <div>
+                        <label style={styles.label}>Day</label>
+                        <input
+                            type="date"
+                            value={schedDay}
+                            onChange={e => setSchedDay(e.target.value)}
+                            min={new Date().toISOString().split('T')[0]}
+                            style={styles.input}
+                        />
+                    </div>
+                    <div>
+                        <label style={styles.label}>Room No.</label>
+                        {schedCamsLoading ? (
+                            <div style={{ fontSize: 13, color: T.textMuted, padding: '10px 0' }}>Loading rooms…</div>
+                        ) : (
+                            <select value={schedRoom} onChange={e => setSchedRoom(e.target.value)} style={styles.select}>
+                                <option value="">Select room…</option>
+                                {Object.keys(schedCamsByRoom).sort().map(r => (
+                                    <option key={r} value={r}>{r}</option>
+                                ))}
                             </select>
-                        </div>
-
-                        {/* Actions */}
-                        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-                            <button onClick={() => setShowScheduleModal(false)} style={{
-                                padding: '9px 20px', borderRadius: 8, border: `1px solid ${T.border}`,
-                                background: 'transparent', color: T.textMuted, fontSize: 13,
-                                fontWeight: 600, cursor: 'pointer',
-                            }}>
-                                Cancel
-                            </button>
-                            <button
-                                onClick={async () => { await handleSchedule(); setShowScheduleModal(false); }}
-                                disabled={scheduleLoading || !period || !scheduleDate}
-                                style={{
-                                    padding: '9px 22px', borderRadius: 8, border: 'none',
-                                    background: '#7c3aed', color: '#fff', fontSize: 13,
-                                    fontWeight: 700, cursor: 'pointer',
-                                    opacity: (scheduleLoading || !period || !scheduleDate) ? 0.45 : 1,
-                                }}
-                            >
-                                {scheduleLoading ? '⏳ Scheduling…' : '⏰ Confirm Schedule'}
-                            </button>
-                        </div>
+                        )}
+                    </div>
+                    <div>
+                        <label style={styles.label}>Period</label>
+                        <select
+                            value={schedPeriod}
+                            onChange={e => setSchedPeriod(e.target.value)}
+                            disabled={schedAllDay}
+                            style={{ ...styles.select, opacity: schedAllDay ? 0.45 : 1 }}
+                        >
+                            <option value="">Select period…</option>
+                            {Object.entries(SLOT_SCHEDULE).map(([key, val]) => (
+                                <option key={key} value={key}>{val.label}</option>
+                            ))}
+                        </select>
                     </div>
                 </div>
-            )}
+
+                {/* All-day toggle */}
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: 10, cursor: 'pointer', marginBottom: 20, userSelect: 'none' }}>
+                    <span
+                        onClick={() => { setSchedAllDay(v => !v); if (!schedAllDay) setSchedPeriod(''); }}
+                        style={{
+                            width: 42, height: 24, borderRadius: 14, position: 'relative',
+                            background: schedAllDay ? T.accent : T.border,
+                            transition: 'background 0.2s', flexShrink: 0, cursor: 'pointer',
+                        }}
+                    >
+                        <span style={{
+                            position: 'absolute', top: 3, left: schedAllDay ? 21 : 3,
+                            width: 18, height: 18, borderRadius: '50%', background: '#fff',
+                            transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+                        }} />
+                    </span>
+                    <span style={{ fontSize: 13, color: T.text, fontWeight: 600 }}>Record All Day</span>
+                    <span style={{ fontSize: 12, color: T.textMuted }}>(schedules all 8 periods)</span>
+                </label>
+
+                {/* Format selector */}
+                <div style={{ marginBottom: 20 }}>
+                    <label style={styles.label}>Recording Format</label>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+                        {[
+                            { id: 'video+audio', label: '🎬 Video + Audio' },
+                            { id: 'video',       label: '📹 Video Only' },
+                            { id: 'audio',       label: '🎵 Audio Only' },
+                        ].map(opt => (
+                            <button
+                                key={opt.id}
+                                onClick={() => setSchedFormat(opt.id)}
+                                style={{
+                                    padding: '7px 14px', borderRadius: 7, fontSize: 12, fontWeight: 600,
+                                    cursor: 'pointer',
+                                    border: `1px solid ${schedFormat === opt.id ? T.accent : T.border}`,
+                                    background: schedFormat === opt.id ? T.accentDim : 'transparent',
+                                    color: schedFormat === opt.id ? T.accent : T.textMuted,
+                                }}
+                            >
+                                {opt.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Camera preview */}
+                {schedRoom && (
+                    <div style={{ marginBottom: 16, padding: '8px 12px', background: T.bg, borderRadius: 6, fontSize: 12 }}>
+                        {(schedCamsByRoom[schedRoom] || []).length === 0 ? (
+                            <span style={{ color: T.danger }}>No cameras registered for room "{schedRoom}"</span>
+                        ) : (
+                            <span style={{ color: T.textMuted }}>
+                                Camera: <span style={{ color: T.text, fontWeight: 600, fontFamily: T.fontMono }}>
+                                    {schedCamsByRoom[schedRoom][0].cameraId || schedCamsByRoom[schedRoom][0].streamUrl}
+                                </span>
+                                {schedCamsByRoom[schedRoom].length > 1 && ` (+${schedCamsByRoom[schedRoom].length - 1} more)`}
+                            </span>
+                        )}
+                    </div>
+                )}
+
+                {/* Submit */}
+                <button
+                    onClick={handleSchedulerSubmit}
+                    disabled={schedSubmitting || !schedDay || !schedRoom || (!schedAllDay && !schedPeriod) || (schedCamsByRoom[schedRoom] || []).length === 0}
+                    style={{
+                        ...styles.btnPrimary,
+                        minWidth: 180,
+                        opacity: (schedSubmitting || !schedDay || !schedRoom || (!schedAllDay && !schedPeriod) || (schedCamsByRoom[schedRoom] || []).length === 0) ? 0.45 : 1,
+                        marginBottom: 24,
+                    }}
+                >
+                    {schedSubmitting ? '⏳ Scheduling…' : schedAllDay ? '⏰ Schedule All Day' : '⏰ Schedule Recording'}
+                </button>
+
+                {/* Schedule list */}
+                {schedules.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '20px 0', color: T.textMuted, fontSize: 13 }}>
+                        No scheduled recordings yet
+                    </div>
+                ) : (
+                    <div>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
+                            All Scheduled ({schedules.filter(s => s.status === 'scheduled' || s.status === 'recording').length} pending · {schedules.filter(s => s.status === 'done').length} done)
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 300, overflowY: 'auto', paddingRight: 4 }}>
+                            {[...schedules].sort((a, b) => {
+                                const order = { recording: 0, scheduled: 1, done: 2, error: 3 };
+                                return (order[a.status] ?? 9) - (order[b.status] ?? 9);
+                            }).map(s => (
+                                <div key={s.scheduleId} style={{
+                                    display: 'flex', alignItems: 'center', gap: 12,
+                                    padding: '10px 14px', borderRadius: 8,
+                                    background: s.status === 'done' ? 'rgba(16,185,129,0.06)' : s.status === 'recording' ? 'rgba(239,68,68,0.06)' : T.bg,
+                                    border: `1px solid ${s.status === 'done' ? 'rgba(16,185,129,0.3)' : s.status === 'recording' ? 'rgba(239,68,68,0.3)' : T.border}`,
+                                }}>
+                                    <span style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: s.status === 'recording' ? '#ef4444' : s.status === 'done' ? '#10b981' : s.status === 'error' ? '#ef4444' : '#7c3aed' }} />
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div style={{ fontSize: 12, fontWeight: 700, color: T.text, wordBreak: 'break-all' }}>{s.label}</div>
+                                        <div style={{ fontSize: 11, color: T.textMuted, fontFamily: T.fontMono, marginTop: 2 }}>
+                                            {s.scheduledDate} · {s.startTime}–{s.endTime} · <span style={{ textTransform: 'capitalize', color: s.status === 'recording' ? '#ef4444' : s.status === 'done' ? '#10b981' : T.textMuted }}>{s.status}</span>
+                                        </div>
+                                    </div>
+                                    {s.status === 'scheduled' && (
+                                        <button onClick={() => handleCancelSchedule(s.scheduleId)} style={{ padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: 'rgba(239,68,68,0.08)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.25)', cursor: 'pointer', flexShrink: 0 }}>
+                                            ✕ Cancel
+                                        </button>
+                                    )}
+                                    {s.status === 'done' && (() => {
+                                        const fname = recordings.find(r => r.label === s.label && r.status === 'done')?.filename;
+                                        const fmt = s.format || 'video+audio';
+                                        return fname ? (
+                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>
+                                                <div style={{ fontSize: 9, color: T.textMuted }}>
+                                                    {fmt === 'video' ? '📹 Video Only' : fmt === 'audio' ? '🎵 Audio Only' : '🎬 V+A'}
+                                                </div>
+                                                <div style={{ display: 'flex', gap: 5 }}>
+                                                    {fmt !== 'audio' && (
+                                                        <button onClick={() => handleDownload(`${REC_API}/download/${encodeURIComponent(fname)}`, fname, 'video')}
+                                                            style={{ padding: '4px 9px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: T.accentDim, color: T.accent, border: `1px solid ${T.accent}30`, cursor: 'pointer' }}>⬇ Video</button>
+                                                    )}
+                                                    {fmt !== 'video' && (
+                                                        <button onClick={() => handleDownload(`${REC_API}/audio/${encodeURIComponent(fname)}`, fname.replace(/\.mp4$/i, '.mp3'), 'audio')}
+                                                            style={{ padding: '4px 9px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: 'rgba(16,185,129,0.09)', color: T.success, border: '1px solid rgba(16,185,129,0.3)', cursor: 'pointer' }}>🎵 Audio</button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <span style={{ padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: 'rgba(16,185,129,0.08)', color: '#10b981', border: '1px solid rgba(16,185,129,0.25)', flexShrink: 0 }}>✓ Done</span>
+                                        );
+                                    })()}
+                                    {s.status === 'recording' && <span style={{ padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: 'rgba(239,68,68,0.08)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.25)', flexShrink: 0 }}>● Recording</span>}
+                                    {s.status === 'error' && <span style={{ padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, background: 'rgba(239,68,68,0.08)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.25)', flexShrink: 0 }}>✕ Error</span>}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+        )}
         </div>
 
         
