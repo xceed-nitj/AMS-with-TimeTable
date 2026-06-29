@@ -1192,6 +1192,50 @@ def _load_existing_folders_from_payload(existing_folders, existing_mean_embs):
                 existing_mean_embs[folder_name] = mean_emb / norm
 
 
+def _select_diverse(pool, stored_embs, new_embs, n):
+    """
+    Greedy farthest-point selection from pool (list of (filename, score) tuples).
+    Picks n images that maximise minimum pairwise cosine distance, using
+    embedding vectors from stored_embs (persisted across DBSCAN passes) and
+    new_embs (from this pass). Falls back to quality order if embeddings are
+    unavailable.
+    """
+    all_embs = {**stored_embs, **new_embs}
+    filenames = [f for f, _ in pool]
+    available = [f for f in filenames if f in all_embs]
+
+    # Fallback: not enough embeddings yet — use quality rank
+    if len(available) < 2:
+        return filenames[:n]
+
+    # Anchor = highest-quality image that has an embedding (pool is quality-sorted)
+    selected = [available[0]]
+    while len(selected) < n and len(selected) < len(available):
+        best_f, best_min_d = None, -1.0
+        for f in available:
+            if f in selected:
+                continue
+            emb_f = all_embs[f]
+            # Minimum cosine distance to any already-selected image
+            min_d = min(
+                1.0 - float(np.dot(emb_f, all_embs[s]))
+                for s in selected
+            )
+            if min_d > best_min_d:
+                best_min_d, best_f = min_d, f
+        if best_f:
+            selected.append(best_f)
+
+    # Append any quality-ordered filenames that have no embedding
+    for f in filenames:
+        if len(selected) >= n:
+            break
+        if f not in selected:
+            selected.append(f)
+
+    return selected[:n]
+
+
 def _save_clusters(labels, unique_labels, all_embeddings, all_face_images,
                     all_timestamps, all_quality, batch_dir, existing_mean_embs,
                     next_serial, target_per_person, person_counts,
@@ -1238,6 +1282,7 @@ def _save_clusters(labels, unique_labels, all_embeddings, all_face_images,
             key=lambda x: x[1], reverse=True)[:still_need]
 
         new_scores      = {}
+        new_embs        = {}   # filename → L2-normalised embedding for diversity selection
         existing_scores = folder_state.get(folder_name, {}).get("scores", {})
         for (crop, quality, ts, idx) in cluster_sorted:
             if crop.size == 0:
@@ -1252,11 +1297,13 @@ def _save_clusters(labels, unique_labels, all_embeddings, all_face_images,
                     "data":     base64.b64encode(buf.tobytes()).decode('ascii'),
                 })
                 new_scores[fname] = round(quality, 4)
+                new_embs[fname]   = all_embeddings[idx]  # already L2-normalised
 
         if not new_scores:
             continue
 
-        _update_info_inmem(folder_name, new_scores, folder_state, crops_to_emit, top_n, embed_n)
+        _update_info_inmem(folder_name, new_scores, folder_state, crops_to_emit,
+                           top_n, embed_n, new_embs=new_embs)
         new_count = len(folder_state.get(folder_name, {}).get("scores", {}))
         person_counts[folder_name] = new_count
         updated[folder_name]       = new_count
@@ -1282,10 +1329,18 @@ def _load_folder_state_from_payload(existing_folders):
     return folder_state
 
 
-def _update_info_inmem(folder_name, new_scores, folder_state, crops_to_emit, top_n=10, embed_n=5):
-    """Update folder_state in memory and append info_save / file_delete events."""
-    fs = folder_state.setdefault(folder_name, {"scores": {}})
+def _update_info_inmem(folder_name, new_scores, folder_state, crops_to_emit,
+                       top_n=10, embed_n=5, new_embs=None):
+    """
+    Update folder_state in memory and append info_save / file_delete events.
+    Embeddings (new_embs: filename → np.ndarray) are stored in folder_state so
+    that diversity selection can draw on all frames seen so far, not just the
+    current DBSCAN pass.
+    """
+    fs = folder_state.setdefault(folder_name, {"scores": {}, "embs": {}})
     fs["scores"].update(new_scores)
+    if new_embs:
+        fs.setdefault("embs", {}).update(new_embs)
 
     all_scored = sorted(fs["scores"].items(), key=lambda x: x[1], reverse=True)
 
@@ -1293,14 +1348,20 @@ def _update_info_inmem(folder_name, new_scores, folder_state, crops_to_emit, top
         for fname, _ in all_scored[top_n:]:
             crops_to_emit.append({"type": "file_delete", "folder": folder_name, "filename": fname})
             fs["scores"].pop(fname, None)
+            fs.get("embs", {}).pop(fname, None)
         all_scored = all_scored[:top_n]
+
+    # Select embed_n images by diversity (greedy farthest-point in embedding
+    # space) rather than pure quality rank, so different angles are preferred.
+    embed_files = _select_diverse(all_scored, fs.get("embs", {}), {}, embed_n)
+    embed_set   = set(embed_files)
 
     crops_to_emit.append({
         "type":   "info_save",
         "folder": folder_name,
         "info": {
-            "embedding_files": [f for f, _ in all_scored[:embed_n]],
-            "backup_files":    [f for f, _ in all_scored[embed_n:]],
+            "embedding_files": embed_files,
+            "backup_files":    [f for f, _ in all_scored if f not in embed_set],
             "scores":          dict(fs["scores"]),
         },
     })
