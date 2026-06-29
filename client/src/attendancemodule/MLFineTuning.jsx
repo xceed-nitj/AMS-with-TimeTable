@@ -8,8 +8,9 @@ import { theme, styles, cssReset } from './config';
 import getEnvironment from '../getenvironment';
 
 const apiUrl = getEnvironment();
-const CONFIG_API    = `${apiUrl}/api/v1/ml/liveness-config`;
-const GT_CONFIG_API = `${apiUrl}/api/v1/ml/gt-config`;
+const CONFIG_API      = `${apiUrl}/api/v1/ml/liveness-config`;
+const GT_CONFIG_API   = `${apiUrl}/api/v1/ml/gt-config`;
+const ATTEND_API      = `${apiUrl}/attendancemodule/acquisitioncontrol/attendance-thresholds`;
 
 const HEURISTIC_OPTIONS = [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.40];
 const ONNX_OPTIONS      = [0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90];
@@ -41,6 +42,29 @@ const GT_LABELS = {
     new_person_timeout:     { label: 'New-person timeout',     unit: 'sec',     hint: 'Auto-stop if all people reach target and no new person appears for N seconds.' },
     top_n:                  { label: 'Max images / person',    unit: 'images',  hint: 'Maximum images kept per person folder (lowest-quality ones are deleted).' },
     embed_n:                { label: 'Embedding images',       unit: 'images',  hint: 'Of the top-N kept, how many are used to compute the mean embedding.' },
+};
+
+const ATTEND_OPTIONS = {
+    threshold:              [0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60],
+    auto_present_threshold: [0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75],
+    review_threshold:       [0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50],
+    min_detections:         [1, 2, 3, 4, 5, 7, 10],
+    auto_enroll_threshold:  [0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95],
+    alert_confidence:       [0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70],
+};
+
+const ATTEND_LABELS = {
+    threshold:              { label: 'Recognition threshold',    unit: '',       hint: 'Minimum cosine similarity to match a detected face to a known student.' },
+    auto_present_threshold: { label: 'Auto-present threshold',   unit: '',       hint: 'Confidence at or above this marks a student as Present automatically.' },
+    review_threshold:       { label: 'Review threshold',         unit: '',       hint: 'Scores between this and auto-present are flagged for manual review (R).' },
+    min_detections:         { label: 'Min detections',           unit: 'frames', hint: 'Student must appear in at least this many frames to be considered detected.' },
+    auto_enroll_threshold:  { label: 'Auto-enroll threshold',    unit: '',       hint: 'Confidence required to auto-add a new face to the ground-truth dataset.' },
+    alert_confidence:       { label: 'Low-confidence alert',     unit: '',       hint: 'Students with average confidence below this trigger a low-confidence notification.' },
+};
+
+const ATTEND_DEFAULTS = {
+    threshold: 0.45, auto_present_threshold: 0.60, review_threshold: 0.40,
+    min_detections: 3, auto_enroll_threshold: 0.75, alert_confidence: 0.60,
 };
 
 function Toggle({ checked, onChange, disabled, label }) {
@@ -78,6 +102,10 @@ export default function MLFineTuning() {
     const [gtLoading,    setGtLoading]    = useState(true);
     const [gtSaving,     setGtSaving]     = useState(false);
 
+    const [attendThresh, setAttendThresh] = useState(null);
+    const [attendLoading, setAttendLoading] = useState(true);
+    const [attendSaving,  setAttendSaving]  = useState(false);
+
     const showToast = (msg, type = 'success') => {
         setToast({ msg, type });
         setTimeout(() => setToast(null), 4000);
@@ -112,6 +140,42 @@ export default function MLFineTuning() {
     }, []);
 
     useEffect(() => { loadGtConfig(); }, [loadGtConfig]);
+
+    const loadAttendThresh = useCallback(async () => {
+        setAttendLoading(true);
+        try {
+            const res = await fetch(ATTEND_API);
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+            setAttendThresh(data);
+        } catch (err) {
+            showToast(`Failed to load attendance thresholds: ${err.message}`, 'error');
+        }
+        setAttendLoading(false);
+    }, []);
+
+    useEffect(() => { loadAttendThresh(); }, [loadAttendThresh]);
+
+    const updateAttendThresh = async (patch) => {
+        setAttendSaving(true);
+        const prev = attendThresh;
+        setAttendThresh({ ...attendThresh, ...patch });
+        try {
+            const res = await fetch(ATTEND_API, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(patch),
+            });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+            setAttendThresh(data);
+            showToast('Threshold updated');
+        } catch (err) {
+            setAttendThresh(prev);
+            showToast(`Update failed: ${err.message}`, 'error');
+        }
+        setAttendSaving(false);
+    };
 
     const updateGtConfig = async (patch) => {
         setGtSaving(true);
@@ -306,6 +370,91 @@ export default function MLFineTuning() {
                         {gtConfig.embed_n > gtConfig.top_n && (
                             <div style={{ marginTop: 12, fontSize: 12, color: theme.danger }}>
                                 ⚠ Embedding images ({gtConfig.embed_n}) cannot exceed max images/person ({gtConfig.top_n}).
+                            </div>
+                        )}
+                    </>
+                )}
+            </div>
+
+            {/* ── Live Attendance Thresholds ─────────────────────────────── */}
+            <div style={{ ...styles.card, marginBottom: 20 }}>
+                <div style={{ marginBottom: 16 }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: theme.text }}>Live Attendance Thresholds</div>
+                    <div style={{ fontSize: 12, color: theme.textMuted, marginTop: 2 }}>
+                        Controls how the ML service classifies students during live attendance runs.
+                        Changes apply to the next run — no restart needed.
+                    </div>
+                </div>
+
+                {attendLoading ? (
+                    <div style={{ fontSize: 13, color: theme.textMuted }}>Loading…</div>
+                ) : !attendThresh ? (
+                    <div style={{ fontSize: 13, color: theme.danger }}>Could not load attendance thresholds.</div>
+                ) : (
+                    <>
+                        {/* Row 1 — recognition & classification */}
+                        <div style={{ fontSize: 11, fontWeight: 700, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
+                            Recognition & Classification
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 20 }}>
+                            {['threshold', 'auto_present_threshold', 'review_threshold', 'min_detections'].map(key => {
+                                const meta = ATTEND_LABELS[key];
+                                const opts = ATTEND_OPTIONS[key];
+                                const isFloat = key !== 'min_detections';
+                                return (
+                                    <div key={key}>
+                                        <label style={styles.label}>{meta.label}{meta.unit ? ` (${meta.unit})` : ''}</label>
+                                        <select
+                                            value={attendThresh[key] ?? ATTEND_DEFAULTS[key]}
+                                            disabled={attendSaving}
+                                            onChange={e => updateAttendThresh({ [key]: isFloat ? parseFloat(e.target.value) : parseInt(e.target.value, 10) })}
+                                            style={styles.select}
+                                        >
+                                            {opts.map(v => (
+                                                <option key={v} value={v}>
+                                                    {isFloat ? v.toFixed(2) : v}{v === ATTEND_DEFAULTS[key] ? ' (default)' : ''}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <div style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>{meta.hint}</div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Row 2 — enrollment & alerts */}
+                        <div style={{ fontSize: 11, fontWeight: 700, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
+                            Enrolment & Alerts
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+                            {['auto_enroll_threshold', 'alert_confidence'].map(key => {
+                                const meta = ATTEND_LABELS[key];
+                                const opts = ATTEND_OPTIONS[key];
+                                return (
+                                    <div key={key}>
+                                        <label style={styles.label}>{meta.label}</label>
+                                        <select
+                                            value={attendThresh[key] ?? ATTEND_DEFAULTS[key]}
+                                            disabled={attendSaving}
+                                            onChange={e => updateAttendThresh({ [key]: parseFloat(e.target.value) })}
+                                            style={styles.select}
+                                        >
+                                            {opts.map(v => (
+                                                <option key={v} value={v}>
+                                                    {v.toFixed(2)}{v === ATTEND_DEFAULTS[key] ? ' (default)' : ''}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <div style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>{meta.hint}</div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {(attendThresh.review_threshold ?? ATTEND_DEFAULTS.review_threshold) >=
+                         (attendThresh.auto_present_threshold ?? ATTEND_DEFAULTS.auto_present_threshold) && (
+                            <div style={{ marginTop: 12, fontSize: 12, color: theme.danger }}>
+                                ⚠ Review threshold must be lower than auto-present threshold.
                             </div>
                         )}
                     </>

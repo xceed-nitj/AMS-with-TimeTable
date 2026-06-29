@@ -2,7 +2,7 @@
 // Input: room + slot + RTSP URL → auto-lookup from LockSem → attendance report
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { DEGREES, YEARS, theme, styles, cssReset } from './config';
 import { useDepartments } from './useDepartments';
 import UnknownFaces from './UnknownFaces';
@@ -31,6 +31,7 @@ const SLOT_LABELS = {
 
 export default function AttendanceReport() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [tab, setTab] = useState('run');
 
   // ── Inputs ────────────────────────────────────────────────────
@@ -575,6 +576,21 @@ export default function AttendanceReport() {
     }
     setDetailLoading(false);
   };
+
+  // ── Auto-open report when navigated from Live Report page ─────────────────
+  useEffect(() => {
+    const s = location.state;
+    if (!s) return;
+    if (s.reportId) {
+      openDetail(s.reportId);
+    } else {
+      // No report yet — at least pre-fill the selectors so user lands in context
+      if (s.prefillRoom) setRoom(s.prefillRoom);
+      if (s.prefillSlot) setSlot(s.prefillSlot);
+      if (s.prefillDate) setDate(s.prefillDate);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const overrideStatus = async (reportId, rollNo, finalStatus) => {
     try {
@@ -1952,31 +1968,17 @@ export default function AttendanceReport() {
                       style={styles.badge(
                         detailReport.status === 'finalized'
                           ? 'success'
-                          : 'warning',
+                          : detailReport.status === 'live'
+                            ? 'warning'
+                            : 'primary',
                       )}
                     >
-                      {detailReport.status}
+                      {detailReport.status === 'finalized'
+                        ? 'Verified'
+                        : detailReport.status === 'live'
+                          ? 'Live'
+                          : 'Completed'}
                     </span>
-                    {detailReport.status !== 'finalized' && (
-                      <>
-                        <button
-                          onClick={() => finalizeReport(detailReport._id)}
-                          style={{
-                            ...styles.btnPrimary,
-                            padding: '8px 18px',
-                            fontSize: '13px',
-                          }}
-                        >
-                          Finalize
-                        </button>
-                        <button
-                          onClick={() => deleteReport(detailReport._id)}
-                          style={{ ...styles.btnDanger, padding: '8px 18px' }}
-                        >
-                          Delete Draft
-                        </button>
-                      </>
-                    )}
                     <button
                       onClick={() => setTab('unknown')}
                       style={{
@@ -2020,6 +2022,11 @@ export default function AttendanceReport() {
                     val: detailReport.summary?.unknownFaceCount ?? 0,
                     color: theme.warning,
                   },
+                  {
+                    label: 'Overrides',
+                    val: (detailReport.finalReport || []).filter(s => s.isOverridden).length,
+                    color: theme.accent,
+                  },
                 ]}
                 theme={theme}
                 styles={styles}
@@ -2028,20 +2035,14 @@ export default function AttendanceReport() {
               {detailReport.slotResults?.length > 0 ? (
                 <MultiRunTable
                   report={detailReport}
-                  readOnly={detailReport.status === 'finalized'}
-                  onOverride={(rollNo, status) =>
-                    overrideStatus(detailReport._id, rollNo, status)
-                  }
+                  readOnly={true}
                   theme={theme}
                   styles={styles}
                 />
               ) : (
                 <AttendanceTable
                   rows={detailReport.finalReport || []}
-                  readOnly={detailReport.status === 'finalized'}
-                  onOverride={(rollNo, status) =>
-                    overrideStatus(detailReport._id, rollNo, status)
-                  }
+                  readOnly={true}
                   theme={theme}
                   styles={styles}
                 />
@@ -2163,6 +2164,7 @@ function MultiRunTable({ report, readOnly, onOverride, theme, styles }) {
             >
               Final
             </th>
+            <th style={{ textAlign: 'center' }}>ERP</th>
             {!readOnly && <th>Override</th>}
           </tr>
         </thead>
@@ -2259,6 +2261,24 @@ function MultiRunTable({ report, readOnly, onOverride, theme, styles }) {
                     </span>
                   ) : (
                     <span style={{ color: theme.textMuted }}>—</span>
+                  )}
+                </td>
+                <td style={{ textAlign: 'center', padding: '9px 8px' }}>
+                  {final?.isOverridden ? (
+                    <span
+                      style={{
+                        padding: '2px 8px',
+                        borderRadius: 4,
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        background: theme.accentDim,
+                        color: theme.accent,
+                      }}
+                    >
+                      Overridden
+                    </span>
+                  ) : (
+                    <span style={{ color: theme.textMuted, fontSize: '11px' }}>—</span>
                   )}
                 </td>
                 {!readOnly && (
@@ -2472,6 +2492,7 @@ function AttendanceTable({ rows, readOnly, onOverride, theme, styles }) {
               'Zone',
               'First Seen',
               'Final',
+              'ERP',
               !readOnly && 'Override',
             ]
               .filter(Boolean)
@@ -2656,6 +2677,24 @@ function AttendanceTable({ rows, readOnly, onOverride, theme, styles }) {
                 >
                   {s.finalStatus}
                 </span>
+              </td>
+              <td style={{ padding: '10px 8px', textAlign: 'center' }}>
+                {s.isOverridden ? (
+                  <span
+                    style={{
+                      padding: '2px 8px',
+                      borderRadius: 4,
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      background: theme.accentDim,
+                      color: theme.accent,
+                    }}
+                  >
+                    Overridden
+                  </span>
+                ) : (
+                  <span style={{ color: theme.textMuted, fontSize: '11px' }}>—</span>
+                )}
               </td>
               {!readOnly && (
                 <td style={{ padding: '10px 14px' }}>

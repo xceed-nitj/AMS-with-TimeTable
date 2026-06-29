@@ -71,6 +71,16 @@ const AcquisitionControlSchema = new mongoose.Schema({
   // Days where acquisition is fully stopped (ISO date strings)
   stoppedDays: { type: [String], default: [] },
 
+  // ML thresholds used during live attendance runs
+  attendanceThresholds: {
+    threshold:              { type: Number, default: 0.45 }, // face recognition similarity
+    auto_present_threshold: { type: Number, default: 0.60 }, // mark as Present
+    review_threshold:       { type: Number, default: 0.40 }, // mark for Review
+    min_detections:         { type: Number, default: 3    }, // min face detections to count
+    auto_enroll_threshold:  { type: Number, default: 0.75 }, // auto-add to ground truth
+    alert_confidence:       { type: Number, default: 0.60 }, // low-confidence alert cutoff
+  },
+
   updatedAt: { type: Date, default: Date.now },
 }, { timestamps: true });
 

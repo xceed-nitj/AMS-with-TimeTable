@@ -11,6 +11,7 @@ const path = require("path");
 
 const LockSem = require("../../../models/locksem");
 const AcquisitionControl = require("../../../models/acquisitionControl");
+const Allotment = require("../../../models/allotment");
 const Camera = require("../../../models/attendanceModule/camera");
 const Subject = require("../../../models/subject");
 const AttendanceReport = require("../../../models/attendanceReport");
@@ -196,7 +197,7 @@ function buildSummary(finalReport) {
 }
 
 // ── Save one check's result into the slot's AttendanceReport ────────────────
-async function saveCheckResult({ ctx, subjectMeta, date, slot, checkIndex, mlResult, room, presentLogic }) {
+async function saveCheckResult({ ctx, subjectMeta, date, slot, checkIndex, mlResult, room, presentLogic, alertConfidence = 0.60 }) {
   try {
     saveFrameSnapshots(mlResult.frame_files || []);
   } catch (snapErr) {
@@ -247,7 +248,7 @@ async function saveCheckResult({ ctx, subjectMeta, date, slot, checkIndex, mlRes
   report.finalReport = mergeStudentStatus(report.slotResults, presentLogic);
 
   for (const s of report.finalReport) {
-    if (s.confidenceZone === "low" || (s.avgConfidence || 0) < 0.6) {
+    if (s.confidenceZone === "low" || (s.avgConfidence || 0) < alertConfidence) {
       alertNotifier
         .notifyLowConfidence({ batch: ctx.batch, rollNo: s.rollNo, avgConfidence: s.avgConfidence || 0, dept: ctx.dept })
         .catch((err) => console.error("[AutoScheduler] alert failed:", err.message));
@@ -312,6 +313,11 @@ async function runOneCheck({ room, slot, date, ctx, subjectMeta, cameras, pkl, r
         durationSec: runConfig.runDurationSec,
         subject: ctx.subject, faculty: ctx.faculty, semester: ctx.sem, locksemId: ctx.locksemId,
         embeddingsPklData: pkl.pklData, // stateless — see resolveSubjectAndPkl
+        threshold:              runConfig.threshold,
+        auto_present_threshold: runConfig.auto_present_threshold,
+        review_threshold:       runConfig.review_threshold,
+        min_detections:         runConfig.min_detections,
+        auto_enroll_threshold:  runConfig.auto_enroll_threshold,
       },
       { timeout: 300000 },
     );
@@ -319,6 +325,7 @@ async function runOneCheck({ room, slot, date, ctx, subjectMeta, cameras, pkl, r
     await saveCheckResult({
       ctx, subjectMeta, date, slot, checkIndex, mlResult: res.data, room,
       presentLogic: runConfig.presentLogic,
+      alertConfidence: runConfig.alertConfidence,
     });
   } catch (err) {
     console.error(`[AutoScheduler] Check ${checkIndex} failed for ${slot} room ${room}: ${err.message}`);
@@ -355,7 +362,17 @@ async function runSlotAttendance({ room, roomOverride, slot, date, periodInfo, c
   const periodDurationMin = (periodInfo.endMin - periodInfo.startMin);
   const checkIntervalMin = numRuns > 1 ? Math.max(1, Math.floor(periodDurationMin / numRuns)) : 0;
 
-  const runConfig = { runDurationSec, presentLogic };
+  const t = config.attendanceThresholds || {};
+  const runConfig = {
+    runDurationSec,
+    presentLogic,
+    threshold:              t.threshold              ?? 0.45,
+    auto_present_threshold: t.auto_present_threshold ?? 0.60,
+    review_threshold:       t.review_threshold       ?? 0.40,
+    min_detections:         t.min_detections         ?? 3,
+    auto_enroll_threshold:  t.auto_enroll_threshold  ?? 0.75,
+    alertConfidence:        t.alert_confidence       ?? 0.60,
+  };
 
   for (let i = 1; i <= numRuns; i++) {
     if (i > 1) {
@@ -424,9 +441,15 @@ function startAutoScheduler() {
     }
     if (!config) return;
 
-    // Step 2: working day check (global on/off + stopped days)
+    // Step 2: working day check (global on/off + stopped days + allotment non-working days)
     if (!config.active) return;
     if ((config.stoppedDays || []).includes(date)) return;
+    const allotmentEntry = await Allotment.findOne({ 'nonWorkingDays.date': date }).lean().catch(() => null);
+    if (allotmentEntry) {
+      const nwd = allotmentEntry.nonWorkingDays.find(d => d.date === date);
+      console.log(`[AutoScheduler] Skipping ${date} — non-working day: ${nwd?.remark || 'Holiday'}`);
+      return;
+    }
 
     for (const period of (config.periods || [])) {
       if (!period.enabled) continue;
