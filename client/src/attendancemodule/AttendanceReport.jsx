@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { DEGREES, YEARS, theme, styles, cssReset } from './config';
 import { useDepartments } from './useDepartments';
 import UnknownFaces from './UnknownFaces';
+import RejectedSamples from './RejectedSamples';
 import getEnvironment from '../getenvironment';
 import ExportReportsTab from './ExportReportsTab';
 
@@ -691,6 +692,7 @@ export default function AttendanceReport() {
           ['run', 'Run Attendance (Developers Only)'],
           ['history', 'Saved Reports'],
           ['unknown', 'Unknown Faces'],
+          ['rejected', 'Rejected Samples'],
           ['export', 'Export Reports'],
           ['detail', 'Report Detail'],
         ].map(
@@ -2059,6 +2061,7 @@ export default function AttendanceReport() {
           />
         </div>
       )}
+      {tab === 'rejected' && <RejectedSamples />}
     </div>
   );
 }

@@ -8,14 +8,40 @@ import { theme, styles, cssReset } from './config';
 import getEnvironment from '../getenvironment';
 
 const apiUrl = getEnvironment();
-const CONFIG_API = `${apiUrl}/api/v1/ml/liveness-config`;
-const SAMPLES_API = `${apiUrl}/api/v1/ml/liveness-rejected-samples`;
+const CONFIG_API    = `${apiUrl}/api/v1/ml/liveness-config`;
+const GT_CONFIG_API = `${apiUrl}/api/v1/ml/gt-config`;
 
-// Threshold dropdowns offer a fixed set of sensible values rather than a
-// free-text input — keeps an admin from typing an out-of-range or
-// nonsensical value, and the server validates 0.0–1.0 anyway as a backstop.
 const HEURISTIC_OPTIONS = [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.40];
 const ONNX_OPTIONS      = [0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90];
+
+// GT Acquisition — fixed option sets per parameter
+const GT_OPTIONS = {
+    frame_skip:             [1, 3, 5, 10, 15, 20, 30],
+    target_imgs_per_person: [5, 8, 10, 15, 20, 30],
+    cluster_threshold:      [0.35, 0.40, 0.45, 0.50, 0.55, 0.60],
+    min_samples:            [2, 3, 5, 7, 10],
+    det_size:               [320, 640],
+    merge_threshold:        [0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90],
+    nms_iou_thresh:         [0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50],
+    det_score_floor:        [0.30, 0.40, 0.50, 0.60, 0.70],
+    new_person_timeout:     [15, 30, 45, 60, 90, 120, 180],
+    top_n:                  [5, 8, 10, 15, 20, 30],
+    embed_n:                [3, 4, 5, 7, 10],
+};
+
+const GT_LABELS = {
+    frame_skip:             { label: 'Frame skip',             unit: 'frames',  hint: 'Process 1 in every N frames. Lower = more coverage, higher = faster.' },
+    target_imgs_per_person: { label: 'Target images / person', unit: 'images',  hint: 'Stop collecting for a person once this many are saved.' },
+    cluster_threshold:      { label: 'Cluster threshold',      unit: '',        hint: 'DBSCAN cosine similarity eps. Higher = looser clusters (may merge different people).' },
+    min_samples:            { label: 'Min cluster samples',    unit: 'detections', hint: 'DBSCAN min_samples. Higher = fewer but more certain clusters.' },
+    det_size:               { label: 'Detection grid size',    unit: 'px',      hint: 'InsightFace input size. 640 is more accurate but slower.' },
+    merge_threshold:        { label: 'Merge threshold',        unit: '',        hint: 'Post-DBSCAN cluster-merge cosine similarity. Lower merges more aggressively.' },
+    nms_iou_thresh:         { label: 'NMS IoU threshold',      unit: '',        hint: 'Non-maximum suppression overlap. Lower keeps fewer overlapping detections.' },
+    det_score_floor:        { label: 'Det score floor',        unit: '',        hint: 'Minimum InsightFace detection confidence to include a face in embeddings.' },
+    new_person_timeout:     { label: 'New-person timeout',     unit: 'sec',     hint: 'Auto-stop if all people reach target and no new person appears for N seconds.' },
+    top_n:                  { label: 'Max images / person',    unit: 'images',  hint: 'Maximum images kept per person folder (lowest-quality ones are deleted).' },
+    embed_n:                { label: 'Embedding images',       unit: 'images',  hint: 'Of the top-N kept, how many are used to compute the mean embedding.' },
+};
 
 function Toggle({ checked, onChange, disabled, label }) {
     return (
@@ -47,9 +73,10 @@ export default function MLFineTuning() {
     const [loading, setLoading]     = useState(true);
     const [saving, setSaving]       = useState(false);
     const [toast, setToast]         = useState(null);
-    const [samples, setSamples]     = useState([]);
-    const [samplesLoading, setSamplesLoading] = useState(false);
-    const [showSamples, setShowSamples] = useState(false);
+
+    const [gtConfig,     setGtConfig]     = useState(null);
+    const [gtLoading,    setGtLoading]    = useState(true);
+    const [gtSaving,     setGtSaving]     = useState(false);
 
     const showToast = (msg, type = 'success') => {
         setToast({ msg, type });
@@ -71,6 +98,42 @@ export default function MLFineTuning() {
 
     useEffect(() => { loadConfig(); }, [loadConfig]);
 
+    const loadGtConfig = useCallback(async () => {
+        setGtLoading(true);
+        try {
+            const res = await fetch(GT_CONFIG_API);
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+            setGtConfig(data);
+        } catch (err) {
+            showToast(`Failed to load GT config: ${err.message}`, 'error');
+        }
+        setGtLoading(false);
+    }, []);
+
+    useEffect(() => { loadGtConfig(); }, [loadGtConfig]);
+
+    const updateGtConfig = async (patch) => {
+        setGtSaving(true);
+        const prev = gtConfig;
+        setGtConfig({ ...gtConfig, ...patch });
+        try {
+            const res = await fetch(GT_CONFIG_API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(patch),
+            });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+            setGtConfig(data);
+            showToast('GT setting updated');
+        } catch (err) {
+            setGtConfig(prev);
+            showToast(`Update failed: ${err.message}`, 'error');
+        }
+        setGtSaving(false);
+    };
+
     const updateConfig = async (patch) => {
         setSaving(true);
         // Optimistic UI update — revert on failure
@@ -91,24 +154,6 @@ export default function MLFineTuning() {
             showToast(`Update failed: ${err.message}`, 'error');
         }
         setSaving(false);
-    };
-
-    const loadSamples = async () => {
-        setSamplesLoading(true);
-        try {
-            const res = await fetch(`${SAMPLES_API}?limit=30`);
-            const data = await res.json();
-            setSamples(data.samples || []);
-        } catch (err) {
-            showToast('Failed to load rejected samples', 'error');
-        }
-        setSamplesLoading(false);
-    };
-
-    const toggleSamples = () => {
-        const next = !showSamples;
-        setShowSamples(next);
-        if (next && samples.length === 0) loadSamples();
     };
 
     if (loading) {
@@ -148,6 +193,123 @@ export default function MLFineTuning() {
             <div style={{ marginBottom: 28 }}>
                 <div style={styles.heading}>ML Fine Tuning</div>
                 <div style={styles.subheading}>Tune model behaviour for attendance detection — no restart required, changes apply to the next face check.</div>
+            </div>
+
+            {/* ── GT Acquisition config ──────────────────────────────────── */}
+            <div style={{ ...styles.card, marginBottom: 20 }}>
+                <div style={{ marginBottom: 16 }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: theme.text }}>GT Acquisition Thresholds</div>
+                    <div style={{ fontSize: 12, color: theme.textMuted, marginTop: 2 }}>
+                        Controls how ground-truth face images are collected from RTSP streams.
+                        Changes apply to the next acquisition run — no restart needed.
+                    </div>
+                </div>
+
+                {gtLoading ? (
+                    <div style={{ fontSize: 13, color: theme.textMuted }}>Loading…</div>
+                ) : !gtConfig ? (
+                    <div style={{ fontSize: 13, color: theme.danger }}>Could not load GT config.</div>
+                ) : (
+                    <>
+                        {/* Group 1 — Session params */}
+                        <div style={{ fontSize: 11, fontWeight: 700, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
+                            Session Parameters
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 20 }}>
+                            {['frame_skip', 'target_imgs_per_person', 'cluster_threshold', 'min_samples', 'det_size'].map(key => {
+                                const meta = GT_LABELS[key];
+                                const opts = GT_OPTIONS[key];
+                                return (
+                                    <div key={key}>
+                                        <label style={styles.label}>{meta.label}{meta.unit ? ` (${meta.unit})` : ''}</label>
+                                        <select
+                                            value={gtConfig[key]}
+                                            disabled={gtSaving}
+                                            onChange={e => updateGtConfig({ [key]: Number(e.target.value) })}
+                                            style={styles.select}
+                                        >
+                                            {opts.map(v => (
+                                                <option key={v} value={v}>
+                                                    {v}{v === (key === 'frame_skip' ? 10 : key === 'target_imgs_per_person' ? 10 : key === 'cluster_threshold' ? 0.45 : key === 'min_samples' ? 3 : 320) ? ' (default)' : ''}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <div style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>{meta.hint}</div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Group 2 — Quality filters */}
+                        <div style={{ fontSize: 11, fontWeight: 700, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
+                            Quality Filters
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 20 }}>
+                            {['merge_threshold', 'nms_iou_thresh', 'det_score_floor'].map(key => {
+                                const meta = GT_LABELS[key];
+                                const opts = GT_OPTIONS[key];
+                                const defaults = { merge_threshold: 0.75, nms_iou_thresh: 0.35, det_score_floor: 0.5 };
+                                return (
+                                    <div key={key}>
+                                        <label style={styles.label}>{meta.label}</label>
+                                        <select
+                                            value={gtConfig[key]}
+                                            disabled={gtSaving}
+                                            onChange={e => updateGtConfig({ [key]: Number(e.target.value) })}
+                                            style={styles.select}
+                                        >
+                                            {opts.map(v => (
+                                                <option key={v} value={v}>{v}{v === defaults[key] ? ' (default)' : ''}</option>
+                                            ))}
+                                        </select>
+                                        <div style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>{meta.hint}</div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Group 3 — Behaviour & storage */}
+                        <div style={{ fontSize: 11, fontWeight: 700, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
+                            Behaviour & Storage
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+                            {['new_person_timeout', 'top_n', 'embed_n'].map(key => {
+                                const meta = GT_LABELS[key];
+                                const opts = GT_OPTIONS[key];
+                                const defaults = { new_person_timeout: 60, top_n: 10, embed_n: 5 };
+                                return (
+                                    <div key={key}>
+                                        <label style={styles.label}>{meta.label}{meta.unit ? ` (${meta.unit})` : ''}</label>
+                                        <select
+                                            value={gtConfig[key]}
+                                            disabled={gtSaving}
+                                            onChange={e => {
+                                                const val = Number(e.target.value);
+                                                if (key === 'top_n' && gtConfig.embed_n > val) {
+                                                    updateGtConfig({ top_n: val, embed_n: Math.min(gtConfig.embed_n, val) });
+                                                } else {
+                                                    updateGtConfig({ [key]: val });
+                                                }
+                                            }}
+                                            style={styles.select}
+                                        >
+                                            {opts.filter(v => key === 'embed_n' ? v <= gtConfig.top_n : true).map(v => (
+                                                <option key={v} value={v}>{v}{v === defaults[key] ? ' (default)' : ''}</option>
+                                            ))}
+                                        </select>
+                                        <div style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>{meta.hint}</div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {gtConfig.embed_n > gtConfig.top_n && (
+                            <div style={{ marginTop: 12, fontSize: 12, color: theme.danger }}>
+                                ⚠ Embedding images ({gtConfig.embed_n}) cannot exceed max images/person ({gtConfig.top_n}).
+                            </div>
+                        )}
+                    </>
+                )}
             </div>
 
             {/* ── Liveness / Anti-Spoofing section ───────────────────────── */}
@@ -230,53 +392,6 @@ export default function MLFineTuning() {
                 )}
             </div>
 
-            {/* ── Rejected samples review panel ──────────────────────────── */}
-            <div style={styles.card}>
-                <div
-                    onClick={toggleSamples}
-                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
-                >
-                    <div style={{ fontSize: 15, fontWeight: 700, color: theme.text }}>
-                        Review Rejected Crops {showSamples ? '▲' : '▼'}
-                    </div>
-                    <div style={{ fontSize: 12, color: theme.accent }}>
-                        {showSamples ? 'Hide' : 'Show recent rejections'}
-                    </div>
-                </div>
-
-                {showSamples && (
-                    <div style={{ marginTop: 16 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-                            <div style={{ fontSize: 12, color: theme.textMuted }}>
-                                Most recent rejected face crops — use these to judge whether the threshold is too strict or too lenient.
-                            </div>
-                            <button onClick={loadSamples} disabled={samplesLoading} style={{ ...styles.btnGhost, padding: '4px 12px', fontSize: 12 }}>
-                                {samplesLoading ? 'Loading…' : 'Refresh'}
-                            </button>
-                        </div>
-
-                        {samplesLoading ? (
-                            <div style={{ textAlign: 'center', padding: 30, color: theme.textMuted }}>Loading…</div>
-                        ) : samples.length === 0 ? (
-                            <div style={{ textAlign: 'center', padding: 30, color: theme.textMuted }}>
-                                No rejected crops saved yet. They'll appear here once attendance runs reject a spoofed face
-                                (requires "Save rejected crops" to be on).
-                            </div>
-                        ) : (
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: 10 }}>
-                                {samples.map((s) => (
-                                    <div key={s.filename} style={{ borderRadius: 8, overflow: 'hidden', border: `1px solid ${theme.border}` }}>
-                                        <img src={s.image} alt={s.filename} style={{ width: '100%', height: 110, objectFit: 'cover', display: 'block' }} />
-                                        <div style={{ fontSize: 10, color: theme.textMuted, padding: '4px 6px', wordBreak: 'break-all' }}>
-                                            {s.filename}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                )}
-            </div>
         </div>
     );
 }

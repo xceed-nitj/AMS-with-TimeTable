@@ -136,7 +136,7 @@ def _compute_mean_embedding_from_bytes(photos):
             continue
         face = max(faces, key=lambda f: (f.bbox[2] - f.bbox[0]) * (f.bbox[3] - f.bbox[1]))
         det_score = float(getattr(face, 'det_score', 1.0))
-        if det_score < 0.5:
+        if det_score < state.gt_config.get("det_score_floor", 0.5):
             continue
         emb  = face.embedding
         norm = np.linalg.norm(emb)
@@ -408,7 +408,7 @@ def _update_student_embedding_sync(req: UpdateEmbeddingRequest):
             continue
         face = max(faces, key=lambda f: (f.bbox[2]-f.bbox[0])*(f.bbox[3]-f.bbox[1]))
         det_score = float(getattr(face, 'det_score', 1.0))
-        if det_score < 0.5:
+        if det_score < state.gt_config.get("det_score_floor", 0.5):
             continue
         emb  = face.embedding
         norm = np.linalg.norm(emb)

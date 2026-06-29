@@ -361,7 +361,7 @@ def extract_rtsp_stream(req: RTSPRequest):
         _cluster_passes      = 0
         _last_person_count   = 0
         _last_new_person_t   = time.time()
-        NEW_PERSON_TIMEOUT   = 60
+        NEW_PERSON_TIMEOUT   = state.gt_config.get("new_person_timeout", 60)
 
         reader   = _RTSPReader(cap, decode_every=req.frameSkip)
         last_seq = 0
@@ -480,7 +480,9 @@ def extract_rtsp_stream(req: RTSPRequest):
                         new_s, upd, crops = _save_clusters(lbl, ulbl, embs, imgs, tss, qs,
                                                             batch_dir, mean_embs, serial,
                                                             req.targetImgsPerPerson, pcounts,
-                                                            req.clusterThreshold, fstate)
+                                                            req.clusterThreshold, fstate,
+                                                            top_n=state.gt_config.get("top_n", 10),
+                                                            embed_n=state.gt_config.get("embed_n", 5))
                         return new_s, upd, mean_embs, pcounts, crops, fstate
 
                     cluster_future = cluster_pool.submit(
@@ -518,7 +520,9 @@ def extract_rtsp_stream(req: RTSPRequest):
                     labels, unique_labels, all_embeddings, all_face_images,
                     all_timestamps, all_quality, batch_dir, existing_mean_embs,
                     next_serial, req.targetImgsPerPerson, person_counts, req.clusterThreshold,
-                    fstate_final)
+                    fstate_final,
+                    top_n=state.gt_config.get("top_n", 10),
+                    embed_n=state.gt_config.get("embed_n", 5))
                 for crop_event in crops_to_emit:
                     yield sse(crop_event)
                 for person_id, new_count in updated.items():
@@ -566,6 +570,8 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
     # run's summary reports only what it rejected (see note on the counter's
     # concurrency tradeoff in clustering_service.py).
     reset_liveness_rejection_count()
+
+    run_dept = req.batch.split("_")[1] if "_" in req.batch else ""
 
     yield {"type": "stage", "message": f"Loading enrolled embeddings for batch: {req.batch}…"}
 
@@ -676,7 +682,7 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
             except Exception:
                 pass
  
-            detections = _detect_faces_tiled(state.face_app, frame, ui_mask)
+            detections = _detect_faces_tiled(state.face_app, frame, ui_mask, dept=run_dept)
             faces_this_frame = len(detections)
 
             for d in detections:
@@ -1306,7 +1312,12 @@ def _update_info_inmem(folder_name, new_scores, folder_state, crops_to_emit, top
 import subprocess
 import shutil
 
-RECORDINGS_DIR = os.path.join(BASE_DIR, "..", "server", "recordings")
+# Override via RECORDINGS_DIR env var to control save path without code changes.
+# Falls back to server/recordings/ relative to this file.
+RECORDINGS_DIR = os.environ.get(
+    "RECORDINGS_DIR",
+    os.path.join(BASE_DIR, "..", "server", "recordings"),
+)
 os.makedirs(RECORDINGS_DIR, exist_ok=True)
 
 _recordings: dict = {}
@@ -1315,28 +1326,32 @@ _rec_lock = threading.Lock()
 class RecordRequest(BaseModel):
     rtspUrl: str
     label:   str
-    durationSec: int = 0   # 0 = no hard stop
+    durationSec: int = 0
+    # "video+audio" | "video" | "audio"
+    format: str = "video+audio"
 
 class StopRecordRequest(BaseModel):
     recordingId: str
 
 @router.post("/start-recording")
 def start_recording(req: RecordRequest):
-    rec_id    = str(uuid.uuid4())
+    rec_id     = str(uuid.uuid4())
     safe_label = re.sub(r'[^\w\-]', '_', req.label)
     ts         = time.strftime('%Y%m%d_%H%M%S')
     filename   = f"{safe_label}_{ts}.mp4"
     out_path   = os.path.join(RECORDINGS_DIR, filename)
 
-    cmd = [
-        "ffmpeg", "-y",
-        "-rtsp_transport", "tcp",
-        "-i", req.rtspUrl,
-        "-c:v", "copy",
-        "-c:a", "aac",          # transcode audio → AAC so MP4 plays everywhere
-        "-b:a", "128k",
-        "-movflags", "+faststart",
-    ]
+    fmt = req.format if req.format in ("video+audio", "video", "audio") else "video+audio"
+
+    cmd = ["ffmpeg", "-y", "-rtsp_transport", "tcp", "-i", req.rtspUrl]
+
+    if fmt == "video+audio":
+        cmd += ["-c:v", "copy", "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart"]
+    elif fmt == "video":
+        cmd += ["-c:v", "copy", "-an", "-movflags", "+faststart"]
+    else:  # audio only
+        cmd += ["-vn", "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart"]
+
     if req.durationSec > 0:
         cmd += ["-t", str(req.durationSec)]
     cmd.append(out_path)
@@ -1348,8 +1363,9 @@ def start_recording(req: RecordRequest):
             "proc": proc, "path": out_path,
             "filename": filename, "label": req.label,
             "started": time.time(), "rtspUrl": req.rtspUrl,
+            "format": fmt,
         }
-    return {"recordingId": rec_id, "filename": filename, "status": "recording"}
+    return {"recordingId": rec_id, "filename": filename, "format": fmt, "status": "recording"}
 
 
 @router.post("/stop-recording")
@@ -1391,6 +1407,7 @@ def list_recordings_ep():
                 "started":     rec["started"],
                 "status":      "recording" if running else "done",
                 "sizeBytes":   size,
+                "format":      rec.get("format", "video+audio"),
             })
     return result
 
@@ -1448,30 +1465,129 @@ def update_liveness_config_ep(req: LivenessConfigUpdate):
     }
 
 
+# ═══════════════════════════════════════════════════════════════════════════
+# GT Acquisition config  (ML Fine Tuning page — GT Acquisition section)
+# ═══════════════════════════════════════════════════════════════════════════
+
+class GTConfigUpdate(BaseModel):
+    frame_skip:             Optional[int]   = None
+    target_imgs_per_person: Optional[int]   = None
+    cluster_threshold:      Optional[float] = None
+    min_samples:            Optional[int]   = None
+    det_size:               Optional[int]   = None
+    merge_threshold:        Optional[float] = None
+    nms_iou_thresh:         Optional[float] = None
+    det_score_floor:        Optional[float] = None
+    new_person_timeout:     Optional[int]   = None
+    top_n:                  Optional[int]   = None
+    embed_n:                Optional[int]   = None
+
+
+@router.get("/gt-config")
+def get_gt_config_ep():
+    with state.gt_config_lock:
+        return dict(state.gt_config)
+
+
+@router.post("/gt-config")
+def update_gt_config_ep(req: GTConfigUpdate):
+    updates = req.dict(exclude_none=True)
+
+    # Validate ranges
+    float_ranges = {
+        "cluster_threshold": (0.3, 0.9),
+        "merge_threshold":   (0.5, 0.95),
+        "nms_iou_thresh":    (0.1, 0.7),
+        "det_score_floor":   (0.3, 0.8),
+    }
+    int_ranges = {
+        "frame_skip":             (1, 60),
+        "target_imgs_per_person": (3, 50),
+        "min_samples":            (2, 15),
+        "new_person_timeout":     (15, 300),
+        "top_n":                  (5, 30),
+        "embed_n":                (3, 15),
+    }
+    for key, (lo, hi) in float_ranges.items():
+        if key in updates and not (lo <= updates[key] <= hi):
+            return JSONResponse(status_code=400,
+                content={"error": f"{key} must be {lo}–{hi}, got {updates[key]}"})
+    for key, (lo, hi) in int_ranges.items():
+        if key in updates and not (lo <= updates[key] <= hi):
+            return JSONResponse(status_code=400,
+                content={"error": f"{key} must be {lo}–{hi}, got {updates[key]}"})
+    if "det_size" in updates and updates["det_size"] not in (320, 640):
+        return JSONResponse(status_code=400,
+            content={"error": "det_size must be 320 or 640"})
+    # embed_n must not exceed top_n
+    new_top_n   = updates.get("top_n",   state.gt_config["top_n"])
+    new_embed_n = updates.get("embed_n", state.gt_config["embed_n"])
+    if new_embed_n > new_top_n:
+        return JSONResponse(status_code=400,
+            content={"error": f"embed_n ({new_embed_n}) cannot exceed top_n ({new_top_n})"})
+
+    with state.gt_config_lock:
+        state.gt_config.update(updates)
+        cfg = dict(state.gt_config)
+
+    logger.info(f"[GTConfig] Updated: {updates} → {cfg}")
+    return cfg
+
+
+def _parse_dept_from_filename(fname: str) -> str:
+    """
+    Extract the dept tag from a rejected-crop filename.
+    New format:  {ts_ms}_{DEPT}_{method}{score}_det{score}.jpg
+    Old format:  {ts_ms}_{method}{score}_det{score}.jpg  (no dept)
+    """
+    stem = fname.rsplit(".", 1)[0]          # strip .jpg
+    parts = stem.split("_")
+    if len(parts) < 2:
+        return ""
+    # If parts[1] starts with a known method prefix it's the old format
+    if parts[1].startswith(("heur", "onnx")):
+        return ""
+    return parts[1]
+
+
 @router.get("/liveness-rejected-samples")
-def list_liveness_rejected_samples(limit: int = 50):
+def list_liveness_rejected_samples(limit: int = 50, dept: str = ""):
     """
     Recent rejected-crop filenames (and a base64 thumbnail of each) for the
-    ML Fine Tuning page's accuracy-review panel — lets an admin actually
-    look at what got rejected and judge whether the threshold needs
-    adjusting, rather than only seeing a count.
+    ML Fine Tuning page's accuracy-review panel.  Optionally filtered by
+    the dept tag encoded in the filename (pass dept= query param).
+    Also returns the full list of depts seen across all saved files.
     """
     rejected_dir = clustering_service.LIVENESS_REJECTED_DIR
     if not os.path.isdir(rejected_dir):
-        return {"samples": [], "total": 0}
+        return {"samples": [], "total": 0, "depts": []}
 
-    files = sorted(
+    all_files = sorted(
         (f for f in os.listdir(rejected_dir) if f.lower().endswith(".jpg")),
-        reverse=True,  # filenames are ms-timestamp-prefixed → newest first
+        reverse=True,  # ms-timestamp prefix → newest first
     )
+
+    # Collect unique dept tags for the filter dropdown
+    depts = sorted({d for d in (_parse_dept_from_filename(f) for f in all_files) if d})
+
+    # Apply dept filter when requested
+    if dept:
+        files = [f for f in all_files if _parse_dept_from_filename(f) == dept]
+    else:
+        files = all_files
+
     total = len(files)
     samples = []
     for fname in files[:limit]:
         try:
-            with open(os.path.join(rejected_dir, fname), "rb") as f:
-                b64 = base64.b64encode(f.read()).decode("ascii")
-            samples.append({"filename": fname, "image": f"data:image/jpeg;base64,{b64}"})
+            with open(os.path.join(rejected_dir, fname), "rb") as fh:
+                b64 = base64.b64encode(fh.read()).decode("ascii")
+            samples.append({
+                "filename": fname,
+                "image": f"data:image/jpeg;base64,{b64}",
+                "dept": _parse_dept_from_filename(fname),
+            })
         except Exception:
             continue
 
-    return {"samples": samples, "total": total}
+    return {"samples": samples, "total": total, "depts": depts}
