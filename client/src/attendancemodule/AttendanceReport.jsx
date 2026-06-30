@@ -208,26 +208,26 @@ export default function AttendanceReport() {
       if (filterDate) params.set('date', filterDate);
       const res = await fetch(`${REPORT_API}?${params}`);
       const data = await res.json();
-      
+
       let fetchedReports = data.reports || [];
       if (filterSem) {
         fetchedReports = fetchedReports.filter((r) => String(r.semester) === String(filterSem));
       }
-      
+
       fetchedReports.sort((a, b) => {
         const dateA = a.date || '';
         const dateB = b.date || '';
         if (dateA !== dateB) return dateA < dateB ? 1 : -1;
-        
+
         const deptA = a.department || '';
         const deptB = b.department || '';
         if (deptA !== deptB) return deptA.localeCompare(deptB);
-        
+
         const semA = a.semester || '';
         const semB = b.semester || '';
         return String(semA).localeCompare(String(semB));
       });
-      
+
       setReports(fetchedReports);
     } catch {
       showToast('Failed to load reports', 'error');
@@ -348,10 +348,10 @@ export default function AttendanceReport() {
     // ── Parse sir's roll number list ──────────────────────────
     const parsedRollNos = enrolledRollNos.trim()
       ? enrolledRollNos
-          .trim()
-          .split(/[\n,]+/)
-          .map((r) => r.trim())
-          .filter(Boolean)
+        .trim()
+        .split(/[\n,]+/)
+        .map((r) => r.trim())
+        .filter(Boolean)
       : [];
 
     setProcessing(true);
@@ -457,7 +457,7 @@ export default function AttendanceReport() {
               setPreviewActive(false);
               setProcessing(false);
             }
-          } catch {}
+          } catch { }
         }
       }
     } catch (e) {
@@ -498,10 +498,10 @@ export default function AttendanceReport() {
 
     const parsedRollNos = enrolledRollNos.trim()
       ? enrolledRollNos
-          .trim()
-          .split(/[\n,]+/)
-          .map((r) => r.trim())
-          .filter(Boolean)
+        .trim()
+        .split(/[\n,]+/)
+        .map((r) => r.trim())
+        .filter(Boolean)
       : [];
 
     try {
@@ -844,8 +844,8 @@ export default function AttendanceReport() {
                             (e.currentTarget.style.background = theme.accentDim)
                           }
                           onMouseLeave={(e) =>
-                            (e.currentTarget.style.background =
-                              r === room ? theme.accentDim : 'transparent')
+                          (e.currentTarget.style.background =
+                            r === room ? theme.accentDim : 'transparent')
                           }
                         >
                           {r}
@@ -854,16 +854,16 @@ export default function AttendanceReport() {
                     {rooms.filter((r) =>
                       r.toLowerCase().includes(roomSearch.toLowerCase()),
                     ).length === 0 && (
-                      <div
-                        style={{
-                          padding: '9px 14px',
-                          color: theme.textMuted,
-                          fontSize: '12px',
-                        }}
-                      >
-                        No rooms match "{roomSearch}"
-                      </div>
-                    )}
+                        <div
+                          style={{
+                            padding: '9px 14px',
+                            color: theme.textMuted,
+                            fontSize: '12px',
+                          }}
+                        >
+                          No rooms match "{roomSearch}"
+                        </div>
+                      )}
                   </div>
                 )}
               </div>
@@ -1200,10 +1200,10 @@ export default function AttendanceReport() {
                     minWidth: 140,
                     opacity:
                       processing ||
-                      !rtspUrl.trim() ||
-                      !room ||
-                      !slot ||
-                      (!derivedCtx?.batch && !manualBatch)
+                        !rtspUrl.trim() ||
+                        !room ||
+                        !slot ||
+                        (!derivedCtx?.batch && !manualBatch)
                         ? 0.5
                         : 1,
                   }}
@@ -1250,11 +1250,11 @@ export default function AttendanceReport() {
                     background: theme.success,
                     opacity:
                       processing ||
-                      sessionActive ||
-                      !rtspUrl.trim() ||
-                      !room ||
-                      !slot ||
-                      (!derivedCtx?.batch && !manualBatch)
+                        sessionActive ||
+                        !rtspUrl.trim() ||
+                        !room ||
+                        !slot ||
+                        (!derivedCtx?.batch && !manualBatch)
                         ? 0.5
                         : 1,
                   }}
@@ -1531,12 +1531,12 @@ export default function AttendanceReport() {
                       },
                       ...(stats.flagged > 0
                         ? [
-                            {
-                              label: 'Flagged 🚩',
-                              val: stats.flagged,
-                              color: theme.warning,
-                            },
-                          ]
+                          {
+                            label: 'Flagged 🚩',
+                            val: stats.flagged,
+                            color: theme.warning,
+                          },
+                        ]
                         : []),
                     ]}
                     theme={theme}
@@ -1898,16 +1898,16 @@ export default function AttendanceReport() {
                           >
                             {r.summary
                               ? pct(r.summary.present, r.summary.totalStudents) +
-                                '%'
+                              '%'
                               : '—'}
                           </td>
                           <td style={{ padding: '11px 14px' }}>
                             <span
                               style={styles.badge(
-                                r.status === 'finalized' ? 'success' : r.status === 'live' ? 'warning' : 'primary',
+                                r.status === 'live' ? 'warning' : 'success',
                               )}
                             >
-                              {r.status === 'live' ? 'Running' : r.status === 'draft' ? 'Draft' : 'Completed'}
+                              {r.status === 'live' ? 'Running' : 'Completed'}
                             </span>
                           </td>
                           <td
@@ -2033,8 +2033,8 @@ export default function AttendanceReport() {
                         [
                           'Slot',
                           SLOT_LABELS[detailReport.timeSlot] ||
-                            detailReport.timeSlot ||
-                            '—',
+                          detailReport.timeSlot ||
+                          '—',
                         ],
                         ['Subject', detailReport.subject || '—'],
                         ['Faculty', detailReport.faculty || '—'],
@@ -2244,9 +2244,9 @@ function MultiRunTable({ report, readOnly, onOverride, theme, styles }) {
                 >
                   {r.processedAt
                     ? new Date(r.processedAt).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })
                     : '—'}
                 </div>
                 <div
