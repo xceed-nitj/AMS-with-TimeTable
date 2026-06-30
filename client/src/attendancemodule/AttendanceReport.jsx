@@ -93,8 +93,11 @@ export default function AttendanceReport() {
   // ── History ───────────────────────────────────────────────────
   const [reports, setReports] = useState([]);
   const [histLoading, setHistLoading] = useState(false);
-  const [filterBatch, setFilterBatch] = useState('');
+  const [filterDept, setFilterDept] = useState('');
+  const [filterSem, setFilterSem] = useState('');
   const [filterDate, setFilterDate] = useState('');
+  const [availableSems, setAvailableSems] = useState([]);
+  const [semsLoading, setSemsLoading] = useState(false);
 
   // ── Detail ────────────────────────────────────────────────────
   const [detailReport, setDetailReport] = useState(null);
@@ -201,16 +204,58 @@ export default function AttendanceReport() {
     setHistLoading(true);
     try {
       const params = new URLSearchParams();
-      if (filterBatch) params.set('batch', filterBatch);
+      if (filterDept) params.set('department', filterDept);
       if (filterDate) params.set('date', filterDate);
       const res = await fetch(`${REPORT_API}?${params}`);
       const data = await res.json();
-      setReports(data.reports || []);
+
+      let fetchedReports = data.reports || [];
+      if (filterSem) {
+        fetchedReports = fetchedReports.filter((r) => String(r.semester) === String(filterSem));
+      }
+
+      fetchedReports.sort((a, b) => {
+        const dateA = a.date || '';
+        const dateB = b.date || '';
+        if (dateA !== dateB) return dateA < dateB ? 1 : -1;
+
+        const deptA = a.department || '';
+        const deptB = b.department || '';
+        if (deptA !== deptB) return deptA.localeCompare(deptB);
+
+        const semA = a.semester || '';
+        const semB = b.semester || '';
+        return String(semA).localeCompare(String(semB));
+      });
+
+      setReports(fetchedReports);
     } catch {
       showToast('Failed to load reports', 'error');
     }
     setHistLoading(false);
-  }, [filterBatch, filterDate]);
+  }, [filterDept, filterSem, filterDate]);
+
+  // ── Fetch semesters for selected department ─────────────────────────
+  useEffect(() => {
+    if (!filterDept) {
+      setAvailableSems([]);
+      setFilterSem('');
+      return;
+    }
+    setSemsLoading(true);
+    fetch(`${apiUrl}/timetablemodule/lock/sems-by-dept?dept=${encodeURIComponent(filterDept)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        const sems = data.sems || [];
+        setAvailableSems(sems);
+        // Ensure selected sem is still valid if not empty
+        if (filterSem && !sems.includes(String(filterSem))) {
+          setFilterSem('');
+        }
+      })
+      .catch(() => setAvailableSems([]))
+      .finally(() => setSemsLoading(false));
+  }, [filterDept]); // Notice filterSem is NOT in deps to avoid unnecessary clears
 
   useEffect(() => {
     if (tab === 'history') fetchReports();
@@ -303,10 +348,10 @@ export default function AttendanceReport() {
     // ── Parse sir's roll number list ──────────────────────────
     const parsedRollNos = enrolledRollNos.trim()
       ? enrolledRollNos
-          .trim()
-          .split(/[\n,]+/)
-          .map((r) => r.trim())
-          .filter(Boolean)
+        .trim()
+        .split(/[\n,]+/)
+        .map((r) => r.trim())
+        .filter(Boolean)
       : [];
 
     setProcessing(true);
@@ -412,7 +457,7 @@ export default function AttendanceReport() {
               setPreviewActive(false);
               setProcessing(false);
             }
-          } catch {}
+          } catch { }
         }
       }
     } catch (e) {
@@ -453,10 +498,10 @@ export default function AttendanceReport() {
 
     const parsedRollNos = enrolledRollNos.trim()
       ? enrolledRollNos
-          .trim()
-          .split(/[\n,]+/)
-          .map((r) => r.trim())
-          .filter(Boolean)
+        .trim()
+        .split(/[\n,]+/)
+        .map((r) => r.trim())
+        .filter(Boolean)
       : [];
 
     try {
@@ -799,8 +844,8 @@ export default function AttendanceReport() {
                             (e.currentTarget.style.background = theme.accentDim)
                           }
                           onMouseLeave={(e) =>
-                            (e.currentTarget.style.background =
-                              r === room ? theme.accentDim : 'transparent')
+                          (e.currentTarget.style.background =
+                            r === room ? theme.accentDim : 'transparent')
                           }
                         >
                           {r}
@@ -809,16 +854,16 @@ export default function AttendanceReport() {
                     {rooms.filter((r) =>
                       r.toLowerCase().includes(roomSearch.toLowerCase()),
                     ).length === 0 && (
-                      <div
-                        style={{
-                          padding: '9px 14px',
-                          color: theme.textMuted,
-                          fontSize: '12px',
-                        }}
-                      >
-                        No rooms match "{roomSearch}"
-                      </div>
-                    )}
+                        <div
+                          style={{
+                            padding: '9px 14px',
+                            color: theme.textMuted,
+                            fontSize: '12px',
+                          }}
+                        >
+                          No rooms match "{roomSearch}"
+                        </div>
+                      )}
                   </div>
                 )}
               </div>
@@ -1155,10 +1200,10 @@ export default function AttendanceReport() {
                     minWidth: 140,
                     opacity:
                       processing ||
-                      !rtspUrl.trim() ||
-                      !room ||
-                      !slot ||
-                      (!derivedCtx?.batch && !manualBatch)
+                        !rtspUrl.trim() ||
+                        !room ||
+                        !slot ||
+                        (!derivedCtx?.batch && !manualBatch)
                         ? 0.5
                         : 1,
                   }}
@@ -1205,11 +1250,11 @@ export default function AttendanceReport() {
                     background: theme.success,
                     opacity:
                       processing ||
-                      sessionActive ||
-                      !rtspUrl.trim() ||
-                      !room ||
-                      !slot ||
-                      (!derivedCtx?.batch && !manualBatch)
+                        sessionActive ||
+                        !rtspUrl.trim() ||
+                        !room ||
+                        !slot ||
+                        (!derivedCtx?.batch && !manualBatch)
                         ? 0.5
                         : 1,
                   }}
@@ -1486,12 +1531,12 @@ export default function AttendanceReport() {
                       },
                       ...(stats.flagged > 0
                         ? [
-                            {
-                              label: 'Flagged 🚩',
-                              val: stats.flagged,
-                              color: theme.warning,
-                            },
-                          ]
+                          {
+                            label: 'Flagged 🚩',
+                            val: stats.flagged,
+                            color: theme.warning,
+                          },
+                        ]
                         : []),
                     ]}
                     theme={theme}
@@ -1664,30 +1709,61 @@ export default function AttendanceReport() {
             }}
           >
             <div>
-              <label style={styles.label}>Batch</label>
-              <input
-                placeholder="e.g. BTECH_TT_2026"
-                value={filterBatch}
-                onChange={(e) => setFilterBatch(e.target.value)}
-                style={{ ...styles.input, width: 220 }}
-              />
-            </div>
-            <div>
               <label style={styles.label}>Date</label>
               <input
                 type="date"
                 value={filterDate}
                 onChange={(e) => setFilterDate(e.target.value)}
-                style={{ ...styles.input, width: 180 }}
+                style={{ ...styles.input, width: 150 }}
               />
+            </div>
+            <div>
+              <label style={styles.label}>Department</label>
+              <select
+                value={filterDept}
+                onChange={(e) => {
+                  setFilterDept(e.target.value);
+                  setFilterSem('');
+                }}
+                style={{ ...styles.select, width: 200 }}
+                disabled={deptLoading}
+              >
+                <option value="">
+                  {deptLoading ? 'Loading…' : deptError ? 'Error' : 'All'}
+                </option>
+                {departments.map((d) => (
+                  <option key={d} value={d}>
+                    {d.replace(/_/g, ' ')}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label style={styles.label}>Semester</label>
+              <select
+                value={filterSem}
+                onChange={(e) => setFilterSem(e.target.value)}
+                style={{ ...styles.select, width: 120 }}
+                disabled={!filterDept || semsLoading}
+              >
+                <option value="">
+                  {!filterDept ? 'Select Dept First' : semsLoading ? 'Loading...' : 'All'}
+                </option>
+                {availableSems.map((sem) => (
+                  <option key={sem} value={sem}>
+                    {sem}
+                  </option>
+                ))}
+              </select>
             </div>
             <button onClick={fetchReports} style={styles.btnPrimary}>
               Search
             </button>
             <button
               onClick={() => {
-                setFilterBatch('');
                 setFilterDate('');
+                setFilterDept('');
+                setFilterSem('');
               }}
               style={styles.btnGhost}
             >
@@ -1717,112 +1793,138 @@ export default function AttendanceReport() {
               No reports found.
             </div>
           ) : (
-            <div style={{ ...styles.card, padding: 0, overflow: 'hidden' }}>
-              <table className="ams-table">
-                <thead>
-                  <tr>
-                    {[
-                      'Batch',
-                      'Date',
-                      'Slot',
-                      'Subject',
-                      'Faculty',
-                      'P',
-                      'A',
-                      '%',
-                      'Status',
-                      '',
-                    ].map((h) => (
-                      <th key={h}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {reports.map((r) => (
-                    <tr
-                      key={r._id}
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => openDetail(r._id)}
-                    >
-                      <td
-                        style={{
-                          padding: '11px 14px',
-                          fontFamily: theme.fontMono,
-                          fontSize: '12px',
-                          fontWeight: 600,
-                          color: theme.text,
-                        }}
-                      >
-                        {r.batch}
-                      </td>
-
-                      <td style={{ padding: '11px 14px', color: theme.text }}>
-                        {r.date}
-                      </td>
-                      <td
-                        style={{ padding: '11px 14px', color: theme.textMuted }}
-                      >
-                        {SLOT_LABELS[r.timeSlot] || r.timeSlot || '—'}
-                      </td>
-                      <td style={{ padding: '11px 14px', color: theme.text }}>
-                        {r.subject || '—'}
-                      </td>
-                      <td
-                        style={{ padding: '11px 14px', color: theme.textMuted }}
-                      >
-                        {r.faculty || '—'}
-                      </td>
-                      <td
-                        style={{
-                          padding: '11px 14px',
-                          color: theme.success,
-                          fontWeight: 700,
-                        }}
-                      >
-                        {r.summary?.present ?? '—'}
-                      </td>
-                      <td
-                        style={{
-                          padding: '11px 14px',
-                          color: theme.danger,
-                          fontWeight: 700,
-                        }}
-                      >
-                        {r.summary?.absent ?? '—'}
-                      </td>
-                      <td
-                        style={{
-                          padding: '11px 14px',
-                          fontFamily: theme.fontMono,
-                        }}
-                      >
-                        {r.summary
-                          ? pct(r.summary.present, r.summary.totalStudents) +
-                            '%'
-                          : '—'}
-                      </td>
-                      <td style={{ padding: '11px 14px' }}>
-                        <span
-                          style={styles.badge(
-                            r.status === 'finalized' ? 'success' : 'warning',
-                          )}
-                        >
-                          {r.status}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+              {Object.values(
+                reports.reduce((acc, r) => {
+                  const dept = r.department ? r.department.replace(/_/g, ' ') : 'Unknown Department';
+                  const sem = r.semester || 'Unknown';
+                  const key = `${dept}-${sem}`;
+                  if (!acc[key]) acc[key] = { dept, sem, items: [] };
+                  acc[key].items.push(r);
+                  return acc;
+                }, {})
+              ).map((group, idx) => (
+                <div key={idx} style={{ ...styles.card, padding: 0, overflow: 'hidden' }}>
+                  <div style={{ padding: '16px 20px', background: theme.surfaceAlt, borderBottom: `1px solid ${theme.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontSize: '15px', fontWeight: 600, color: theme.text }}>
+                      {filterDept ? (
+                        <span>Semester {group.sem}</span>
+                      ) : (
+                        <span>
+                          {group.dept} <span style={{ color: theme.textMuted, fontSize: '13px', marginLeft: 8 }}>Semester {group.sem}</span>
                         </span>
-                      </td>
-                      <td
-                        style={{
-                          padding: '11px 14px',
-                          color: theme.accent,
-                          fontSize: '12px',
-                        }}
-                      >
-                        View
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      )}
+                    </div>
+                    <div style={{ fontSize: '12px', color: theme.textMuted, fontFamily: theme.fontMono }}>
+                      {group.items.length} report{group.items.length !== 1 ? 's' : ''}
+                    </div>
+                  </div>
+                  <table className="ams-table">
+                    <thead>
+                      <tr>
+                        {[
+                          'Batch',
+                          'Date',
+                          'Slot',
+                          'Subject',
+                          'Faculty',
+                          'P',
+                          'A',
+                          '%',
+                          'Status',
+                          '',
+                        ].map((h) => (
+                          <th key={h}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {group.items.map((r) => (
+                        <tr
+                          key={r._id}
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => openDetail(r._id)}
+                        >
+                          <td
+                            style={{
+                              padding: '11px 14px',
+                              fontFamily: theme.fontMono,
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              color: theme.text,
+                            }}
+                          >
+                            {r.batch}
+                          </td>
+                          <td style={{ padding: '11px 14px', color: theme.text }}>
+                            {r.date}
+                          </td>
+                          <td
+                            style={{ padding: '11px 14px', color: theme.textMuted }}
+                          >
+                            {SLOT_LABELS[r.timeSlot] || r.timeSlot || '—'}
+                          </td>
+                          <td style={{ padding: '11px 14px', color: theme.text }}>
+                            {r.subject || '—'}
+                          </td>
+                          <td
+                            style={{ padding: '11px 14px', color: theme.textMuted }}
+                          >
+                            {r.faculty || '—'}
+                          </td>
+                          <td
+                            style={{
+                              padding: '11px 14px',
+                              color: theme.success,
+                              fontWeight: 700,
+                            }}
+                          >
+                            {r.summary?.present ?? '—'}
+                          </td>
+                          <td
+                            style={{
+                              padding: '11px 14px',
+                              color: theme.danger,
+                              fontWeight: 700,
+                            }}
+                          >
+                            {r.summary?.absent ?? '—'}
+                          </td>
+                          <td
+                            style={{
+                              padding: '11px 14px',
+                              fontFamily: theme.fontMono,
+                            }}
+                          >
+                            {r.summary
+                              ? pct(r.summary.present, r.summary.totalStudents) +
+                              '%'
+                              : '—'}
+                          </td>
+                          <td style={{ padding: '11px 14px' }}>
+                            <span
+                              style={styles.badge(
+                                r.status === 'live' ? 'warning' : 'success',
+                              )}
+                            >
+                              {r.status === 'live' ? 'Running' : 'Completed'}
+                            </span>
+                          </td>
+                          <td
+                            style={{
+                              padding: '11px 14px',
+                              color: theme.accent,
+                              fontSize: '12px',
+                            }}
+                          >
+                            View
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -1931,8 +2033,8 @@ export default function AttendanceReport() {
                         [
                           'Slot',
                           SLOT_LABELS[detailReport.timeSlot] ||
-                            detailReport.timeSlot ||
-                            '—',
+                          detailReport.timeSlot ||
+                          '—',
                         ],
                         ['Subject', detailReport.subject || '—'],
                         ['Faculty', detailReport.faculty || '—'],
@@ -2142,9 +2244,9 @@ function MultiRunTable({ report, readOnly, onOverride, theme, styles }) {
                 >
                   {r.processedAt
                     ? new Date(r.processedAt).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })
                     : '—'}
                 </div>
                 <div
