@@ -42,6 +42,34 @@ const slotResultSchema = new Schema({
     }
 }, { _id: false });
 
+// Save data for proxy roll numbers: students appearing in different rooms at same time period
+const proxyStudentSchema = new Schema({
+    rollNo: {
+        type: String,
+        required: true,
+    },
+
+    otherReports: [{
+        reportId: {
+            type: Schema.Types.ObjectId,
+            ref: "AttendanceReport",
+            required: true,
+        },
+        room: {
+            type: String,
+            default: "",
+        },
+        subject: {
+            type: String,
+            default: "",
+        },
+        faculty: {
+            type: String,
+            default: "",
+        },
+    }],
+}, { _id: false });
+
 // Top-level attendance report — one doc per class session
 const attendanceReportSchema = new Schema({
     // Context (from locksem / timetable)
@@ -78,6 +106,17 @@ const attendanceReportSchema = new Schema({
         review:        { type: Number, default: 0 },
         attendancePct: { type: Number, default: 0 },
         unknownFaceCount:{ type: Number, default: 0 },
+    },
+
+    // Students detected in multiple rooms for the same date & timeSlot
+    hasProxyStudents: {
+        type: Boolean,
+        default: false,
+    },
+
+    proxyStudents: {
+        type: [proxyStudentSchema],
+        default: [],
     },
 
     status: {
