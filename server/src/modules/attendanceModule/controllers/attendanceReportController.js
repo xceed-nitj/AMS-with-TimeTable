@@ -100,6 +100,63 @@ function buildSummary(finalReport) {
     attendancePct: total > 0 ? Math.round((present / total) * 100) : 0,
   };
 }
+// Helper function: while saving attendance detects proxies
+async function detectAndUpdateProxies(date, timeSlot) {
+  // Get every report running during this slot
+  const reports = await AttendanceReport.find({
+    date,
+    timeSlot,
+  });
+
+  // rollNo -> list of reports where student is present
+  const studentMap = new Map();
+
+  for (const report of reports) {
+    for (const student of report.finalReport) {
+      if (student.finalStatus !== "P") continue;
+      if (!studentMap.has(student.rollNo)) {
+        studentMap.set(student.rollNo, []);
+      }
+      studentMap.get(student.rollNo).push({
+        reportId: report._id,
+        room: report.room,
+        subject: report.subject,
+        faculty: report.faculty,
+      });
+    }
+  }
+  // reportId -> proxy entries
+  const proxyMap = new Map();
+  for (const report of reports) {
+    proxyMap.set(report._id.toString(), []);
+  }
+  for (const [rollNo, appearances] of studentMap.entries()) {
+    if (appearances.length <= 1) continue;
+    for (const current of appearances) {
+      const others = appearances.filter(
+        (x) => x.reportId.toString() !== current.reportId.toString()
+      );
+      proxyMap.get(current.reportId.toString()).push({
+        rollNo,
+        otherReports: others,
+      });
+    }
+  }
+
+  // Update reports
+  const updates = [];
+
+  for (const report of reports) {
+    const proxies = proxyMap.get(report._id.toString()) || [];
+
+    report.proxyStudents = proxies;
+    report.hasProxyStudents = proxies.length > 0;
+
+    updates.push(report.save());
+  }
+
+  await Promise.all(updates);
+}
 
 class AttendanceReportController {
   // ── Save / update report after ML processes a video ───────────
@@ -243,6 +300,8 @@ class AttendanceReportController {
       }
 
       await report.save();
+      // Check for possible proxies and save them in the report
+      await detectAndUpdateProxies(report.date, report.timeSlot);
 
       res.json({
         message: "Report saved successfully",
