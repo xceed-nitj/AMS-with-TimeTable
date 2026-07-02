@@ -9,6 +9,7 @@ import UnknownFaces from './UnknownFaces';
 import RejectedSamples from './RejectedSamples';
 import getEnvironment from '../getenvironment';
 import ExportReportsTab from './ExportReportsTab';
+import ProxyModal from './ProxyModal';
 
 const apiUrl = getEnvironment();
 const REPORT_API = `${apiUrl}/attendancemodule/reports`;
@@ -102,6 +103,10 @@ export default function AttendanceReport() {
   // ── Detail ────────────────────────────────────────────────────
   const [detailReport, setDetailReport] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  // Proxy Info of the detail report
+    const [proxyInfo, setProxyInfo] = useState(null);
+    const [proxyInfoLoading, setProxyInfoLoading] = useState(true);
+    const [showProxyModal, setshowProxyModal] = useState(false);
 
   // ── Camera status from DB ─────────────────────────────────────────────────
   const [cameraStatus, setCameraStatus] = useState(null); // null | 'ok' | 'inactive' | 'none'
@@ -615,11 +620,14 @@ export default function AttendanceReport() {
     setDetailLoading(true);
     setDetailReport(null);
     try {
-      setDetailReport(await (await fetch(`${REPORT_API}/${id}`)).json());
+      const report = await (await fetch(`${REPORT_API}/${id}`)).json()
+      setDetailReport(report);
+      setProxyInfo(report.proxyStudents);
     } catch {
       showToast('Failed to load report', 'error');
     }
     setDetailLoading(false);
+    setProxyInfoLoading(false);
   };
 
   // ── Auto-open report when navigated from Live Report page ─────────────────
@@ -1933,6 +1941,14 @@ export default function AttendanceReport() {
       {/* ════ DETAIL TAB ════ */}
       {tab === 'detail' && (
         <div>
+          {/* Show Detailed Proxy Info */}
+          <ProxyModal
+            open={showProxyModal}
+            onClose={() => setshowProxyModal(false)}
+            proxyStudents={proxyInfo || []}
+            theme={theme}
+            styles={styles}
+          />
           {detailLoading && (
             <div
               style={{
@@ -2096,7 +2112,17 @@ export default function AttendanceReport() {
                   </div>
                 </div>
               </div>
-
+              {
+                // If there are proxies shows the number of possible proxies
+                !proxyInfoLoading && proxyInfo.length > 0 && (
+                  <div style={{marginBottom: 16, cursor: "pointer"}}>
+                    <span onClick={() => setshowProxyModal(true)} style={{...styles.badge('warning'), fontSize: 14, width: "fit-content", display: "flex", alignItems: "center", justifyContent: "center", gap: 4, fontWeight: 600}}>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-triangle-alert-icon lucide-triangle-alert"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                      {proxyInfo.length} Possible { proxyInfo.length > 1 ? "Proxies" : "Proxy"}
+                    </span>
+                  </div>
+                )
+              }
               <StatBar
                 stats={[
                   {
