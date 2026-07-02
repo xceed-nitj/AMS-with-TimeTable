@@ -1,0 +1,122 @@
+2026-07-02 15:49:35,480 [INFO] embeddings — Batch folder detected: BTECH_ELECTRONICS_AND_COMMUNICATION_ENGINEERING_2022  (25 students)
+2026-07-02 15:49:35,481 [WARNING] embeddings — Duplicate roll 'person' (folder 'person_024' in batch 'BTECH_ELECTRONICS_AND_COMMUNICATION_ENGINEERING_2022') — skipping.
+2026-07-02 15:49:35,481 [WARNING] embeddings — Duplicate roll 'person' (folder 'person_025' in batch 'BTECH_ELECTRONICS_AND_COMMUNICATION_ENGINEERING_2022') — skipping.
+2026-07-02 15:49:35,481 [WARNING] embeddings — Duplicate roll 'person' (folder 'person_026' in batch 'BTECH_ELECTRONICS_AND_COMMUNICATION_ENGINEERING_2022') — skipping.
+2026-07-02 15:49:35,483 [WARNING] embeddings — Duplicate roll 'person' (folder 'person_027' in batch 'BTECH_ELECTRONICS_AND_COMMUNICATION_ENGINEERING_2022') — skipping.
+2026-07-02 15:49:35,483 [WARNING] embeddings — Duplicate roll 'person' (folder 'person_028' in batch 'BTECH_ELECTRONICS_AND_COMMUNICATION_ENGINEERING_2022') — skipping.
+2026-07-02 15:49:35,484 [WARNING] embeddings — Duplicate roll 'person' (folder 'person_029' in batch 'BTECH_ELECTRONICS_AND_COMMUNICATION_ENGINEERING_2022') — skipping.
+2026-07-02 15:49:35,489 [INFO] embeddings — Batch folder detected: BTECH_ELECTRONICS_AND_COMMUNICATION_ENGINEERING_2023  (68 students)
+2026-07-02 15:49:35,489 [WARNING] embeddings — Duplicate roll '22104027' (folder '22104027' in batch 'BTECH_ELECTRONICS_AND_COMMUNICATION_ENGINEERING_2023') — skipping.
+2026-07-02 15:49:35,489 [WARNING] embeddings — Duplicate roll '23104009' (folder '23104009' in batch 'BTECH_ELECTRONICS_AND_COMMUNICATION_ENGINEERING_2023') — skipping.
+2026-07-02 15:49:35,489 [WARNING] embeddings — Duplicate roll '23104017' (folder '23104017' in batch 'BTECH_ELECTRONICS_AND_COMMUNICATION_ENGINEERING_2023') — skipping.
+2026-07-02 15:49:35,489 [WARNING] embeddings — Duplicate roll '23104023' (folder '23104023' in batch 'BTECH_ELECTRONICS_AND_COMMUNICATION_ENGINEERING_2023') — skipping.
+2026-07-02 15:49:35,489 [WARNING] embeddings — Duplicate roll '23104026' (folder '23104026' in batch 'BTECH_ELECTRONICS_AND_COMMUNICATION_ENGINEERING_2023') — skipping.
+2026-07-02 15:49:35,489 [WARNING] embeddings — Duplicate roll '23104028' (folder '23104028' in batch 'BTECH_ELECTRONICS_AND_COMMUNICATION_ENGINEERING_2023') — skipping.
+2026-07-02 15:49:35,489 [WARNING] embeddings — Duplicate roll '23104036' (folder '23104036' in batch 'BTECH_ELECTRONICS_AND_COMMUNICATION_ENGINEERING_2023') — skipping.
+2026-07-02 15:49:35,489 [WARNING] embeddings — Duplicate roll '23104038' (folder '23104038' in batch 'BTECH_ELECTRONICS_AND_COMMUNICATION_ENGINEERING_2023') — skipping.
+2026-07-02 15:49:35,489 [WARNING] embeddings — Duplicate roll '23104039' (folder '23104039' in batch 'BTECH_ELECTRONICS_AND_COMMUNICATION_ENGINEERING_2023') — skipping.
+2026-07-02 15:49:35,489 [WARNING] embeddings — Duplicate roll '23104040' (folder '23104040' in batch 'BTECH_ELECTRONICS_AND_COMMUNICATION_ENGINEERING_2023') — skipping.
+2026-07-02 15:49:35,489 [WARNING] embeddings — Duplicate roll '23104046' (folder '23104046' in batch 'BTECH_ELECTRONICS_AND_COMMUNICATION_ENGINEERING_2023') — skipping.
+2026-07-02 15:49:35,489 [WARNING] embeddings — Duplicate roll '23104049' (folder '23104049' in batch 'BTECH_ELECTRONICS_AND_COMMUNICATION_ENGINEERING_2023') — skipping.
+2026-07-02 15:49:35,489 [WARNING] embeddings — Duplicate roll '23104050' (folder '23104050' in batch 'BTECH_ELECTRONICS_AND_COMMUNICATION_ENGINEERING_2023') — skipping.
+2026-07-02 15:49:35,489 [WARNING] embeddings — Duplicate roll '23104052' (folder '23104052' in batch 'BTECH_ELECTRONICS_AND_COMMUNICATION_ENGINEERING_2023') — skipping.
+2026-07-02 15:49:35,489 [WARNING] embeddings — Duplicate roll '23104062' (folder '23104062' in batch 'BTECH_ELECTRONICS_AND_COMMUNICATION_ENGINEERING_2023') — skipping.
+2026-07-02 15:49:35,489 [WARNING] embeddings — Duplicate roll '23104063' (folder '23104063' in batch 'BTECH_ELECTRONICS_AND_COMMUNICATION_ENGINEERING_2023') — skipping.
+2026-07-02 15:49:35,489 [WARNING] embeddings — Duplicate roll '23104072' (folder '23104072' in batch 'BTECH_ELECTRONICS_AND_COMMUNICATION_ENGINEERING_2023') — skipping.
+2026-07-02 15:49:35,490 [WARNING] embeddings — Duplicate roll 'BTECH' (folder 'BTECH_ELECTRONICS_AND_COMMUNICATION_ENGINEERING_2025') — skipping.
+2026-07-02 15:49:35,490 [WARNING] embeddings — Duplicate roll 'BTECH' (folder 'BTECH_HUMANITIES_AND_MANAGEMENT_2025') — skipping.
+2026-07-02 15:49:35,492 [INFO] embeddings — Batch folder detected: BTECH_INSTRUMENTATION_AND_CONTROL_ENGINEERING_2022  (13 students)
+2026-07-02 15:49:35,492 [WARNING] embeddings — Duplicate roll 'person' (folder 'person_001' in batch 'BTECH_INSTRUMENTATION_AND_CONTROL_ENGINEERING_2022') — skipping.
+2026-07-02 15:49:35,492 [WARNING] embeddings — Duplicate roll 'person' (folder 'person_002' in batch 'BTECH_INSTRUMENTATION_AND_CONTROL_ENGINEERING_2022') — skipping.
+2026-07-02 15:49:35,492 [WARNING] embeddings — Duplicate roll 'person' (folder 'person_003' in batch 'BTECH_INSTRUMENTATION_AND_CONTROL_ENGINEERING_2022') — skipping.
+2026-07-02 15:49:35,492 [WARNING] embeddings — Duplicate roll 'person' (folder 'person_004' in batch 'BTECH_INSTRUMENTATION_AND_CONTROL_ENGINEERING_2022') — skipping.
+2026-07-02 15:49:35,492 [WARNING] embeddings — Duplicate roll 'person' (folder 'person_005' in batch 'BTECH_INSTRUMENTATION_AND_CONTROL_ENGINEERING_2022') — skipping.
+2026-07-02 15:49:35,492 [WARNING] embeddings — Duplicate roll 'person' (folder 'person_006' in batch 'BTECH_INSTRUMENTATION_AND_CONTROL_ENGINEERING_2022') — skipping.
+2026-07-02 15:49:35,492 [WARNING] embeddings — Duplicate roll 'person' (folder 'person_007' in batch 'BTECH_INSTRUMENTATION_AND_CONTROL_ENGINEERING_2022') — skipping.
+2026-07-02 15:49:35,492 [WARNING] embeddings — Duplicate roll 'person' (folder 'person_008' in batch 'BTECH_INSTRUMENTATION_AND_CONTROL_ENGINEERING_2022') — skipping.
+2026-07-02 15:49:35,492 [WARNING] embeddings — Duplicate roll 'person' (folder 'person_009' in batch 'BTECH_INSTRUMENTATION_AND_CONTROL_ENGINEERING_2022') — skipping.
+2026-07-02 15:49:35,493 [WARNING] embeddings — Duplicate roll 'person' (folder 'person_010' in batch 'BTECH_INSTRUMENTATION_AND_CONTROL_ENGINEERING_2022') — skipping.
+2026-07-02 15:49:35,493 [WARNING] embeddings — Duplicate roll 'person' (folder 'person_011' in batch 'BTECH_INSTRUMENTATION_AND_CONTROL_ENGINEERING_2022') — skipping.
+2026-07-02 15:49:35,493 [WARNING] embeddings — Duplicate roll 'person' (folder 'person_012' in batch 'BTECH_INSTRUMENTATION_AND_CONTROL_ENGINEERING_2022') — skipping.
+2026-07-02 15:49:35,493 [WARNING] embeddings — Duplicate roll 'person' (folder 'person_013' in batch 'BTECH_INSTRUMENTATION_AND_CONTROL_ENGINEERING_2022') — skipping.
+2026-07-02 15:49:35,493 [WARNING] embeddings — Duplicate roll 'BTECH' (folder 'BTECH_INSTRUMENTATION_AND_CONTROL_ENGINEERING_2025') — skipping.
+2026-07-02 15:49:35,494 [WARNING] embeddings — Duplicate roll 'BTECH' (folder 'BTECH_MECHANICAL_ENGINEERING_2023') — skipping.
+2026-07-02 15:49:35,494 [WARNING] embeddings — Duplicate roll 'BTECH' (folder 'BTECH_MECHANICAL_ENGINEERING_2025') — skipping.
+2026-07-02 15:49:35,495 [WARNING] embeddings — Duplicate roll 'BTECH' (folder 'BTECH_PHYSICS_2025') — skipping.
+2026-07-02 15:49:35,495 [INFO] embeddings — Dataset: C:\Users\KARAN\OneDrive\Desktop\Coding\IAMS\AMS-with-TimeTable\server\ml-data\ground_truth  |  71 student folder(s)
+2026-07-02 15:49:43,555 [WARNING] embeddings — roll=BTECH  only 0 image(s) — skipping (min=1)
+2026-07-02 15:49:59,834 [INFO] embeddings — roll=23104009      scanned= 6  kept=3
+2026-07-02 15:50:00,037 [INFO] embeddings — roll=22104027      scanned= 5  kept=3
+2026-07-02 15:50:19,808 [INFO] embeddings — roll=23104017      scanned= 7  kept=3
+2026-07-02 15:50:23,824 [INFO] embeddings — roll=23104023      scanned= 7  kept=3
+2026-07-02 15:50:23,824 [WARNING] embeddings — roll=23104028  only 0 image(s) — skipping (min=1)
+2026-07-02 15:50:37,795 [INFO] embeddings — roll=23104026      scanned= 7  kept=3
+2026-07-02 15:50:42,643 [INFO] embeddings — roll=23104036      scanned= 6  kept=3
+2026-07-02 15:50:55,880 [INFO] embeddings — roll=23104038      scanned= 6  kept=3
+2026-07-02 15:51:05,053 [INFO] embeddings — roll=23104039      scanned= 7  kept=3
+2026-07-02 15:51:12,725 [INFO] embeddings — roll=23104040      scanned= 6  kept=3
+2026-07-02 15:51:27,999 [INFO] embeddings — roll=23104046      scanned= 7  kept=3
+2026-07-02 15:51:36,455 [INFO] embeddings — roll=23104049      scanned= 7  kept=3
+2026-07-02 15:51:44,108 [INFO] embeddings — roll=23104050      scanned= 5  kept=3
+2026-07-02 15:51:56,709 [INFO] embeddings — roll=23104052      scanned= 7  kept=3
+2026-07-02 15:52:05,598 [INFO] embeddings — roll=23104062      scanned= 7  kept=3
+2026-07-02 15:52:17,689 [INFO] embeddings — roll=23104063      scanned= 7  kept=3
+2026-07-02 15:52:26,509 [INFO] embeddings — roll=23104072      scanned= 7  kept=3
+2026-07-02 15:52:35,835 [INFO] embeddings — roll=23104080      scanned= 6  kept=3
+2026-07-02 15:52:40,827 [INFO] embeddings — roll=person        scanned= 5  kept=3
+2026-07-02 15:53:50,211 [INFO] embeddings — roll=23104001      scanned=10  kept=3
+2026-07-02 15:54:02,153 [INFO] embeddings — roll=22104090      scanned=16  kept=3
+2026-07-02 15:54:22,006 [INFO] embeddings — roll=23104002      scanned=10  kept=3
+2026-07-02 15:54:33,965 [INFO] embeddings — roll=23104004      scanned=10  kept=3
+2026-07-02 15:54:51,270 [INFO] embeddings — roll=23104007      scanned=10  kept=3
+2026-07-02 15:55:09,607 [INFO] embeddings — roll=23104008      scanned=12  kept=3
+2026-07-02 15:55:27,103 [INFO] embeddings — roll=23104010      scanned= 7  kept=3
+2026-07-02 15:55:56,569 [INFO] embeddings — roll=23104011      scanned=10  kept=3
+2026-07-02 15:56:16,165 [INFO] embeddings — roll=23104012      scanned=15  kept=3
+2026-07-02 15:56:43,016 [INFO] embeddings — roll=23104013      scanned=16  kept=3
+2026-07-02 15:56:46,862 [INFO] embeddings — roll=23104014      scanned=10  kept=3
+2026-07-02 15:57:02,216 [INFO] embeddings — roll=23104016      scanned= 5  kept=3
+2026-07-02 15:57:11,713 [INFO] embeddings — roll=23104015      scanned=10  kept=3
+2026-07-02 15:57:31,256 [INFO] embeddings — roll=23104018      scanned=10  kept=3
+2026-07-02 15:57:40,565 [INFO] embeddings — roll=23104019      scanned=10  kept=3
+2026-07-02 15:57:59,284 [INFO] embeddings — roll=23104021      scanned= 8  kept=3
+2026-07-02 15:58:01,532 [INFO] embeddings — roll=23104020      scanned=10  kept=3
+2026-07-02 15:58:22,524 [INFO] embeddings — roll=23104025      scanned= 7  kept=3
+2026-07-02 15:58:38,452 [INFO] embeddings — roll=23104022      scanned=14  kept=3
+2026-07-02 15:59:01,061 [INFO] embeddings — roll=23104029      scanned= 9  kept=3
+2026-07-02 15:59:14,776 [INFO] embeddings — roll=23104027      scanned=17  kept=3
+2026-07-02 15:59:31,516 [INFO] embeddings — roll=23104032      scanned= 9  kept=3
+2026-07-02 16:00:05,809 [INFO] embeddings — roll=23104035      scanned=10  kept=3
+2026-07-02 16:00:17,970 [INFO] embeddings — roll=23104034      scanned=20  kept=3
+2026-07-02 16:00:41,495 [INFO] embeddings — roll=23104037      scanned=10  kept=3
+2026-07-02 16:00:55,558 [INFO] embeddings — roll=23104042      scanned=10  kept=3
+2026-07-02 16:01:25,357 [INFO] embeddings — roll=23104044      scanned= 9  kept=3
+2026-07-02 16:01:30,727 [INFO] embeddings — roll=23104043      scanned=14  kept=3
+2026-07-02 16:01:57,221 [INFO] embeddings — roll=23104045      scanned=10  kept=3
+2026-07-02 16:02:31,025 [INFO] embeddings — roll=23104051      scanned=10  kept=3
+2026-07-02 16:02:48,854 [INFO] embeddings — roll=23104047      scanned=20  kept=3
+2026-07-02 16:02:59,070 [INFO] embeddings — roll=23104054      scanned= 3  kept=2
+2026-07-02 16:03:16,261 [INFO] embeddings — roll=23104053      scanned=11  kept=3
+2026-07-02 16:03:31,663 [INFO] embeddings — roll=23104055      scanned=10  kept=3
+2026-07-02 16:03:46,779 [INFO] embeddings — roll=23104057      scanned=10  kept=3
+2026-07-02 16:04:03,465 [INFO] embeddings — roll=23104059      scanned=10  kept=3
+2026-07-02 16:04:19,786 [INFO] embeddings — roll=23104060      scanned=10  kept=3
+2026-07-02 16:04:45,235 [INFO] embeddings — roll=23104061      scanned=12  kept=3
+2026-07-02 16:04:55,010 [INFO] embeddings — roll=23104068      scanned= 3  kept=3
+2026-07-02 16:05:03,763 [INFO] embeddings — roll=23104066      scanned=13  kept=3
+2026-07-02 16:05:03,818 [INFO] embeddings — roll=23104069      scanned= 3  kept=3
+2026-07-02 16:05:23,784 [INFO] embeddings — roll=23104070      scanned= 6  kept=3
+2026-07-02 16:05:37,610 [INFO] embeddings — roll=23104073      scanned=10  kept=3
+2026-07-02 16:06:10,272 [INFO] embeddings — roll=23104074      scanned=13  kept=3
+2026-07-02 16:06:18,103 [INFO] embeddings — roll=23104075      scanned=13  kept=3
+2026-07-02 16:06:40,414 [INFO] embeddings — roll=23104076      scanned= 9  kept=3
+2026-07-02 16:06:53,986 [INFO] embeddings — roll=23104078      scanned=11  kept=3
+2026-07-02 16:07:03,146 [INFO] embeddings — roll=23104081      scanned= 7  kept=3
+2026-07-02 16:07:30,474 [INFO] embeddings — roll=23104082      scanned=10  kept=3
+2026-07-02 16:07:32,800 [INFO] embeddings — roll=23104083      scanned=10  kept=3
+2026-07-02 16:07:37,357 [INFO] embeddings — roll=23104085      scanned= 4  kept=2
+2026-07-02 16:07:37,744 [INFO] embeddings — Total embeddings collected: 205
+2026-07-02 16:07:37,745 [INFO] embeddings — IndexFlatIP  (n=205 < 1000)
+2026-07-02 16:07:37,748 [INFO] embeddings — FAISS index written: C:\Users\KARAN\OneDrive\Desktop\Coding\IAMS\AMS-with-TimeTable\server\ml-data\embeddings\faiss.index
+2026-07-02 16:07:37,791 [INFO] embeddings — SQLite DB updated: 205 rows
+2026-07-02 16:07:37,791 [INFO] embeddings — DONE — 71 students  |  205 total embeddings  |  0 error(s)

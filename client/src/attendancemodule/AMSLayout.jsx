@@ -11,7 +11,6 @@ const apiUrl = getEnvironment();
 
 const NAV = [
   { id: 'dashboard', route: '/attendance', label: 'Dashboard', exact: true },
-
   { id: 'rtsp', route: '/attendance/groundtruth/rtsp', label: 'Ground Truth Capture' },
   {
     id: 'assign',
@@ -38,11 +37,13 @@ const NAV = [
     route: '/attendance/confidence',
     label: 'Confidence Monitor',
   },
+   { id: 'gate', route: '/attendance/institute', label: 'Institute Level' },
   { id: 'manual', route: '/ams-manual', label: 'Help & Manual', newTab: true },
 ];
 
 const COLORS = {
   dashboard: '#6366f1',
+  gate: '#3b82f6',
   rtsp: '#0ea5e9',
   assign: '#10b981',
   upload: '#f472b6',
