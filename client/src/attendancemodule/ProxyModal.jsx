@@ -161,7 +161,7 @@ export default function ProxyModal({
                     }}
                   >
                     Detected in {student.otherReports.length} oher class 
-                    {student.otherReports.length > 1 ? "s" : ""}
+                    {student.otherReports.length > 1 ? "es" : ""}
                   </span>
                 </div>
 
