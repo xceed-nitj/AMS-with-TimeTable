@@ -80,6 +80,7 @@ function mergeStudentStatus(slotResults) {
       // slots didn't detect a face clearly enough to compare.
       genderMismatch: entries.some((e) => e.genderMismatch),
       finalStatus,
+      autoFinalStatus: finalStatus,
     });
   }
 
@@ -594,6 +595,137 @@ class AttendanceReportController {
         weekFrom: weekAgoStr,
         semester: semesterInfo,
         students: result,
+      });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  }
+
+  // GET /attendancemodule/reports/model-performance?department=CSE&semester=3&days=30
+  // Aggregates how often the model's original autoFinalStatus (captured once
+  // at merge time, never overwritten) disagreed with the finalStatus a human
+  // later corrected it to. Records with autoFinalStatus === null predate this
+  // field and are skipped — there's no baseline to compare against.
+  // Scoped by department + semester (not batch/year) — a department's
+  // semester cohort is what the dashboard's audience (dept admins) actually
+  // reasons about, and it matches the filter pattern already used by the
+  // Attendance Reports history tab (see getReports()).
+  async getModelPerformanceMetrics(req, res) {
+    try {
+      const { department, semester } = req.query;
+      if (!department || !semester) {
+        return res
+          .status(400)
+          .json({ error: "department and semester are required" });
+      }
+
+      const days = parseInt(req.query.days) || 30;
+      const now = new Date();
+      const fromDate = new Date(now);
+      fromDate.setDate(fromDate.getDate() - days);
+      const fromStr = fromDate.toISOString().slice(0, 10);
+      const toStr = now.toISOString().slice(0, 10);
+
+      // Case/space/underscore-insensitive department match — same pattern
+      // as getReports() above, since dept strings vary in casing/separator
+      // between the timetable module and stored reports.
+      const escapeRegex = (v) => String(v).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const deptNorm = escapeRegex(department.trim().replace(/\s+/g, "_"));
+      const deptRegex = new RegExp(`^${deptNorm.replace(/_/g, "[ _]")}$`, "i");
+
+      const reports = await AttendanceReport.find({
+        department: deptRegex,
+        semester: String(semester),
+        date: { $gte: fromStr },
+      })
+        .select("date department subject finalReport")
+        .sort({ date: 1 });
+
+      let total = 0;
+      let overrides = 0;
+      const disagreementMap = {}; // "P->A" -> count
+      const bucketMap = {}; // "0.4-0.5" -> { total, overrides }
+      const dayMap = {}; // date -> { total, overrides }
+      const studentMap = {}; // rollNo -> { total, overrides }
+
+      for (const report of reports) {
+        for (const s of report.finalReport) {
+          if (!s.autoFinalStatus) continue; // no baseline — pre-dashboard record
+
+          total += 1;
+          const changed = s.finalStatus !== s.autoFinalStatus;
+          if (changed) overrides += 1;
+
+          if (changed) {
+            const key = `${s.autoFinalStatus}->${s.finalStatus}`;
+            disagreementMap[key] = (disagreementMap[key] || 0) + 1;
+          }
+
+          const conf = Math.max(0, Math.min(1, s.avgConfidence || 0));
+          const bucketStart = Math.min(9, Math.floor(conf * 10)) / 10;
+          const bucketKey = `${bucketStart.toFixed(1)}-${(bucketStart + 0.1).toFixed(1)}`;
+          if (!bucketMap[bucketKey]) bucketMap[bucketKey] = { total: 0, overrides: 0 };
+          bucketMap[bucketKey].total += 1;
+          if (changed) bucketMap[bucketKey].overrides += 1;
+
+          if (!dayMap[report.date]) dayMap[report.date] = { total: 0, overrides: 0 };
+          dayMap[report.date].total += 1;
+          if (changed) dayMap[report.date].overrides += 1;
+
+          if (!studentMap[s.rollNo]) studentMap[s.rollNo] = { total: 0, overrides: 0 };
+          studentMap[s.rollNo].total += 1;
+          if (changed) studentMap[s.rollNo].overrides += 1;
+        }
+      }
+
+      const disagreementBreakdown = Object.entries(disagreementMap).map(
+        ([key, count]) => {
+          const [from, to] = key.split("->");
+          return { from, to, count };
+        },
+      );
+
+      const confidenceCalibration = Object.entries(bucketMap)
+        .map(([bucket, v]) => ({
+          bucket,
+          total: v.total,
+          agreementRate: v.total > 0 ? 1 - v.overrides / v.total : null,
+        }))
+        .sort((a, b) => a.bucket.localeCompare(b.bucket));
+
+      const trend = Object.entries(dayMap)
+        .map(([date, v]) => ({
+          date,
+          total: v.total,
+          overrideRate: v.total > 0 ? v.overrides / v.total : 0,
+        }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+
+      const topOverriddenStudents = Object.entries(studentMap)
+        .map(([rollNo, v]) => ({
+          rollNo,
+          overrides: v.overrides,
+          total: v.total,
+          overrideRate: v.total > 0 ? v.overrides / v.total : 0,
+        }))
+        .filter((s) => s.overrides > 0)
+        .sort((a, b) => b.overrides - a.overrides)
+        .slice(0, 20);
+
+      res.json({
+        department,
+        semester,
+        from: fromStr,
+        to: toStr,
+        overall: {
+          total,
+          overrides,
+          agreementRate: total > 0 ? 1 - overrides / total : null,
+        },
+        disagreementBreakdown,
+        confidenceCalibration,
+        trend,
+        topOverriddenStudents,
       });
     } catch (err) {
       res.status(500).json({ error: err.message });

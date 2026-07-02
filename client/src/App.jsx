@@ -206,6 +206,7 @@ import RollAssign from './attendancemodule/rollassign';
 // import FlaggedAssign from './attendancemodule/flaggedassign';
 import Attendancedoc from './attendancemodule/Attendancedoc';
 import ModelPerformance from './attendancemodule/modelperformance';
+import ModelAnalytics from './attendancemodule/ModelAnalytics';
 import AttendanceReport from './attendancemodule/AttendanceReport';
 import GroundTruthRTSP from './attendancemodule/groundtruthgen_rtsp';
 import GroundTruthUpload from './attendancemodule/groundtruthupload';
@@ -680,6 +681,7 @@ function App() {
           <Route path="embeddings" element={<EmbeddingGeneration />} />
           <Route path="report" element={<Attendancedoc />} />
           <Route path="model" element={<ModelPerformance />} />
+          <Route path="model-analytics" element={<ModelAnalytics />} />
           <Route path="reports" element={<AttendanceReport />} />
           <Route path="frame-verification" element={<FrameVerification />} />
           <Route path="confidence" element={<ConfidenceMonitor />} />

@@ -24,6 +24,10 @@ const studentAttendanceSchema = new Schema({
     finalStatus:     { type: String, enum: ['P', 'A', 'R'], default: 'A' },
     // ERP override: set to true when ERP system changes a student's finalStatus
     isOverridden:    { type: Boolean, default: false },
+    // Model's original P/A/R decision at merge time — never modified by
+    // updateStudentStatus(). Preserved so accuracy metrics can compare the
+    // model's call against any later human correction without ambiguity.
+    autoFinalStatus: { type: String, enum: ['P', 'A', 'R', null], default: null },
 }, { _id: false });
 
 // Per-time-slot sub-document (matches notebook: 8:45, 9:00, 9:15 columns)
