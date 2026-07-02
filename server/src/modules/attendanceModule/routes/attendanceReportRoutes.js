@@ -246,6 +246,14 @@ router.get("/confidence-trend", async (req, res) => {
   }
 });
 
+router.get("/model-performance", async (req, res) => {
+  try {
+    await ctrl.getModelPerformanceMetrics(req, res);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 
 router.get("/export", async (req, res) => {
   try {
