@@ -216,21 +216,14 @@ function GenerateTab({ departments, deptLoading, deptError, prefill, onPrefillCo
     const [subjectCode, setSubjectCode] = useState('');
     const [subjectId,   setSubjectId]   = useState('');
 
-    const [rollInput,  setRollInput]  = useState('');
-    const [rollNos,    setRollNos]    = useState([]);
-    const [instituteWise, setInstituteWise] = useState(false);
-
-
     const [rows,    setRows]    = useState([]);
     const [running, setRunning] = useState(false);
     const [summary, setSummary] = useState(null);
 
     const [prefillSem,     setPrefillSem]     = useState('');
     const [prefillSubject, setPrefillSubject] = useState('');
-    const [isUpdateMode,   setIsUpdateMode]   = useState(false);
 
     const [toast, setToast] = useState(null);
-    const xlsxRef = useRef();
 
     const batchName   = dept ? `BTECH_${dept}_2023` : null;
     const canGenerate = !running && subject.trim().length > 0 && sem.trim().length > 0;
@@ -240,91 +233,39 @@ function GenerateTab({ departments, deptLoading, deptError, prefill, onPrefillCo
         setTimeout(() => setToast(null), 4000);
     };
 
-    const parseRolls = (raw) =>
-        raw.split(/[\n,;\s]+/).map(r => r.trim().toUpperCase()).filter(Boolean);
-
-    useEffect(() => { setRollNos(parseRolls(rollInput)); }, [rollInput]);
-
     // Apply prefill when it arrives from ViewTab
     useEffect(() => {
         if (!prefill) return;
-        // For dept-locked admins, ignore any prefill dept that doesn't match —
-        // they should never be able to jump into another department's batch.
         if (fixedDepartment && prefill.dept && prefill.dept !== fixedDepartment) return;
         setDept(fixedDepartment || prefill.dept || '');
-        setRollInput((prefill.rollNos || []).join('\n'));
         setSummary(null);
         setRows([]);
         setPrefillSem(prefill.sem || '');
         setPrefillSubject(prefill.subject || '');
-        setIsUpdateMode(true);
     }, [prefill]);
 
     const handleSetDept = (d) => {
         setDept(d);
         setSummary(null);
         setRows([]);
-        setRollInput('');
         setPrefillSem('');
         setPrefillSubject('');
-        setIsUpdateMode(false);
         if (onPrefillConsumed) onPrefillConsumed();
     };
 
-    const handleXlsxUpload = (e) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            try {
-                const wb    = XLSX.read(ev.target.result, { type: 'binary' });
-                const sheet = wb.Sheets[wb.SheetNames[0]];
-                const rows  = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-                const rolls = rows
-                    .flat()
-                    .map(v => String(v ?? '').trim().toUpperCase())
-                    .filter(v => v.length > 3 && !/^(roll|rollno|roll_no|sno|sr\.?\s*no)/i.test(v));
-                setRollInput(rolls.join('\n'));
-                showToast(`Loaded ${rolls.length} roll numbers from ${file.name}`);
-            } catch (err) {
-                showToast('Failed to parse xlsx: ' + err.message, 'error');
-            }
-        };
-        reader.readAsBinaryString(file);
-        e.target.value = '';
-    };
-
-    const downloadTemplate = () => {
-        const sample = [
-            ['Roll No'],
-            ['21CS001'],
-            ['21CS002'],
-            ['21CS003'],
-            ['21CS004'],
-            ['21CS005'],
-        ];
-        const ws = XLSX.utils.aoa_to_sheet(sample);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Roll Numbers');
-        XLSX.writeFile(wb, 'roll_numbers_template.xlsx');
-    };
-
     const startGeneration = async () => {
-        if (!batchName || rollNos.length === 0 || !subject.trim()) return;
+        if (!batchName || !subject.trim()) return;
         setRunning(true);
         setSummary(null);
 
-        const initRows = rollNos.map(r => ({ rollNo: r, status: 'pending', reason: null, photosUsed: null }));
-        setRows(initRows);
-
-        const updateRow = (rollNo, patch) =>
-            setRows(prev => prev.map(r => r.rollNo === rollNo ? { ...r, ...patch } : r));
+        // Roll numbers are auto-resolved server-side from ground_truth folders
+        setRows([{ rollNo: 'auto', status: 'processing', reason: null, photosUsed: null }]);
 
         try {
             const res = await fetch(`${EMB_BASE}/generate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sem: sem.trim(), subject: subject.trim(), dept: dept.trim(), subjectCode: subjectCode.trim(), rollNos, instituteWise }),
+                body: JSON.stringify({ sem: sem.trim(), subject: subject.trim(), dept: dept.trim(), subjectCode: subjectCode.trim() }),
             });
 
             if (!res.ok) {
@@ -334,41 +275,17 @@ function GenerateTab({ departments, deptLoading, deptError, prefill, onPrefillCo
                 return;
             }
 
-            const reader  = res.body.getReader();
-            const decoder = new TextDecoder();
-            let   buffer  = '';
-
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                buffer += decoder.decode(value, { stream: true });
-                const parts = buffer.split('\n\n');
-                buffer = parts.pop();
-
-                for (const part of parts) {
-                    const line = part.trim();
-                    if (!line.startsWith('data:')) continue;
-                    try {
-                        const msg = JSON.parse(line.slice(5).trim());
-                        if (msg.type === 'student') {
-                            updateRow(msg.rollNo, { status: msg.status, reason: msg.reason || null, photosUsed: msg.photosUsed || null });
-                        }
-                        if (msg.type === 'done') {
-                            setSummary({
-                                success:       msg.success,
-                                failed:        msg.failed,
-                                embeddingFile: msg.embeddingFile,
-                                missedRollNos: msg.missedRollNos || [],
-                                dept:          dept.trim(),
-                                sem:           sem.trim(),
-                                subject:       subject.trim(),
-                                instituteWise,
-                            });
-                            showToast(`Done - ${msg.success} succeeded, ${msg.failed} failed`);
-                        }
-                    } catch (_) {}
-                }
-            }
+            const data = await res.json();
+            setSummary({
+                success:       data.students_enrolled || 0,
+                failed:        0,
+                embeddingFile: data.output_path || 'batch.pkl',
+                missedRollNos: [],
+                dept:          dept.trim(),
+                sem:           sem.trim(),
+                subject:       subject.trim(),
+            });
+            showToast(`Done - embeddings generated for ${data.students_enrolled || 0} students`);
         } catch (err) {
             showToast('Generation failed: ' + err.message, 'error');
         }
@@ -408,84 +325,19 @@ function GenerateTab({ departments, deptLoading, deptError, prefill, onPrefillCo
                 </div>
             ) : (
                 <>
-                    {/* Roll number input */}
-                    <div style={{ ...styles.card, marginBottom: 20, borderLeft: `3px solid ${theme.border}` }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-                            <span style={{ fontSize: '13px', fontWeight: 700, color: theme.text }}>Roll Numbers</span>
-                            {rollNos.length > 0 && (
-                                <span style={{ fontSize: '11px', fontWeight: 700, padding: '1px 8px', borderRadius: 99, background: theme.accentDim, color: theme.accent }}>{rollNos.length}</span>
-                            )}
-                            <div style={{ flex: 1 }} />
-                            <button
-                                type="button"
-                                onClick={downloadTemplate}
-                                title="Download a sample .xlsx with dummy roll numbers"
-                                style={{
-                                    display: 'inline-flex', alignItems: 'center', gap: 6,
-                                    padding: '5px 12px', borderRadius: 6, cursor: 'pointer',
-                                    background: theme.successDim, color: theme.success,
-                                    border: `1px solid ${theme.success}44`, fontSize: '12px', fontWeight: 600,
-                                }}
-                            >
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                    <polyline points="7 10 12 15 17 10" />
-                                    <line x1="12" y1="15" x2="12" y2="3" />
-                                </svg>
-                                Download Template
-                            </button>
-                            <label style={{
-                                display: 'inline-flex', alignItems: 'center', gap: 6,
-                                padding: '5px 12px', borderRadius: 6, cursor: 'pointer',
-                                background: theme.accentDim, color: theme.accent,
-                                border: `1px solid ${theme.accent}44`, fontSize: '12px', fontWeight: 600,
-                            }}>
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                    <polyline points="17 8 12 3 7 8" />
-                                    <line x1="12" y1="3" x2="12" y2="15" />
-                                </svg>
-                                Upload .xlsx
-                                <input ref={xlsxRef} type="file" accept=".xlsx,.xls,.csv"
-                                    style={{ display: 'none' }} onChange={handleXlsxUpload} disabled={running} />
-                            </label>
+                    {/* Auto-generate info card */}
+                    <div style={{ ...styles.card, marginBottom: 20, borderLeft: `3px solid ${theme.accent}` }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                            <span style={{ fontSize: '13px', fontWeight: 700, color: theme.text }}>Subject Embeddings</span>
                         </div>
-                        <div style={{ marginBottom: 8 }}>
-                            <label style={{
-                                display: 'inline-flex', alignItems: 'center', gap: 7,
-                                cursor: running ? 'not-allowed' : 'pointer',
-                                fontSize: '12px', fontWeight: 600,
-                                color: theme.accent,
-                                padding: '5px 12px', borderRadius: 6,
-                                border: `1px solid ${theme.accent}44`,
-                                background: theme.accentDim,
-                                transition: 'all 0.15s',
-                            }}>
-                                <input
-                                    type="checkbox"
-                                    checked={instituteWise}
-                                    onChange={e => setInstituteWise(e.target.checked)}
-                                    disabled={running}
-                                    style={{ width: 14, height: 14, accentColor: theme.accent, cursor: running ? 'not-allowed' : 'pointer' }}
-                                />
-                                Search Institute Wise
-                            </label>
-                        </div>
-                        <textarea
-                            value={rollInput}
-                            onChange={e => setRollInput(e.target.value)}
-                            disabled={running}
-                            placeholder="Enter roll numbers - separated by newlines, commas, or spaces"
-                            style={{ ...styles.input, height: 160, resize: 'vertical', fontFamily: theme.fontMono, fontSize: '13px' }}
-                        />
-                        <div style={{ marginTop: 8 }}>
-                            <span style={{ fontSize: '12px', color: theme.textMuted }}>
-                                {rollNos.length} roll number{rollNos.length !== 1 ? 's' : ''} detected
-                            </span>
+                        <div style={{ fontSize: '12px', color: theme.textMuted, lineHeight: 1.6 }}>
+                            Embeddings will be generated for <strong>all students</strong> in the ground truth folder for this department.
+                            Roll numbers are auto-resolved from the folder hierarchy — no manual input needed.
+                            The resulting .pkl file will be saved to <code style={{ fontFamily: theme.fontMono, background: theme.bg, padding: '1px 5px', borderRadius: 3 }}>server/ml-data/embeddings/</code>.
                         </div>
                     </div>
 
-                    {/* Generate / Update button */}
+                    {/* Generate button */}
                     <div style={{ marginBottom: 28, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                         <button
                             onClick={startGeneration}
@@ -497,13 +349,11 @@ function GenerateTab({ departments, deptLoading, deptError, prefill, onPrefillCo
                                 fontSize: '14px', fontWeight: 700, cursor: canGenerate ? 'pointer' : 'not-allowed',
                                 transition: 'all 0.15s', letterSpacing: '0.02em',
                             }}>
-                            {running
-                                ? (isUpdateMode ? `Updating... (${progressPct}%)` : `Generating... (${progressPct}%)`)
-                                : (isUpdateMode ? 'Update Embedding' : 'Generate Embeddings')}
+                            {running ? `Generating... (${progressPct}%)` : 'Generate Embeddings'}
                         </button>
                         {!subject.trim() && !running && dept && (
                             <div style={{ textAlign: 'center', marginTop: 8, fontSize: '12px', color: theme.textMuted }}>
-                                {isUpdateMode ? 'Waiting for subject to load...' : 'Select a subject first'}
+                                Select a subject first
                             </div>
                         )}
                         {running && (
@@ -512,7 +362,7 @@ function GenerateTab({ departments, deptLoading, deptError, prefill, onPrefillCo
                                     <div style={{ height: '100%', width: `${progressPct}%`, background: theme.accent, transition: 'width 0.3s' }} />
                                 </div>
                                 <div style={{ marginTop: 6, textAlign: 'center', fontSize: '12px', color: theme.textMuted }}>
-                                    Processing {rollNos.length} students for <strong style={{ color: theme.text }}>{subject}</strong>
+                                    Generating embeddings for <strong style={{ color: theme.text }}>{subject}</strong>
                                 </div>
                             </div>
                         )}
