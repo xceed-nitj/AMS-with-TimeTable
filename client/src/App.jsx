@@ -224,6 +224,8 @@ import AMSLayout from './attendancemodule/AMSLayout';
 import CameraRegistry from './attendancemodule/camera';
 import EditSessionDates from './attendancemodule/editSessionDates'; // 1. Added explicit file import string logic here
 import GpuMetrics from './attendancemodule/GpuMetrics';
+import NodeConsole from './attendancemodule/NodeConsole';
+import ReactConsole from './attendancemodule/ReactConsole';
 import AMSManual from './attendancemodule/manual';
 import TTManual from './timetableadmin/TTManual';
 
@@ -688,6 +690,8 @@ function App() {
           <Route path="ml-fine-tuning" element={<MLFineTuning />} />
           <Route path="acquisition-control" element={<SchedulerPage />} />
           <Route path="gpu" element={<GpuMetrics />} />
+          <Route path="server-console" element={<NodeConsole />} />
+          <Route path="client-console" element={<ReactConsole />} />
           <Route path="dept-menu-config" element={<DeptMenuConfig />} />
           <Route path="scheduler" element={<SchedulerPage />} />
           <Route path="live-report" element={<LiveReportPage />} />

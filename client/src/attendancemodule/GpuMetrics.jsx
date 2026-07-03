@@ -10,6 +10,7 @@ import {
   YAxis,
 } from 'recharts';
 import { theme } from './config';
+import ServiceConsole from './ServiceConsole';
 
 const HISTORY_LIMIT = 28800;
 const POLL_MS = 3000;
@@ -20,7 +21,6 @@ const METRICS_URLS = [
   'http://localhost:8500/metrics/gpu',
 ];
 const LOGS_URL = '/api/v1/ml/logs';
-const LOG_LIMIT = 200;
 const RANGE_OPTIONS = [
   { id: 'live', label: 'Live' },
   { id: 'custom', label: 'Custom' },
@@ -69,15 +69,6 @@ function formatAxisDate(timestamp) {
   });
 }
 
-function formatLogTime(timestamp) {
-  if (!timestamp) return '--';
-  return new Date(timestamp).toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  });
-}
-
 function readHistory() {
   try {
     const parsed = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
@@ -87,23 +78,14 @@ function readHistory() {
   }
 }
 
-function shouldShowConsoleLog(log) {
-  const message = String(log?.message || '').toLowerCase();
-  return !message.includes('/health') && !message.includes('/status');
-}
-
 export default function GpuMetrics() {
   const [samples, setSamples] = useState(readHistory);
   const [error, setError] = useState('');
   const [range, setRange] = useState('live');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
-  const [serviceLogs, setServiceLogs] = useState([]);
-  const [logsError, setLogsError] = useState('');
   const chartScrollerRef = useRef(null);
   const previousChartCountRef = useRef(0);
-  const logsScrollerRef = useRef(null);
-  const previousLogsCountRef = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -174,45 +156,6 @@ export default function GpuMetrics() {
     localStorage.setItem(HISTORY_KEY, JSON.stringify(samples.slice(-HISTORY_LIMIT)));
   }, [samples]);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function fetchLogs() {
-      try {
-        const response = await axios.get(LOGS_URL, {
-          timeout: 5000,
-          params: { limit: LOG_LIMIT },
-        });
-        const data = response.data;
-
-        if (!data || !Array.isArray(data.logs)) {
-          throw new Error('ML service log endpoint did not return logs');
-        }
-        if (cancelled) return;
-
-        setLogsError('');
-        setServiceLogs(data.logs.slice(-LOG_LIMIT));
-      } catch (err) {
-        if (!cancelled) {
-          const message = err.response?.data?.error
-            || err.response?.data?.detail
-            || (err.message === 'Network Error'
-              ? 'ML logs route unreachable. Restart the Vite dev server and Node backend after the /logs changes.'
-              : err.message)
-            || 'ML service logs unavailable';
-          setLogsError(message);
-        }
-      }
-    }
-
-    fetchLogs();
-    const interval = setInterval(fetchLogs, POLL_MS);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
-  }, []);
-
   const latest = samples[samples.length - 1];
   const chartSamples = useMemo(() => {
     if (range === 'live') return samples;
@@ -227,10 +170,6 @@ export default function GpuMetrics() {
     if (!latest?.memUsedMiB || !latest?.memTotalMiB) return '--';
     return `${Math.round(latest.memUsedMiB)} / ${Math.round(latest.memTotalMiB)} MiB`;
   }, [latest]);
-  const visibleServiceLogs = useMemo(
-    () => serviceLogs.filter(shouldShowConsoleLog),
-    [serviceLogs]
-  );
 
   useEffect(() => {
     if (range !== 'live' || !chartScrollerRef.current) return;
@@ -250,25 +189,6 @@ export default function GpuMetrics() {
       });
     });
   }, [chartSamples.length, latest?.timestamp, range]);
-
-  useEffect(() => {
-    if (!logsScrollerRef.current) return;
-
-    const scroller = logsScrollerRef.current;
-    const previousCount = previousLogsCountRef.current;
-    previousLogsCountRef.current = visibleServiceLogs.length;
-
-    const distanceFromEnd = scroller.scrollHeight - scroller.clientHeight - scroller.scrollTop;
-    const shouldFollowLogs = previousCount === 0 || distanceFromEnd < 80;
-    if (!shouldFollowLogs) return;
-
-    requestAnimationFrame(() => {
-      scroller.scrollTo({
-        top: scroller.scrollHeight,
-        behavior: 'smooth',
-      });
-    });
-  }, [visibleServiceLogs.length]);
 
   return (
     <main style={styles.page}>
@@ -391,40 +311,12 @@ export default function GpuMetrics() {
         )}
       </section>
 
-      <section style={styles.consolePanel}>
-        <div style={styles.consoleHeader}>
-          <div>
-            <h2 style={styles.consoleTitle}>ML Service Console</h2>
-            <p style={styles.consoleSubtitle}>Latest output from the Python service</p>
-          </div>
-          <span
-            style={{
-              ...styles.consoleStatus,
-              color: logsError ? T.danger : T.success,
-              borderColor: logsError ? '#fecaca' : '#bbf7d0',
-              background: logsError ? '#fef2f2' : '#ecfdf5',
-            }}
-          >
-            {logsError ? 'Unavailable' : `${visibleServiceLogs.length} lines`}
-          </span>
-        </div>
-        <div ref={logsScrollerRef} style={styles.consoleBody}>
-          {logsError ? (
-            <div style={styles.consoleEmpty}>{logsError}</div>
-          ) : visibleServiceLogs.length ? (
-            visibleServiceLogs.map((log, index) => (
-              <div key={`${log.timestamp}-${index}`} style={styles.logLine}>
-                <span style={styles.logTime}>{formatLogTime(log.timestamp)}</span>
-                <span style={styles.logLevel}>{log.level || 'INFO'}</span>
-                <span style={styles.logLogger}>{log.logger || 'ml_service'}</span>
-                <span style={styles.logMessage}>{log.message}</span>
-              </div>
-            ))
-          ) : (
-            <div style={styles.consoleEmpty}>No ML service logs yet</div>
-          )}
-        </div>
-      </section>
+      <ServiceConsole
+        title="ML Service Console"
+        subtitle="Latest output from the Python service"
+        logsUrl={LOGS_URL}
+        defaultLoggerLabel="ml_service"
+      />
     </main>
   );
 }
@@ -622,86 +514,5 @@ const styles = {
     justifyContent: 'center',
     color: T.textMuted,
     fontSize: 14,
-  },
-  consolePanel: {
-    marginTop: 16,
-    background: '#ffffff',
-    border: `1px solid ${T.border}`,
-    borderRadius: 8,
-    padding: 14,
-    boxShadow: '0 1px 4px rgba(15, 23, 42, 0.04)',
-  },
-  consoleHeader: {
-    display: 'flex',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: 12,
-    marginBottom: 12,
-  },
-  consoleTitle: {
-    margin: 0,
-    color: T.text,
-    fontSize: 15,
-    fontWeight: 800,
-    letterSpacing: 0,
-  },
-  consoleSubtitle: {
-    margin: '3px 0 0',
-    color: T.textMuted,
-    fontSize: 12,
-  },
-  consoleStatus: {
-    border: '1px solid',
-    borderRadius: 7,
-    padding: '5px 9px',
-    fontSize: 11,
-    fontWeight: 800,
-    whiteSpace: 'nowrap',
-  },
-  consoleBody: {
-    height: 260,
-    overflow: 'auto',
-    borderRadius: 7,
-    background: '#0f172a',
-    color: '#dbeafe',
-    padding: 12,
-    fontFamily: T.fontMono,
-    fontSize: 12,
-    lineHeight: 1.55,
-    scrollBehavior: 'smooth',
-  },
-  consoleEmpty: {
-    height: '100%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    color: '#94a3b8',
-  },
-  logLine: {
-    display: 'grid',
-    gridTemplateColumns: '78px 60px 170px minmax(0, 1fr)',
-    gap: 8,
-    alignItems: 'baseline',
-    padding: '2px 0',
-  },
-  logTime: {
-    color: '#93c5fd',
-    whiteSpace: 'nowrap',
-  },
-  logLevel: {
-    color: '#facc15',
-    fontWeight: 800,
-    whiteSpace: 'nowrap',
-  },
-  logLogger: {
-    color: '#a5b4fc',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-  },
-  logMessage: {
-    color: '#e2e8f0',
-    whiteSpace: 'pre-wrap',
-    wordBreak: 'break-word',
   },
 };

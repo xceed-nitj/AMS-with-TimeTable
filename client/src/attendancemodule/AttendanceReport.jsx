@@ -1831,7 +1831,6 @@ export default function AttendanceReport() {
                     <thead>
                       <tr>
                         {[
-                          'Batch',
                           'Date',
                           'Slot',
                           'Subject',
@@ -1853,17 +1852,6 @@ export default function AttendanceReport() {
                           style={{ cursor: 'pointer' }}
                           onClick={() => openDetail(r._id)}
                         >
-                          <td
-                            style={{
-                              padding: '11px 14px',
-                              fontFamily: theme.fontMono,
-                              fontSize: '12px',
-                              fontWeight: 600,
-                              color: theme.text,
-                            }}
-                          >
-                            {r.batch}
-                          </td>
                           <td style={{ padding: '11px 14px', color: theme.text }}>
                             {r.date}
                           </td>
@@ -2394,7 +2382,15 @@ function MultiRunTable({ report, readOnly, onOverride, theme, styles }) {
                 <td style={{ textAlign: 'center', padding: '9px 8px' }}>
                   {final?.isOverridden ? (
                     <span
+                      title={
+                        final.autoFinalStatus && final.autoFinalStatus !== final.finalStatus
+                          ? `Model said ${final.autoFinalStatus}, changed to ${final.finalStatus}`
+                          : 'Overridden'
+                      }
                       style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 5,
                         padding: '2px 8px',
                         borderRadius: 4,
                         fontSize: '11px',
@@ -2403,7 +2399,12 @@ function MultiRunTable({ report, readOnly, onOverride, theme, styles }) {
                         color: theme.accent,
                       }}
                     >
-                      Overridden
+                      ⚑ Overridden
+                      {final.autoFinalStatus && final.autoFinalStatus !== final.finalStatus && (
+                        <span style={{ fontFamily: theme.fontMono, fontWeight: 700 }}>
+                          ({final.autoFinalStatus}→{final.finalStatus})
+                        </span>
+                      )}
                     </span>
                   ) : (
                     <span style={{ color: theme.textMuted, fontSize: '11px' }}>—</span>
