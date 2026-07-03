@@ -200,6 +200,12 @@ mongoose
         console.log('[FrameCleanup] Development environment detected — Scheduler paused to protect local assets.');
       }
 
+      // ── HOD Daily/Weekly Attendance Summary Scheduler ─────────
+      // Actual enabled/frequency/threshold behavior is controlled from the
+      // Email Notifications settings tab (NotificationSettings.dailySummaryConfig).
+      const { startHodSummaryScheduler } = require('./modules/attendanceModule/controllers/hodSummaryScheduler');
+      startHodSummaryScheduler();
+
     });
     server.setTimeout(600000); // 10 min — prevents Node killing long SSE connections
     server.keepAliveTimeout = 620000;
