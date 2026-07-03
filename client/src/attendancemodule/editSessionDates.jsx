@@ -200,8 +200,9 @@ export default function EditSessionDates() {
 
   const [nonWorkingDays, setNonWorkingDays] = useState([]);
 
-  const [isEditingStart, setIsEditingStart] = useState(false);
-  const [isEditingEnd, setIsEditingEnd] = useState(false);
+  // Single edit mode for the term duration (start + end date are edited
+  // together as one unit, saved with one button).
+  const [isEditingTerm, setIsEditingTerm] = useState(false);
 
   const [holidayStartDate, setHolidayStartDate] = useState('');
   const [holidayEndDate, setHolidayEndDate] = useState('');
@@ -350,8 +351,7 @@ export default function EditSessionDates() {
         isFetching.current = true;
         setIsLoading(true);
         setSaveMsg(null);
-        setIsEditingStart(false);
-        setIsEditingEnd(false);
+        setIsEditingTerm(false);
 
         const res = await fetch(
           `${ALLOTMENT_API}?session=${encodeURIComponent(sessionName)}`,
@@ -582,15 +582,26 @@ export default function EditSessionDates() {
     triggerToast('success', 'Holiday entry removed successfully.');
   };
 
-  const handleSaveStartDateOnly = async () => {
-    if (tempStartDate === endingDate) {
+  // Merged start+end date save. The UI collects End Date first, then Start
+  // Date, so we validate in that same order — end date must exist before
+  // we can sanity-check the start date against it.
+  const handleSaveTermDates = async () => {
+    if (!tempEndDate) {
+      triggerToast('error', 'Please enter the end date first.');
+      return;
+    }
+    if (!tempStartDate) {
+      triggerToast('error', 'Please enter the start date.');
+      return;
+    }
+    if (tempStartDate === tempEndDate) {
       triggerToast(
         'error',
         'Start and end dates cannot evaluate to the same value.',
       );
       return;
     }
-    if (tempStartDate > endingDate) {
+    if (tempStartDate > tempEndDate) {
       triggerToast(
         'error',
         'Start date cannot exceed session termination bounds.',
@@ -599,48 +610,17 @@ export default function EditSessionDates() {
     }
 
     setStartingDate(tempStartDate);
-    setIsEditingStart(false);
-
-    const updatedDaysWithWeekends = generateWeekendsForRange(
-      tempStartDate,
-      endingDate,
-      nonWorkingDays,
-    );
-    setNonWorkingDays(updatedDaysWithWeekends);
-    await saveToBackendDatabaseDirectly(
-      tempStartDate,
-      endingDate,
-      updatedDaysWithWeekends,
-    );
-  };
-
-  const handleSaveEndDateOnly = async () => {
-    if (startingDate === tempEndDate) {
-      triggerToast(
-        'error',
-        'Start and end dates cannot evaluate to the same value.',
-      );
-      return;
-    }
-    if (startingDate > tempEndDate) {
-      triggerToast(
-        'error',
-        'Termination target date must succeed commencement date.',
-      );
-      return;
-    }
-
     setEndingDate(tempEndDate);
-    setIsEditingEnd(false);
+    setIsEditingTerm(false);
 
     const updatedDaysWithWeekends = generateWeekendsForRange(
-      startingDate,
+      tempStartDate,
       tempEndDate,
       nonWorkingDays,
     );
     setNonWorkingDays(updatedDaysWithWeekends);
     await saveToBackendDatabaseDirectly(
-      startingDate,
+      tempStartDate,
       tempEndDate,
       updatedDaysWithWeekends,
     );
@@ -794,10 +774,20 @@ export default function EditSessionDates() {
   }
 
   const activeMonthsTimeline = getActiveMonthsTimelineList();
-  const visibleHolidaysCount = nonWorkingDays.filter((day) => {
-    if (!startingDate || !endingDate) return true;
-    return day.date >= startingDate && day.date <= endingDate;
-  }).length;
+
+  // Total working days = total calendar days in the term range minus the
+  // non-working days (holidays/weekends) that fall inside that range.
+  const totalWorkingDays = (() => {
+    if (!startingDate || !endingDate || startingDate > endingDate) return null;
+    const start = new Date(startingDate);
+    const end = new Date(endingDate);
+    const totalCalendarDays =
+      Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
+    const nonWorkingInRange = nonWorkingDays.filter(
+      (day) => day.date >= startingDate && day.date <= endingDate,
+    ).length;
+    return Math.max(0, totalCalendarDays - nonWorkingInRange);
+  })();
 
   return (
     <>
@@ -978,63 +968,128 @@ export default function EditSessionDates() {
                     >
                       Term Duration Context
                     </span>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: T.accent,
+                      }}
+                    >
+                      {totalWorkingDays != null
+                        ? `${totalWorkingDays} working days`
+                        : ''}
+                    </span>
                   </div>
 
-                  {/* Start Date Row */}
-                  <div className="term-date-row">
-                    <div style={{ flex: 1 }}>
-                      <label
-                        style={{
-                          display: 'block',
-                          fontSize: 11,
-                          fontWeight: 700,
-                          color: T.textMuted,
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.08em',
-                          marginBottom: '6px',
-                        }}
-                      >
-                        Start Date
-                      </label>
-                      {isEditingStart ? (
-                        <input
-                          type="date"
-                          className="native-input"
-                          value={tempStartDate}
-                          onChange={(e) => setTempStartDate(e.target.value)}
-                          max={endingDate}
-                          style={{ maxWidth: '300px' }}
-                        />
-                      ) : (
-                        <div
+                  {/* Unified term-date row — displayed as Start Date then
+                      End Date. Save-time validation still checks the end
+                      date value first internally (see handleSaveTermDates),
+                      independent of this display order. */}
+                  <div className="term-date-row" style={{ alignItems: 'flex-end' }}>
+                    <div style={{ flex: 1, display: 'flex', gap: 20 }}>
+                      <div style={{ flex: 1 }}>
+                        <label
                           style={{
-                            padding: '10px 14px',
-                            background: T.bg,
-                            borderRadius: 8,
-                            fontSize: 14,
-                            fontWeight: 600,
+                            display: 'block',
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color: T.textMuted,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.08em',
+                            marginBottom: '6px',
                           }}
                         >
-                          {startingDate ? (
-                            new Date(startingDate).toLocaleDateString('en-IN', {
-                              dateStyle: 'long',
-                            })
-                          ) : (
-                            <span
-                              style={{ color: T.textMuted, fontWeight: 400 }}
-                            >
-                              Not set
-                            </span>
-                          )}
-                        </div>
-                      )}
+                          Start Date
+                        </label>
+                        {isEditingTerm ? (
+                          <input
+                            type="date"
+                            className="native-input"
+                            value={tempStartDate}
+                            onChange={(e) => setTempStartDate(e.target.value)}
+                            max={tempEndDate}
+                            style={{ maxWidth: '300px' }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              padding: '10px 14px',
+                              background: T.bg,
+                              borderRadius: 8,
+                              fontSize: 14,
+                              fontWeight: 600,
+                            }}
+                          >
+                            {startingDate ? (
+                              new Date(startingDate).toLocaleDateString(
+                                'en-IN',
+                                { dateStyle: 'long' },
+                              )
+                            ) : (
+                              <span
+                                style={{ color: T.textMuted, fontWeight: 400 }}
+                              >
+                                Not set
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      <div style={{ flex: 1 }}>
+                        <label
+                          style={{
+                            display: 'block',
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color: T.textMuted,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.08em',
+                            marginBottom: '6px',
+                          }}
+                        >
+                          End Date
+                        </label>
+                        {isEditingTerm ? (
+                          <input
+                            type="date"
+                            className="native-input"
+                            value={tempEndDate}
+                            onChange={(e) => setTempEndDate(e.target.value)}
+                            style={{ maxWidth: '300px' }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              padding: '10px 14px',
+                              background: T.bg,
+                              borderRadius: 8,
+                              fontSize: 14,
+                              fontWeight: 600,
+                            }}
+                          >
+                            {endingDate ? (
+                              new Date(endingDate).toLocaleDateString(
+                                'en-IN',
+                                { dateStyle: 'long' },
+                              )
+                            ) : (
+                              <span
+                                style={{ color: T.textMuted, fontWeight: 400 }}
+                              >
+                                Not set
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div>
-                      {isEditingStart ? (
+                      {isEditingTerm ? (
                         <div style={{ display: 'flex', gap: '8px' }}>
                           <button
                             className="native-btn"
-                            onClick={handleSaveStartDateOnly}
+                            onClick={handleSaveTermDates}
                             style={{
                               background: T.success,
                               color: '#fff',
@@ -1042,109 +1097,11 @@ export default function EditSessionDates() {
                               fontSize: '12px',
                             }}
                           >
-                            Save Date
+                            Save
                           </button>
                           <button
                             className="native-btn"
-                            onClick={() => setIsEditingStart(false)}
-                            style={{
-                              background: 'transparent',
-                              border: `1px solid ${T.border}`,
-                              color: T.textMuted,
-                              padding: '8px 14px',
-                              fontSize: '12px',
-                            }}
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          className="native-btn"
-                          onClick={() => {
-                            setTempStartDate(startingDate);
-                            setIsEditingStart(true);
-                          }}
-                          style={{
-                            background: T.accent,
-                            color: '#fff',
-                            padding: '8px 14px',
-                            fontSize: '12px',
-                          }}
-                        >
-                          Edit Date
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* End Date Row */}
-                  <div className="term-date-row">
-                    <div style={{ flex: 1 }}>
-                      <label
-                        style={{
-                          display: 'block',
-                          fontSize: 11,
-                          fontWeight: 700,
-                          color: T.textMuted,
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.08em',
-                          marginBottom: '6px',
-                        }}
-                      >
-                        End Date
-                      </label>
-                      {isEditingEnd ? (
-                        <input
-                          type="date"
-                          className="native-input"
-                          value={tempEndDate}
-                          onChange={(e) => setTempEndDate(e.target.value)}
-                          min={startingDate}
-                          style={{ maxWidth: '300px' }}
-                        />
-                      ) : (
-                        <div
-                          style={{
-                            padding: '10px 14px',
-                            background: T.bg,
-                            borderRadius: 8,
-                            fontSize: 14,
-                            fontWeight: 600,
-                          }}
-                        >
-                          {endingDate ? (
-                            new Date(endingDate).toLocaleDateString('en-IN', {
-                              dateStyle: 'long',
-                            })
-                          ) : (
-                            <span
-                              style={{ color: T.textMuted, fontWeight: 400 }}
-                            >
-                              Not set
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      {isEditingEnd ? (
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          <button
-                            className="native-btn"
-                            onClick={handleSaveEndDateOnly}
-                            style={{
-                              background: T.success,
-                              color: '#fff',
-                              padding: '8px 14px',
-                              fontSize: '12px',
-                            }}
-                          >
-                            Save Date
-                          </button>
-                          <button
-                            className="native-btn"
-                            onClick={() => setIsEditingEnd(false)}
+                            onClick={() => setIsEditingTerm(false)}
                             style={{
                               background: 'transparent',
                               border: `1px solid ${T.border}`,
@@ -1161,7 +1118,8 @@ export default function EditSessionDates() {
                           className="native-btn"
                           onClick={() => {
                             setTempEndDate(endingDate);
-                            setIsEditingEnd(true);
+                            setTempStartDate(startingDate);
+                            setIsEditingTerm(true);
                           }}
                           style={{
                             background: T.accent,
@@ -1170,7 +1128,7 @@ export default function EditSessionDates() {
                             fontSize: '12px',
                           }}
                         >
-                          Edit Date
+                          Edit
                         </button>
                       )}
                     </div>
@@ -1190,16 +1148,6 @@ export default function EditSessionDates() {
                       }}
                     >
                       Non-Working Days Configuration
-                      <span
-                        style={{
-                          marginLeft: 8,
-                          fontSize: 11,
-                          fontWeight: 500,
-                          color: T.accent,
-                        }}
-                      >
-                        {visibleHolidaysCount} mapped
-                      </span>
                     </span>
                   </div>
 
