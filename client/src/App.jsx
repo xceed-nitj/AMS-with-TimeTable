@@ -228,6 +228,7 @@ import NodeConsole from './attendancemodule/NodeConsole';
 import ReactConsole from './attendancemodule/ReactConsole';
 import AMSManual from './attendancemodule/manual';
 import TTManual from './timetableadmin/TTManual';
+import InstituteIdentification from './attendancemodule/InstituteIdentification';
 
 
 // ─── Department Admin Module Imports ────────────────────────────
@@ -668,6 +669,7 @@ function App() {
         />
         <Route path="/attendance" element={<AMSLayout />}>
           <Route index element={<AMSDashboard />} />
+          <Route path="institute" element={<InstituteIdentification />} />
 
           {/* 2. Session setup sub-route handler registered context array */}
           <Route path="edit-session-dates" element={<EditSessionDates />} />
