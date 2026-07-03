@@ -191,6 +191,7 @@ export default function HealthDashboard() {
           `Version ${clientVersion}`,
           lastCheck ? `Last check: ${lastCheck}` : null,
         ]}
+        action={{ label: 'View Console', onClick: () => navigate('/attendance/client-console') }}
       />
 
       <ServiceButton
@@ -201,6 +202,7 @@ export default function HealthDashboard() {
             ? `Uptime: ${formatUptime(healthData?.services?.server?.uptime)}`
             : 'Backend unreachable',
         ]}
+        action={{ label: 'View Console', onClick: () => navigate('/attendance/server-console') }}
       />
 
       <ServiceButton

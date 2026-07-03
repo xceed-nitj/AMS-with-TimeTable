@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const axios = require("axios");
 const mlClient = require("../controllers/mlServiceClient");
 const alertNotifier = require("../controllers/alertNotifier");
+const nodeLogBuffer = require("../../../nodeLogBuffer");
 
 let prevMlStatus = "online";
 let mlAlertInProgress = false;
@@ -62,6 +63,12 @@ async function getHealthStatus() {
 
 router.get("/status", async (req, res) => {
   res.json(await getHealthStatus());
+});
+
+// Node's own console output, mirroring the Python ML service's /logs endpoint
+router.get("/node-logs", (req, res) => {
+  const limit = parseInt(req.query.limit, 10) || 200;
+  res.json(nodeLogBuffer.getLogs(limit));
 });
 
 // Stream endpoint for real-time auto-updates via SSE
