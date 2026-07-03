@@ -96,6 +96,9 @@ const attendanceReportSchema = new Schema({
         credits:         { type: Number, default: null },
     },
 
+    // ERP-specific field: shorthand code used by the ERP system to identify this subject
+    subAbbreviation: { type: String, default: '' },
+
     // One entry per video processed in this session
     slotResults: [slotResultSchema],
 
