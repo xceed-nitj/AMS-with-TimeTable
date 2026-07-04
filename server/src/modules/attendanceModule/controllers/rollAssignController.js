@@ -7,6 +7,7 @@ const axios      = require('axios');
 
 const ClusterMatch = require('../../../models/attendanceModule/clusterMatch');
 const erpSync       = require('./erpEmbeddingSyncHelper');
+const { batchBelongsToDepartment } = require('../middleware/attendanceAccess');
 
 const ML_SERVICE_URL   = process.env.ML_SERVICE_URL || 'http://localhost:8500';
 const GROUND_TRUTH_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'ground_truth');
@@ -1193,7 +1194,15 @@ class RollAssignController {
             { $project: { _id: 0, batch: '$_id', total: 1, approved: 1, pending: 1, flagged: 1, unmatched: 1, cross_dept: 1 } },
             { $sort: { batch: 1 } },
         ]);
-        res.json({ batches: agg });
+        // Dept-admins only ever see their own department's batches here —
+        // this route carries no batch/dept param for enforceAttendanceDepartment
+        // to check, so the scoping has to happen in the controller itself.
+        // Filtering post-aggregation is fine: the group above is one row per
+        // batch, a small result set, not per-document.
+        const scoped = req.attendanceFullAccess
+            ? agg
+            : agg.filter((row) => batchBelongsToDepartment(row.batch, req.attendanceDepartment));
+        res.json({ batches: scoped });
     }
 }
 
