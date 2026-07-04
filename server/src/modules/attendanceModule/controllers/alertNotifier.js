@@ -47,6 +47,17 @@ async function sendAlert(subject, html, cooldownKey, alertKey, dept = null) {
 
   if (!settings.enabled) return;
 
+  // Explicit guarantee, for every alert type: if no role has opted into this
+  // alertKey at all, never send — regardless of how many recipients exist.
+  // (getRecipients()'s per-recipient role check below produces the same
+  // outcome; this makes the invariant visible without relying on that as an
+  // emergent side-effect.)
+  const anyRoleOptedIn = settings.roles.some((r) => r.alertTypes?.[alertKey]);
+  if (!anyRoleOptedIn) {
+    console.warn("[AlertNotifier] No role opted into", alertKey, "— skipping");
+    return;
+  }
+
   const emails = getRecipients(settings, alertKey, dept);
   if (emails.length === 0) {
     console.warn("[AlertNotifier] No recipients for", alertKey, "— skipping");
@@ -117,6 +128,14 @@ async function notifyDailySummary({ dept, date, frequencyLabel, mode, threshold,
   );
 }
 
+async function notifyEmbeddingProgress({ dept, semesterGroups }) {
+  await sendAlert(
+    `📸 iAMS Weekly Embedding Progress — ${dept}`,
+    templates.embeddingProgressTemplate({ dept, semesterGroups }),
+    null, "embeddingProgress", dept || null
+  );
+}
+
 module.exports = {
   notifyServerDown,
   notifyNoReportSaved,
@@ -124,4 +143,5 @@ module.exports = {
   notifyLowConfidence,
   notifyDuplicateAttendance,
   notifyDailySummary,
+  notifyEmbeddingProgress,
 };
