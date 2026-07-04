@@ -222,13 +222,13 @@ import RecordStream from './attendancemodule/RecordStream';
 import AMSDashboard from './attendancemodule/AMSDashboard';
 import AMSLayout from './attendancemodule/AMSLayout';
 import CameraRegistry from './attendancemodule/camera';
+import InstituteIdentification from './attendancemodule/InstituteIdentification';
 import EditSessionDates from './attendancemodule/editSessionDates'; // 1. Added explicit file import string logic here
 import GpuMetrics from './attendancemodule/GpuMetrics';
 import NodeConsole from './attendancemodule/NodeConsole';
 import ReactConsole from './attendancemodule/ReactConsole';
 import AMSManual from './attendancemodule/manual';
 import TTManual from './timetableadmin/TTManual';
-import InstituteIdentification from './attendancemodule/InstituteIdentification';
 
 
 // ─── Department Admin Module Imports ────────────────────────────
@@ -669,7 +669,6 @@ function App() {
         />
         <Route path="/attendance" element={<AMSLayout />}>
           <Route index element={<AMSDashboard />} />
-          <Route path="institute" element={<InstituteIdentification />} />
 
           {/* 2. Session setup sub-route handler registered context array */}
           <Route path="edit-session-dates" element={<EditSessionDates />} />
@@ -681,6 +680,7 @@ function App() {
           <Route path="groundtruth/rtsp" element={<GroundTruthRTSP />} />
           {/* <Route path="groundtruth/photos" element={<PhotoEdit />} /> */}
           <Route path="groundtruth/upload" element={<GroundTruthUpload />} />
+          <Route path="institute-identification" element={<InstituteIdentification />} />
           <Route path="record-stream" element={<RecordStream />} />
           <Route path="embeddings" element={<EmbeddingGeneration />} />
           <Route path="report" element={<Attendancedoc />} />

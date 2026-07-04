@@ -45,7 +45,6 @@ from rtsp_routes         import router as rtsp_router
 # ADDED — new router for /run-attendance-rtsp-tracked (live DeepSort-tracked
 # attendance against the FAISS index). Does not replace rtsp_router above.
 from tracked_routes      import router as tracked_router
-from institute_routes import router as institute_routes
 
 LOG_BUFFER = deque(maxlen=int(os.environ.get("ML_LOG_BUFFER_LINES", "500")))
 LOG_LOCK = threading.Lock()
@@ -262,8 +261,10 @@ app.include_router(rtsp_router)
 
 # ADDED — register the new tracked-attendance router and load the FAISS
 app.include_router(tracked_router)
-app.include_router(institute_routes)
 load_faiss_index()
+
+from institute_identification_routes import router as institute_router
+app.include_router(institute_router)
 
 # Serve ground-truth photos as static files
 if os.path.exists(CLIENT_GROUND_TRUTH):
@@ -407,35 +408,21 @@ class ReloadEmbeddingsRequest(BaseModel):
     pkl_path: Optional[str] = None   # local/solo-machine dev convenience only
     pkl_data: Optional[str] = None   # base64-encoded pickle bytes — works cross-machine, preferred
 
-def _rebuild_faiss_background():
-    try:
-        import sys
-        logger.info("Starting background FAISS index rebuild...")
-        subprocess.run([sys.executable, "Generate_embeddings.py"], check=True)
-        logger.info("Background FAISS rebuild complete, reloading index...")
-        load_faiss_index()
-    except Exception as e:
-        logger.error(f"Background FAISS rebuild failed: {e}")
-
 @app.post("/reload-embeddings")
 def reload_embeddings_ep(req: ReloadEmbeddingsRequest = ReloadEmbeddingsRequest()):
     if req.pkl_data:
         import pickle, base64
         state.embeddings_db = pickle.loads(base64.b64decode(req.pkl_data))
         logger.info(f"Loaded subject embeddings from pkl_data (base64): {len(state.embeddings_db)} students.")
-        source = "pkl_data"
+        return {"status": "ok", "students_enrolled": len(state.embeddings_db), "source": "pkl_data"}
     elif req.pkl_path and os.path.exists(req.pkl_path):
         import pickle
         with open(req.pkl_path, "rb") as f:
             state.embeddings_db = pickle.load(f)
         logger.info(f"Loaded subject embeddings from {req.pkl_path}: {len(state.embeddings_db)} students.")
-        source = req.pkl_path
     else:
         load_embeddings()  # loads default embeddings_db.pkl
-        source = DB_PATH
-        
-    threading.Thread(target=_rebuild_faiss_background, daemon=True).start()
-    return {"status": "ok", "students_enrolled": len(state.embeddings_db), "source": source, "faiss_rebuild": "started"}
+    return {"status": "ok", "students_enrolled": len(state.embeddings_db), "source": req.pkl_path or DB_PATH}
 
 
 # ─── Entry point ──────────────────────────────────────────────────────────────
