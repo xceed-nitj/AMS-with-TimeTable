@@ -96,6 +96,18 @@ const ALERT_TYPES = [
       </svg>
     ),
   },
+  {
+    key: 'embeddingProgress',
+    label: 'Embedding Progress',
+    description: 'Weekly per-subject embedding/ground-truth readiness summary',
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+        <rect x="2" y="3" width="12" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.4"/>
+        <circle cx="8" cy="7.5" r="2" stroke="currentColor" strokeWidth="1.4"/>
+        <line x1="4.5" y1="13.5" x2="11.5" y2="13.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+      </svg>
+    ),
+  },
 ];
 
 const FREQUENCIES = [
