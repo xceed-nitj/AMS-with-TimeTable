@@ -109,10 +109,19 @@ async function notifyDuplicateAttendance({ rollNo, date, sessions }) {
   );
 }
 
+async function notifyDailySummary({ dept, date, frequencyLabel, mode, threshold, rows }) {
+  await sendAlert(
+    `📊 iAMS ${frequencyLabel === "weekly" ? "Weekly" : "Daily"} Attendance Summary — ${dept}`,
+    templates.dailySummaryTemplate({ dept, date, frequencyLabel, mode, threshold, rows }),
+    null, "dailySummary", dept || null
+  );
+}
+
 module.exports = {
   notifyServerDown,
   notifyNoReportSaved,
   notifyClassBunk,
   notifyLowConfidence,
   notifyDuplicateAttendance,
+  notifyDailySummary,
 };
