@@ -11,8 +11,6 @@ const apiUrl = getEnvironment();
 
 const NAV = [
   { id: 'dashboard', route: '/attendance', label: 'Dashboard', exact: true },
-  { id: 'institute', route: '/attendance/institute-identification', label: 'Institute Identification' },
-
   { id: 'rtsp', route: '/attendance/groundtruth/rtsp', label: 'Ground Truth Capture' },
   {
     id: 'assign',
@@ -40,6 +38,7 @@ const NAV = [
     label: 'Confidence Monitor',
   },
   { id: 'manual', route: '/ams-manual', label: 'Help & Manual', newTab: true },
+  { id: 'institute', route: '/attendance/institute-identification', label: 'Institute Identification' },
 ];
 
 const COLORS = {

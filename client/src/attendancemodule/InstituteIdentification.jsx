@@ -19,6 +19,8 @@ export default function InstituteGateIdentification() {
   const [showPreview, setShowPreview] = useState(false);
   const [zoomSnapshot, setZoomSnapshot] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
+  const [useStreamUrl, setUseStreamUrl] = useState(false);
+  const [streamUrl, setStreamUrl] = useState('');
   const fileInputRef = useRef(null);
   const abortControllerRef = useRef(null);
 
@@ -45,13 +47,17 @@ export default function InstituteGateIdentification() {
   };
 
   const handleUpload = async () => {
-    if (!file) {
+    if (!useStreamUrl && !file) {
       setError("Please select a video file first.");
       return;
     }
-
+    if (useStreamUrl && !streamUrl) {
+      setError("Please enter a stream URL.");
+      return;
+    }
+    
     setProcessing(true);
-    setStreamLog([{ type: 'info', message: 'Starting video upload and processing...', time: new Date().toLocaleTimeString() }]);
+    setStreamLog([{ type: 'info', message: useStreamUrl ? 'Connecting to live stream...' : 'Starting video upload and processing...', time: new Date().toLocaleTimeString() }]);
     setMarkedStudents({});
     setSummary(null);
     setError(null);
@@ -59,17 +65,26 @@ export default function InstituteGateIdentification() {
     setTotalRuns(0);
 
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-
       abortControllerRef.current = new AbortController();
+      let response;
       
-      // We will manually fetch and read the stream directly from Python ML service to bypass any node proxy buffering
-      const response = await fetch(`http://127.0.0.1:8500/identify-institute-video`, {
-        method: 'POST',
-        body: formData,
-        signal: abortControllerRef.current.signal
-      });
+      if (useStreamUrl) {
+        response = await fetch(`http://127.0.0.1:8500/identify-institute-url`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: streamUrl }),
+          signal: abortControllerRef.current.signal
+        });
+      } else {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        response = await fetch(`http://127.0.0.1:8500/identify-institute-video`, {
+          method: 'POST',
+          body: formData,
+          signal: abortControllerRef.current.signal
+        });
+      }
 
       if (!response.ok) {
         throw new Error(`Upload failed: ${response.statusText}`);
@@ -170,66 +185,95 @@ export default function InstituteGateIdentification() {
               style={{ display: 'none' }}
             />
             
-            <div 
-              onClick={() => !processing && fileInputRef.current.click()}
-              style={{ 
-                border: `2px dashed ${file ? T.accent : T.border}`,
-                borderRadius: '8px',
-                padding: '32px 16px',
-                textAlign: 'center',
-                cursor: processing ? 'not-allowed' : 'pointer',
-                background: processing ? '#f8fafc' : '#fafafa',
-                transition: 'all 0.2s'
-              }}
-            >
-              {file ? (
-                <div>
-                  <div style={{ fontWeight: '500', color: T.accent, marginBottom: '8px' }}>{file.name}</div>
-                  <div style={{ fontSize: '12px', color: T.textMuted }}>{(file.size / (1024*1024)).toFixed(2)} MB</div>
-                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '16px' }}>
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); setShowPreview(true); }}
-                      style={{ padding: '6px 12px', background: '#e0e7ff', color: '#4f46e5', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', transition: 'opacity 0.2s' }}
-                    >
-                      Preview Video
-                    </button>
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); setFile(null); }}
-                      disabled={processing}
-                      style={{ padding: '6px 12px', background: '#fee2e2', color: '#ef4444', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: '600', cursor: processing ? 'not-allowed' : 'pointer', transition: 'opacity 0.2s' }}
-                    >
-                      Delete Video
-                    </button>
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); fileInputRef.current.click(); }}
-                      disabled={processing}
-                      style={{ padding: '6px 12px', background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: '600', cursor: processing ? 'not-allowed' : 'pointer', transition: 'opacity 0.2s' }}
-                    >
-                      Choose Another Video
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div style={{ color: T.textMuted }}>
-                  <svg style={{ width: '32px', height: '32px', margin: '0 auto 8px', color: '#94a3b8' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                  Click to browse or drag video file here
-                </div>
-              )}
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '16px' }}>
+              <button 
+                onClick={() => setUseStreamUrl(false)} 
+                disabled={processing}
+                style={{ padding: '6px 12px', background: !useStreamUrl ? T.accent : '#f1f5f9', color: !useStreamUrl ? '#fff' : '#475569', border: 'none', borderRadius: '20px', fontSize: '13px', fontWeight: '500', cursor: processing ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}
+              >Upload File</button>
+              <button 
+                onClick={() => setUseStreamUrl(true)} 
+                disabled={processing}
+                style={{ padding: '6px 12px', background: useStreamUrl ? T.accent : '#f1f5f9', color: useStreamUrl ? '#fff' : '#475569', border: 'none', borderRadius: '20px', fontSize: '13px', fontWeight: '500', cursor: processing ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}
+              >Live Stream URL</button>
             </div>
+
+            {useStreamUrl ? (
+              <div style={{ padding: '24px 16px', border: `1px solid ${T.border}`, borderRadius: '8px', background: '#fafafa', marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: T.text, marginBottom: '8px' }}>RTSP or HTTP Stream URL</label>
+                <input 
+                  type="text" 
+                  value={streamUrl} 
+                  onChange={(e) => setStreamUrl(e.target.value)} 
+                  placeholder="e.g. rtsp://192.168.1.100:554/stream1" 
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: `1px solid ${T.border}`, outline: 'none', fontSize: '14px' }} 
+                  disabled={processing}
+                />
+              </div>
+            ) : (
+              <div 
+                onClick={() => !processing && fileInputRef.current.click()}
+                style={{ 
+                  border: `2px dashed ${file ? T.accent : T.border}`,
+                  borderRadius: '8px',
+                  padding: '32px 16px',
+                  textAlign: 'center',
+                  cursor: processing ? 'not-allowed' : 'pointer',
+                  background: processing ? '#f8fafc' : '#fafafa',
+                  transition: 'all 0.2s',
+                  marginBottom: '16px'
+                }}
+              >
+                {file ? (
+                  <div>
+                    <div style={{ fontWeight: '500', color: T.accent, marginBottom: '8px' }}>{file.name}</div>
+                    <div style={{ fontSize: '12px', color: T.textMuted }}>{(file.size / (1024*1024)).toFixed(2)} MB</div>
+                    <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '16px' }}>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setShowPreview(true); }}
+                        style={{ padding: '6px 12px', background: '#e0e7ff', color: '#4f46e5', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', transition: 'opacity 0.2s' }}
+                      >
+                        Preview Video
+                      </button>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setFile(null); }}
+                        disabled={processing}
+                        style={{ padding: '6px 12px', background: '#fee2e2', color: '#ef4444', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: '600', cursor: processing ? 'not-allowed' : 'pointer', transition: 'opacity 0.2s' }}
+                      >
+                        Delete Video
+                      </button>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); fileInputRef.current.click(); }}
+                        disabled={processing}
+                        style={{ padding: '6px 12px', background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: '600', cursor: processing ? 'not-allowed' : 'pointer', transition: 'opacity 0.2s' }}
+                      >
+                        Choose Another Video
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ color: T.textMuted }}>
+                    <svg style={{ width: '32px', height: '32px', margin: '0 auto 8px', color: '#94a3b8' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                    Click to browse or drag video file here
+                  </div>
+                )}
+              </div>
+            )}
 
             <button 
               onClick={handleUpload}
-              disabled={!file || processing}
+              disabled={((!useStreamUrl && !file) || (useStreamUrl && !streamUrl) || processing)}
               style={{
                 width: '100%',
                 marginTop: '16px',
                 padding: '10px 16px',
-                background: (!file || processing) ? '#cbd5e1' : T.accent,
+                background: ((!useStreamUrl && !file) || (useStreamUrl && !streamUrl) || processing) ? '#cbd5e1' : T.accent,
                 color: '#fff',
                 border: 'none',
-                borderRadius: '6px',
-                fontWeight: '600',
-                cursor: (!file || processing) ? 'not-allowed' : 'pointer'
+                borderRadius: '8px',
+                fontWeight: 'bold',
+                cursor: ((!useStreamUrl && !file) || (useStreamUrl && !streamUrl) || processing) ? 'not-allowed' : 'pointer',
+                transition: 'background 0.2s'
               }}
             >
               {processing ? 'Processing Video...' : 'Identify Students'}
