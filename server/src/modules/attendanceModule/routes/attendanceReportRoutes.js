@@ -3,11 +3,12 @@
 const express = require("express");
 const router = express.Router();
 const AttendanceReportController = require("../controllers/attendanceReportController");
+const { attendanceRoleAccess, enforceAttendanceDepartment } = require("../middleware/attendanceAccess");
 
 const ctrl = new AttendanceReportController();
 
 // Save report after ML processes a video
-router.post("/save", async (req, res) => {
+router.post("/save", ...attendanceRoleAccess, enforceAttendanceDepartment, async (req, res) => {
   try {
     await ctrl.saveReport(req, res);
   } catch (e) {
@@ -16,7 +17,7 @@ router.post("/save", async (req, res) => {
 });
 
 // List reports (filters via query: batch, date, faculty, subject, status)
-router.get("/", async (req, res) => {
+router.get("/", ...attendanceRoleAccess, enforceAttendanceDepartment, async (req, res) => {
   try {
     await ctrl.getReports(req, res);
   } catch (e) {
@@ -25,7 +26,7 @@ router.get("/", async (req, res) => {
 });
 
 // Get reports for a batch on a specific date
-router.get("/by-date/:batch/:date", async (req, res) => {
+router.get("/by-date/:batch/:date", ...attendanceRoleAccess, enforceAttendanceDepartment, async (req, res) => {
   try {
     await ctrl.getReportByDate(req, res);
   } catch (e) {
@@ -34,7 +35,7 @@ router.get("/by-date/:batch/:date", async (req, res) => {
 });
 
 // Get student attendance history across all sessions
-router.get("/student/:batch/:rollNo", async (req, res) => {
+router.get("/student/:batch/:rollNo", ...attendanceRoleAccess, enforceAttendanceDepartment, async (req, res) => {
   try {
     await ctrl.getStudentHistory(req, res);
   } catch (e) {
@@ -43,7 +44,7 @@ router.get("/student/:batch/:rollNo", async (req, res) => {
 });
 
 // Get locksem context (subject / faculty / slot info)
-router.get("/locksem-context/:locksemId", async (req, res) => {
+router.get("/locksem-context/:locksemId", ...attendanceRoleAccess, async (req, res) => {
   try {
     await ctrl.getLocksemContext(req, res);
   } catch (e) {
@@ -52,7 +53,7 @@ router.get("/locksem-context/:locksemId", async (req, res) => {
 });
 
 // Finalize a report
-router.post("/:id/finalize", async (req, res) => {
+router.post("/:id/finalize", ...attendanceRoleAccess, async (req, res) => {
   try {
     await ctrl.finalizeReport(req, res);
   } catch (e) {
@@ -60,7 +61,13 @@ router.post("/:id/finalize", async (req, res) => {
   }
 });
 
-// Manually override one student's final status
+// Manually override one student's final status.
+// INTENTIONALLY LEFT UNAUTHENTICATED: this is called directly by the external
+// ERP system (see updateStudentStatus's own comment in the controller), which
+// has no browser session/JWT cookie to present. There's no API-key/service-auth
+// mechanism in this codebase yet to gate it with instead — flagged as a known,
+// deliberate exception during the attendance-module access lockdown, not an
+// oversight. Revisit once the ERP integration can carry a shared-secret header.
 router.patch("/:id/student/:rollNo", async (req, res) => {
   try {
     await ctrl.updateStudentStatus(req, res);
@@ -70,7 +77,7 @@ router.patch("/:id/student/:rollNo", async (req, res) => {
 });
 
 // Delete a draft report
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", ...attendanceRoleAccess, async (req, res) => {
   try {
     await ctrl.deleteReport(req, res);
   } catch (e) {
@@ -82,7 +89,7 @@ router.delete("/:id", async (req, res) => {
 const sessionCtrl = require("../controllers/attendanceSessionController");
 
 // Start a multi-run session
-router.post("/start-session", async (req, res) => {
+router.post("/start-session", ...attendanceRoleAccess, enforceAttendanceDepartment, async (req, res) => {
   try {
     const result = await sessionCtrl.startSession(req.body);
     res.json(result);
@@ -92,7 +99,7 @@ router.post("/start-session", async (req, res) => {
 });
 
 // Stop a running session
-router.post("/stop-session/:reportId", async (req, res) => {
+router.post("/stop-session/:reportId", ...attendanceRoleAccess, async (req, res) => {
   try {
     const result = await sessionCtrl.stopSession(req.params.reportId);
     res.json(result);
@@ -102,7 +109,7 @@ router.post("/stop-session/:reportId", async (req, res) => {
 });
 
 // Get session status
-router.get("/session-status/:reportId", async (req, res) => {
+router.get("/session-status/:reportId", ...attendanceRoleAccess, async (req, res) => {
   try {
     res.json(sessionCtrl.getSessionStatus(req.params.reportId));
   } catch (e) {
@@ -111,7 +118,7 @@ router.get("/session-status/:reportId", async (req, res) => {
 });
 
 // List all active sessions
-router.get("/active-sessions", async (req, res) => {
+router.get("/active-sessions", ...attendanceRoleAccess, async (req, res) => {
   try {
     res.json(sessionCtrl.listActiveSessions());
   } catch (e) {
@@ -120,7 +127,7 @@ router.get("/active-sessions", async (req, res) => {
 });
 
 // Dashboard stats aggregate
-router.get("/stats", async (req, res) => {
+router.get("/stats", ...attendanceRoleAccess, async (req, res) => {
   try {
     const AttendanceReport = require("../../../models/attendanceReport");
     const now = new Date();
@@ -179,7 +186,7 @@ router.get("/stats", async (req, res) => {
 });
 
 // Chart data: dept-wise and day-wise attendance aggregates
-router.get("/charts", async (req, res) => {
+router.get("/charts", ...attendanceRoleAccess, async (req, res) => {
   try {
     const AttendanceReport = require("../../../models/attendanceReport");
     const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -238,7 +245,7 @@ router.get("/charts", async (req, res) => {
   }
 });
 
-router.get("/confidence-trend", async (req, res) => {
+router.get("/confidence-trend", ...attendanceRoleAccess, async (req, res) => {
   try {
     await ctrl.getConfidenceTrend(req, res);
   } catch (e) {
@@ -246,7 +253,7 @@ router.get("/confidence-trend", async (req, res) => {
   }
 });
 
-router.get("/model-performance", async (req, res) => {
+router.get("/model-performance", ...attendanceRoleAccess, async (req, res) => {
   try {
     await ctrl.getModelPerformanceMetrics(req, res);
   } catch (e) {
@@ -255,7 +262,7 @@ router.get("/model-performance", async (req, res) => {
 });
 
 
-router.get("/export", async (req, res) => {
+router.get("/export", ...attendanceRoleAccess, async (req, res) => {
   try {
     await ctrl.exportAttendance(req, res);
   } catch (e) {
@@ -263,7 +270,7 @@ router.get("/export", async (req, res) => {
   }
 });
 
-router.get("/export-options", async (req, res) => {
+router.get("/export-options", ...attendanceRoleAccess, async (req, res) => {
   try {
     await ctrl.getExportOptions(req, res);
   } catch (e) {
@@ -271,16 +278,8 @@ router.get("/export-options", async (req, res) => {
   }
 });
 
-// Get full report by ID (keep last to avoid conflicts with named routes above)
-router.get("/:id", async (req, res) => {
-  try {
-    await ctrl.getReportById(req, res);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
 // GET /attendancemodule/reports/lookup-context?room=lt101&slot=period1&date=2026-04-08
-router.get("/lookup-context", async (req, res) => {
+router.get("/lookup-context", ...attendanceRoleAccess, async (req, res) => {
   try {
     const { room, slot, date } = req.query;
     if (!room || !slot)
@@ -353,8 +352,9 @@ router.get("/lookup-context", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 // Get full report by ID (keep last to avoid conflicts with named routes above)
-router.get("/:id", async (req, res) => {
+router.get("/:id", ...attendanceRoleAccess, async (req, res) => {
   try {
     await ctrl.getReportById(req, res);
   } catch (e) {
