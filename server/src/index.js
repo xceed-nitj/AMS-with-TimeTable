@@ -200,6 +200,19 @@ mongoose
         console.log('[FrameCleanup] Development environment detected — Scheduler paused to protect local assets.');
       }
 
+      // ── HOD Daily/Weekly Attendance Summary Scheduler ─────────
+      // Actual enabled/frequency/threshold behavior is controlled from the
+      // Email Notifications settings tab (NotificationSettings.dailySummaryConfig).
+      const { startHodSummaryScheduler } = require('./modules/attendanceModule/controllers/hodSummaryScheduler');
+      startHodSummaryScheduler();
+
+      // ── Weekly Embedding Progress Scheduler ───────────────────
+      // Emails head/coordinator recipients a per-subject embedding/ground-truth
+      // readiness summary, gated by the same NotificationSettings.enabled flag
+      // and the "Embedding Progress" per-role opt-in.
+      const { startEmbeddingProgressScheduler } = require('./modules/attendanceModule/controllers/embeddingProgressScheduler');
+      startEmbeddingProgressScheduler();
+
     });
     server.setTimeout(600000); // 10 min — prevents Node killing long SSE connections
     server.keepAliveTimeout = 620000;

@@ -83,10 +83,130 @@ function duplicateAttendanceTemplate({ rollNo, date, sessions }) {
   `;
 }
 
+function dailySummaryTemplate({ dept, date, frequencyLabel, mode, threshold, rows }) {
+  // Group by semester — one table per semester in the email body, rather
+  // than a single table with a Batch column.
+  const bySemester = {};
+  for (const r of rows) {
+    const sem = r.semester || 'Unknown';
+    if (!bySemester[sem]) bySemester[sem] = [];
+    bySemester[sem].push(r);
+  }
+  const semesters = Object.keys(bySemester).sort((a, b) =>
+    String(a).localeCompare(String(b), undefined, { numeric: true }),
+  );
+
+  const tablesHtml = semesters
+    .map((sem) => {
+      // Sorted by period so a subject taught multiple times in the range
+      // reads as distinct chronological rows — never averaged together.
+      const sortedRows = [...bySemester[sem]].sort((a, b) =>
+        String(a.period || '').localeCompare(String(b.period || '')),
+      );
+      const rowsHtml = sortedRows
+        .map(
+          (r) => `
+      <tr>
+        <td style="padding:4px 12px 4px 0;">${r.subject || 'N/A'}</td>
+        <td style="padding:4px 12px 4px 0;">${r.faculty || 'N/A'}</td>
+        <td style="padding:4px 12px 4px 0;">${r.period || 'N/A'}</td>
+        <td style="padding:4px 12px 4px 0;">${r.room || 'N/A'}</td>
+        <td style="padding:4px 12px 4px 0;">${r.present}/${r.totalStudents}</td>
+        <td style="padding:4px 12px 4px 0;"><strong>${r.attendancePct}%</strong></td>
+      </tr>`,
+        )
+        .join('');
+
+      return `
+    <h4 style="margin:18px 0 6px;">Semester ${sem}</h4>
+    <table style="border-collapse:collapse;font-size:14px;width:100%;">
+      <thead>
+        <tr style="color:#888;text-align:left;">
+          <th style="padding:4px 12px 4px 0;">Subject</th>
+          <th style="padding:4px 12px 4px 0;">Faculty</th>
+          <th style="padding:4px 12px 4px 0;">Period</th>
+          <th style="padding:4px 12px 4px 0;">Room</th>
+          <th style="padding:4px 12px 4px 0;">Present</th>
+          <th style="padding:4px 12px 4px 0;">%</th>
+        </tr>
+      </thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>`;
+    })
+    .join('');
+
+  const introText =
+    mode === 'threshold'
+      ? `The following classes in <strong>${dept}</strong> had attendance below <strong>${threshold}%</strong> for this ${frequencyLabel === 'weekly' ? 'week' : 'day'}.`
+      : `Attendance summary for all classes in <strong>${dept}</strong> for this ${frequencyLabel === 'weekly' ? 'week' : 'day'}.`;
+
+  return `
+    <h3>📊 ${frequencyLabel === 'weekly' ? 'Weekly' : 'Daily'} Attendance Summary — ${dept}</h3>
+    <p>${introText}</p>
+    ${tablesHtml}
+    <p style="color:#888;font-size:12px;">Report date: ${date}</p>
+    <hr/>
+    <p style="color:#888;font-size:12px;">This is an automated alert from iAMS. Do not reply to this email.</p>
+  `;
+}
+
+const STATUS_COLORS = {
+  'Completed':   '#16a34a',
+  'Pending':     '#d97706',
+  'Not Started': '#dc2626',
+};
+
+function embeddingProgressTemplate({ dept, semesterGroups }) {
+  const tablesHtml = semesterGroups
+    .map(({ sem, rows }) => {
+      const rowsHtml = rows
+        .map((r) => {
+          const color = STATUS_COLORS[r.status] || '#888';
+          return `
+      <tr>
+        <td style="padding:4px 12px 4px 0;">${r.subject || 'N/A'}</td>
+        <td style="padding:4px 12px 4px 0;">${r.faculty || 'N/A'}</td>
+        <td style="padding:4px 12px 4px 0;">${r.submitted ?? '—'}</td>
+        <td style="padding:4px 12px 4px 0;">${r.groundTruthReady ?? '—'}</td>
+        <td style="padding:4px 12px 4px 0;">${r.missing ?? '—'}</td>
+        <td style="padding:4px 12px 4px 0;"><strong style="color:${color};">${r.status}</strong></td>
+      </tr>`;
+        })
+        .join('');
+
+      return `
+    <h4 style="margin:18px 0 6px;">Semester ${sem}</h4>
+    <table style="border-collapse:collapse;font-size:14px;width:100%;">
+      <thead>
+        <tr style="color:#888;text-align:left;">
+          <th style="padding:4px 12px 4px 0;">Subject</th>
+          <th style="padding:4px 12px 4px 0;">Faculty</th>
+          <th style="padding:4px 12px 4px 0;">Submitted</th>
+          <th style="padding:4px 12px 4px 0;">Ground Truth Ready</th>
+          <th style="padding:4px 12px 4px 0;">Missing</th>
+          <th style="padding:4px 12px 4px 0;">Status</th>
+        </tr>
+      </thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>`;
+    })
+    .join('');
+
+  return `
+    <h3>📸 Weekly Embedding/Ground-Truth Progress — ${dept}</h3>
+    <p>Per-subject embedding status across all semesters in <strong>${dept}</strong>, as of this week. "Not Started" means no roll numbers have been submitted for that subject yet.</p>
+    ${tablesHtml}
+    <hr/>
+    <p style="color:#888;font-size:12px;">This is an automated alert from iAMS. Do not reply to this email.</p>
+  `;
+}
+
 module.exports = {
   serverDownTemplate,
   noReportSavedTemplate,
   classBunkTemplate,
   lowConfidenceTemplate,
   duplicateAttendanceTemplate,
+  dailySummaryTemplate,
+  embeddingProgressTemplate,
 };

@@ -1,7 +1,9 @@
 const NotificationSettings = require('../../../models/attendanceModule/notificationSettings');
 
-const ALERT_KEYS = ['serverDown', 'lowConfidence', 'noReportSaved', 'classBunk', 'duplicateAttendance'];
+const ALERT_KEYS = ['serverDown', 'lowConfidence', 'noReportSaved', 'classBunk', 'duplicateAttendance', 'dailySummary', 'embeddingProgress'];
 const VALID_ROLES = ['admin', 'coordinator', 'head'];
+const VALID_FREQUENCIES = ['daily', 'weekly'];
+const VALID_MODES = ['all', 'threshold'];
 
 function normalizeAlertTypes(input = {}) {
   const result = {};
@@ -64,6 +66,34 @@ class NotificationSettingsController {
       settings.recipients.push({ email, role, dept: dept || '' });
       await settings.save();
       res.json({ message: 'Recipient added', settings });
+    } catch (error) {
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  // Update the daily/weekly HOD attendance-summary config (what/when it sends —
+  // separate from alertTypes.dailySummary, which controls who receives it)
+  async updateDailySummaryConfig(req, res) {
+    try {
+      const { enabled, frequency, mode, threshold } = req.body;
+      const settings = await NotificationSettings.getSettings();
+      const cfg = settings.dailySummaryConfig;
+      if (typeof enabled === 'boolean') cfg.enabled = enabled;
+      if (frequency !== undefined) {
+        if (!VALID_FREQUENCIES.includes(frequency)) return res.status(400).json({ error: 'Invalid frequency' });
+        cfg.frequency = frequency;
+      }
+      if (mode !== undefined) {
+        if (!VALID_MODES.includes(mode)) return res.status(400).json({ error: 'Invalid mode' });
+        cfg.mode = mode;
+      }
+      if (threshold !== undefined) {
+        const num = Number(threshold);
+        if (!Number.isFinite(num) || num < 0 || num > 100) return res.status(400).json({ error: 'threshold must be 0-100' });
+        cfg.threshold = num;
+      }
+      await settings.save();
+      res.json({ message: 'Updated', settings });
     } catch (error) {
       res.status(500).json({ error: 'Internal server error' });
     }
