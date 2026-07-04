@@ -1,6 +1,20 @@
 const TimeTable = require("../../../models/timetable");
 const HttpException = require("../../../models/http-exception");
 
+const SUBJECT_PROJECTION = {
+  subjectFullName: 1,
+  subName: 1, // abbreviation
+  subCode: 1,
+  type: 1,
+  sem: 1,
+  degree: 1,
+  dept: 1,
+  credits: 1,
+  studentCount: 1,
+  code: 1,
+  _id: 1,
+};
+
 class SemesterAbbreviationController {
   // Route 1: GET /semester/current
   async getCurrentSessionSemesters(req, res) {
@@ -9,19 +23,29 @@ class SemesterAbbreviationController {
         { $match: { currentSession: true } },
         {
           $lookup: {
-            from: "subjects", // Mongo collection name for the Subject model
+            from: "subjects",
             localField: "code",
             foreignField: "code",
             as: "subjects",
           },
         },
         { $unwind: "$subjects" },
-        { $group: { _id: null, sems: { $addToSet: "$subjects.sem" } } },
+        {
+          $group: {
+            _id: { dept: "$dept", sem: "$subjects.sem" },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            dept: "$_id.dept",
+            sem: "$_id.sem",
+          },
+        },
+        { $sort: { dept: 1, sem: 1 } },
       ]);
 
-      const sems = (result[0]?.sems || []).sort((a, b) => a.localeCompare(b));
-
-      res.status(200).json(sems);
+      res.status(200).json(result);
     } catch (e) {
       res
         .status(e?.status || 500)
@@ -30,6 +54,8 @@ class SemesterAbbreviationController {
   }
 
   // Route 2: GET /semester/abbreviations/:sem
+  // Returns full subject records (name, code, abbreviation, credits, etc.)
+  // for a given sem, current session, all depts.
   async getAbbreviationsBySem(req, res) {
     try {
       const { sem } = req.params;
@@ -52,21 +78,16 @@ class SemesterAbbreviationController {
                   },
                 },
               },
+              { $project: SUBJECT_PROJECTION },
             ],
             as: "subjects",
           },
         },
         { $unwind: "$subjects" },
-        {
-          $group: {
-            _id: null,
-            abbreviations: { $addToSet: "$subjects.subName" },
-          },
-        },
+        { $replaceRoot: { newRoot: "$subjects" } },
       ]);
 
-      const abbreviations = result[0]?.abbreviations || [];
-      res.status(200).json(abbreviations);
+      res.status(200).json(result);
     } catch (e) {
       res
         .status(e?.status || 500)
@@ -74,7 +95,8 @@ class SemesterAbbreviationController {
     }
   }
 
-  // Route 3: GET /semester/bysession?session=2023-2024 (Even)
+  // Route 3: GET /semester/bysession?session=<session>
+  // Returns all distinct {dept, sem} pairs for any given session
   async getSemestersBySession(req, res) {
     try {
       const { session } = req.query;
@@ -91,11 +113,22 @@ class SemesterAbbreviationController {
           },
         },
         { $unwind: "$subjects" },
-        { $group: { _id: null, sems: { $addToSet: "$subjects.sem" } } },
+        {
+          $group: {
+            _id: { dept: "$dept", sem: "$subjects.sem" },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            dept: "$_id.dept",
+            sem: "$_id.sem",
+          },
+        },
+        { $sort: { dept: 1, sem: 1 } },
       ]);
 
-      const sems = (result[0]?.sems || []).sort((a, b) => a.localeCompare(b));
-      res.status(200).json(sems);
+      res.status(200).json(result);
     } catch (e) {
       res
         .status(e?.status || 500)

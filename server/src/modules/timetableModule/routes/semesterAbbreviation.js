@@ -14,4 +14,5 @@ semesterRouter.get("/abbreviations/:sem", async (req, res) => {
 semesterRouter.get("/bysession", async (req, res) => {
   await semesterController.getSemestersBySession(req, res);
 });
+
 module.exports = semesterRouter;
