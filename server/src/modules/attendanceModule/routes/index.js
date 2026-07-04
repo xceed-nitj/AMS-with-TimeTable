@@ -122,5 +122,11 @@ router.use(
     ...attendanceRoleAccess,
     require("./mldataFolderSizeRoutes"),
 );
+router.use(
+    '/institute',
+    ...attendanceRoleAccess,
+    enforceAttendanceDepartment,
+    require("./instituteIdentificationRoutes"),
+);
 
 module.exports = router;

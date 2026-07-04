@@ -263,6 +263,9 @@ app.include_router(rtsp_router)
 app.include_router(tracked_router)
 load_faiss_index()
 
+from institute_identification_routes import router as institute_router
+app.include_router(institute_router)
+
 # Serve ground-truth photos as static files
 if os.path.exists(CLIENT_GROUND_TRUTH):
     app.mount(
