@@ -1,23 +1,25 @@
 // client/src/attendancemodule/Attendancedoc.jsx
-// Page 4: Run attendance — timetable lookup → attendance report with confidence
-// This page is used ONLY for testing. In production, the scheduler runs automatically.
-// The report is saved along with sem data and subAbbreviation from the timetable module.
-// Embeddings .pkl files are fetched directly from the server/ml-data/embeddings/ folder.
+// Page 4: Run attendance — video + timetable lookup → attendance report with confidence
 
 import { useState, useCallback } from 'react';
-import { API_BASE, TIMETABLE_API, theme, styles, cssReset } from './config';
+import { API_BASE, TIMETABLE_API, DEGREES, DEPARTMENTS, YEARS, theme, styles, cssReset } from './config';
 
 export default function Attendancedoc() {
-    // Timetable mode only (manual batch selection removed — this is for testing)
+    // Mode: manual batch select OR timetable lookup
+    const [mode, setMode] = useState('manual'); // 'manual' | 'timetable'
+
+    // Manual mode
+    const [degree, setDegree] = useState('BTECH');
+    const [department, setDepartment] = useState('');
+    const [year, setYear] = useState('');
+
+    // Timetable mode
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [room, setRoom] = useState('');
     const [timeSlot, setTimeSlot] = useState('');
     const [session, setSession] = useState('');
     const [ttData, setTtData] = useState(null);
     const [ttLoading, setTtLoading] = useState(false);
-
-    const [checkInterval, setCheckInterval] = useState('0'); // default single run
-    const [durationPerCheck, setDurationPerCheck] = useState('120'); // default 2 minutes
 
     // Common
     const [videoLink, setVideoLink] = useState('');
@@ -26,6 +28,9 @@ export default function Attendancedoc() {
     const [toast, setToast] = useState(null);
 
     const CONFIDENCE_THRESHOLD = 0.65;
+
+    const batchName = degree && department && year
+        ? `${degree}_${department}_${year}`.toUpperCase() : null;
 
     const showToast = (msg, type = 'success') => {
         setToast({ msg, type });
@@ -57,12 +62,14 @@ export default function Attendancedoc() {
 
     // ─── Run attendance ───────────────────────────────────────────
     const runAttendance = async () => {
+        const batch = mode === 'manual' ? batchName : ttData?.batch;
+
         if (!videoLink.trim()) {
             showToast('Paste the video link', 'error');
             return;
         }
-        if (!room || !timeSlot) {
-            showToast('Lookup timetable and select a slot first', 'error');
+        if (mode === 'manual' && !batchName) {
+            showToast('Select degree, department, and year', 'error');
             return;
         }
 
@@ -75,11 +82,12 @@ export default function Attendancedoc() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     videoLink: videoLink.trim(),
+                    batch: batch || batchName,
                     room,
                     date,
-                    slot: timeSlot,
-                    checkInterval: parseInt(checkInterval),
-                    durationPerCheck: parseInt(durationPerCheck)
+                    timeSlot,
+                    faculty: ttData?.faculty || '',
+                    subject: ttData?.subject || '',
                 })
             });
 
@@ -88,7 +96,7 @@ export default function Attendancedoc() {
                 showToast(data.error, 'error');
             } else {
                 setReport(data);
-                showToast('Attendance report generated and saved');
+                showToast('Attendance report generated');
             }
         } catch (err) {
             showToast('Failed: ' + err.message, 'error');
@@ -126,84 +134,123 @@ export default function Attendancedoc() {
 
             {/* Header */}
             <div style={{ marginBottom: 28 }}>
-                <div style={styles.heading}>Attendance Report (Testing)</div>
-                <div style={styles.subheading}>
-                    Timetable lookup → auto-load embeddings → generate attendance with confidence scores
-                </div>
-                <div style={{
-                    marginTop: 8, padding: '8px 14px', borderRadius: 6,
-                    background: theme.warningDim, border: `1px solid ${theme.warning}44`,
-                    fontSize: '12px', color: theme.warning, fontWeight: 600,
-                }}>
-                    ⚠ Testing mode only. In production, the scheduler runs automatically.
-                    Embeddings .pkl files are loaded directly from the server folder.
-                    Report is saved with sem data and subject abbreviation for ERP.
-                </div>
+                <div style={styles.heading}>Attendance Report</div>
+                <div style={styles.subheading}>Process class video → compare with ground truth → generate attendance with confidence scores</div>
+            </div>
+
+            {/* Mode Toggle */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+                {[
+                    { id: 'manual', label: 'Select Batch Manually' },
+                    { id: 'timetable', label: 'Lookup from Timetable' },
+                ].map(m => (
+                    <button
+                        key={m.id}
+                        onClick={() => setMode(m.id)}
+                        style={{
+                            padding: '8px 20px', borderRadius: '999px', fontSize: '13px', fontWeight: 600,
+                            cursor: 'pointer', transition: 'all 0.15s',
+                            border: `2px solid ${mode === m.id ? theme.accent : theme.border}`,
+                            background: mode === m.id ? theme.accentDim : 'transparent',
+                            color: mode === m.id ? theme.accent : theme.textMuted,
+                        }}
+                    >
+                        {m.label}
+                    </button>
+                ))}
             </div>
 
             {/* Config Card */}
             <div style={{ ...styles.card, marginBottom: 24 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 16, marginBottom: 16 }}>
-                    <div>
-                        <label style={styles.label}>Date</label>
-                        <input type="date" value={date} onChange={e => setDate(e.target.value)} style={styles.input} />
-                    </div>
-                    <div>
-                        <label style={styles.label}>Session Code</label>
-                        <input type="text" placeholder="e.g. 2025-26-odd" value={session}
-                            onChange={e => setSession(e.target.value)} style={styles.input} />
-                    </div>
-                    <div>
-                        <label style={styles.label}>Room No</label>
-                        <input type="text" placeholder="e.g. LT-101" value={room}
-                            onChange={e => setRoom(e.target.value)} style={styles.input} />
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-                        <button
-                            onClick={lookupTimetable}
-                            disabled={ttLoading}
-                            style={{ ...styles.btnGhost, width: '100%', opacity: ttLoading ? 0.5 : 1 }}
-                        >
-                            {ttLoading ? 'Looking up...' : 'Lookup'}
-                        </button>
-                    </div>
-                </div>
-
-                {/* Timetable results */}
-                {ttData && ttData.length > 0 && (
-                    <div style={{
-                        background: theme.bg, borderRadius: '6px', padding: '12px 16px',
-                        marginBottom: 16, fontSize: '13px',
-                    }}>
-                        <div style={{ ...styles.label, marginBottom: 8 }}>Slots found for Room {room}</div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                            {ttData.map((entry, i) => (
-                                <div
-                                    key={i}
-                                    onClick={() => {
-                                        setTimeSlot(entry.slot);
-                                        // Try to derive batch from sem/code
-                                    }}
-                                    style={{
-                                        padding: '8px 12px', borderRadius: '6px', cursor: 'pointer',
-                                        background: timeSlot === entry.slot ? theme.accentDim : 'transparent',
-                                        border: `1px solid ${timeSlot === entry.slot ? theme.accent : theme.border}`,
-                                        display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8,
-                                    }}
-                                >
-                                    <span><strong>{entry.day}</strong> {entry.slot}</span>
-                                    {entry.slotData?.map((sd, j) => (
-                                        <span key={j} style={{ color: theme.textMuted }}>
-                                            {sd.subject} — {sd.faculty}
-                                        </span>
-                                    ))}
-                                    <span style={{ color: theme.accent, fontFamily: theme.fontMono }}>
-                                        Sem: {entry.sem}
-                                    </span>
-                                </div>
-                            ))}
+                {mode === 'manual' ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 20 }}>
+                        <div>
+                            <label style={styles.label}>Degree</label>
+                            <select value={degree} onChange={e => setDegree(e.target.value)} style={styles.select}>
+                                <option value="">Select...</option>
+                                {DEGREES.map(d => <option key={d}>{d}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label style={styles.label}>Department</label>
+                            <select value={department} onChange={e => setDepartment(e.target.value)} style={styles.select}>
+                                <option value="">Select...</option>
+                                {DEPARTMENTS.map(d => <option key={d}>{d}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label style={styles.label}>Year</label>
+                            <select value={year} onChange={e => setYear(e.target.value)} style={styles.select}>
+                                <option value="">Select...</option>
+                                {YEARS.map(y => <option key={y}>{y}</option>)}
+                            </select>
                         </div>
                     </div>
+                ) : (
+                    <>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 16, marginBottom: 16 }}>
+                            <div>
+                                <label style={styles.label}>Date</label>
+                                <input type="date" value={date} onChange={e => setDate(e.target.value)} style={styles.input} />
+                            </div>
+                            <div>
+                                <label style={styles.label}>Session Code</label>
+                                <input type="text" placeholder="e.g. 2025-26-odd" value={session}
+                                    onChange={e => setSession(e.target.value)} style={styles.input} />
+                            </div>
+                            <div>
+                                <label style={styles.label}>Room No</label>
+                                <input type="text" placeholder="e.g. LT-101" value={room}
+                                    onChange={e => setRoom(e.target.value)} style={styles.input} />
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+                                <button
+                                    onClick={lookupTimetable}
+                                    disabled={ttLoading}
+                                    style={{ ...styles.btnGhost, width: '100%', opacity: ttLoading ? 0.5 : 1 }}
+                                >
+                                    {ttLoading ? 'Looking up...' : 'Lookup'}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Timetable results */}
+                        {ttData && ttData.length > 0 && (
+                            <div style={{
+                                background: theme.bg, borderRadius: '6px', padding: '12px 16px',
+                                marginBottom: 16, fontSize: '13px',
+                            }}>
+                                <div style={{ ...styles.label, marginBottom: 8 }}>Slots found for Room {room}</div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                    {ttData.map((entry, i) => (
+                                        <div
+                                            key={i}
+                                            onClick={() => {
+                                                setTimeSlot(entry.slot);
+                                                // Try to derive batch from sem/code
+                                            }}
+                                            style={{
+                                                padding: '8px 12px', borderRadius: '6px', cursor: 'pointer',
+                                                background: timeSlot === entry.slot ? theme.accentDim : 'transparent',
+                                                border: `1px solid ${timeSlot === entry.slot ? theme.accent : theme.border}`,
+                                                display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8,
+                                            }}
+                                        >
+                                            <span><strong>{entry.day}</strong> {entry.slot}</span>
+                                            {entry.slotData?.map((sd, j) => (
+                                                <span key={j} style={{ color: theme.textMuted }}>
+                                                    {sd.subject} — {sd.faculty}
+                                                </span>
+                                            ))}
+                                            <span style={{ color: theme.accent, fontFamily: theme.fontMono }}>
+                                                Sem: {entry.sem}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </>
                 )}
 
                 {/* Video Link + Run */}
@@ -220,7 +267,7 @@ export default function Attendancedoc() {
                     </div>
                     <button
                         onClick={runAttendance}
-                        disabled={processing || !videoLink.trim() || !timeSlot}
+                        disabled={processing || !videoLink.trim()}
                         style={{
                             ...styles.btnPrimary, minWidth: 180,
                             opacity: (processing || !videoLink.trim()) ? 0.5 : 1,
@@ -286,7 +333,7 @@ export default function Attendancedoc() {
                             {Object.entries(report.metadata).filter(([, v]) => v).map(([k, v]) => (
                                 <span key={k}>
                                     <span style={{ color: theme.textMuted, textTransform: 'capitalize' }}>{k}: </span>
-                                    <span style={{ fontWeight: 600 }}>{typeof v === 'object' ? JSON.stringify(v) : String(v)}</span>
+                                    <span style={{ fontWeight: 600 }}>{v}</span>
                                 </span>
                             ))}
                         </div>
