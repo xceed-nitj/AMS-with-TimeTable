@@ -79,8 +79,6 @@ export default function AttendanceReport() {
   const [jobId, setJobId] = useState(null);
   const [snapshots, setSnapshots] = useState([]);
   const [previewActive, setPreviewActive] = useState(false);
-  const [enrolledRollNos, setEnrolledRollNos] = useState('');
-  const [showRollInput, setShowRollInput] = useState(false);
   const [saving, setSaving] = useState(false);
   const [mlResult, setMlResult] = useState(null);
   const [savedReport, setSavedReport] = useState(null);
@@ -350,15 +348,6 @@ export default function AttendanceReport() {
       return;
     }
 
-    // ── Parse sir's roll number list ──────────────────────────
-    const parsedRollNos = enrolledRollNos.trim()
-      ? enrolledRollNos
-        .trim()
-        .split(/[\n,]+/)
-        .map((r) => r.trim())
-        .filter(Boolean)
-      : [];
-
     setProcessing(true);
     setMlResult(null);
     setSavedReport(null);
@@ -386,12 +375,12 @@ export default function AttendanceReport() {
           slot,
           date,
           durationSec: duration,
+          checkIntervalMin: checkIntervalMin,
           frameSkip: 10,
           subject: derivedCtx?.subject || '',
           faculty: derivedCtx?.faculty || '',
           semester: derivedCtx?.sem || '',
           locksemId: derivedCtx?.locksemId || '',
-          enrolledRollNos: parsedRollNos, // ← sir's list sent to Python
         }),
       });
 
@@ -501,14 +490,6 @@ export default function AttendanceReport() {
       return;
     }
 
-    const parsedRollNos = enrolledRollNos.trim()
-      ? enrolledRollNos
-        .trim()
-        .split(/[\n,]+/)
-        .map((r) => r.trim())
-        .filter(Boolean)
-      : [];
-
     try {
       const res = await fetch(`${REPORT_API}/start-session`, {
         method: 'POST',
@@ -527,7 +508,6 @@ export default function AttendanceReport() {
           faculty: derivedCtx?.faculty || '',
           semester: derivedCtx?.sem || '',
           locksemId: derivedCtx?.locksemId || '',
-          enrolledRollNos: parsedRollNos,
         }),
       });
       const data = await res.json();
@@ -1068,63 +1048,10 @@ export default function AttendanceReport() {
               )}
             </details>
 
-            {/* ── Enrolled Roll Numbers — sir's list ── */}
-            <details
-              open={showRollInput}
-              style={{ marginBottom: 14 }}
-              onToggle={(e) => setShowRollInput(e.target.open)}
-            >
-              <summary
-                style={{
-                  fontSize: '12px',
-                  color: theme.accent,
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  marginBottom: 8,
-                }}
-              >
-                📋 Enrolled Roll Numbers (sir's list — optional but recommended)
-              </summary>
-              <div style={{ marginTop: 10 }}>
-                <label style={styles.label}>
-                  Paste roll numbers — one per line or comma separated. Only
-                  these appear in the report. Faces detected outside this list
-                  are flagged.
-                </label>
-                <textarea
-                  value={enrolledRollNos}
-                  onChange={(e) => setEnrolledRollNos(e.target.value)}
-                  placeholder={
-                    'CS001\nCS002\nCS003\n...\nor: CS001, CS002, CS003'
-                  }
-                  rows={6}
-                  style={{
-                    ...styles.input,
-                    fontFamily: theme.fontMono,
-                    resize: 'vertical',
-                    marginTop: 6,
-                  }}
-                />
-                {enrolledRollNos.trim() && (
-                  <div
-                    style={{
-                      fontSize: '11px',
-                      color: theme.accent,
-                      marginTop: 4,
-                      fontFamily: theme.fontMono,
-                    }}
-                  >
-                    {
-                      enrolledRollNos
-                        .trim()
-                        .split(/[\n,]+/)
-                        .filter((r) => r.trim()).length
-                    }{' '}
-                    roll numbers entered
-                  </div>
-                )}
-              </div>
-            </details>
+            {/* Enrolled Roll Numbers manual-entry UI removed — embeddings
+                for enrolled students are now fetched automatically, directly
+                from the ground-truth folders on disk (buildEnrolledEmbeddings
+                on the backend), so there is nothing left to type here. */}
 
             {/* Camera URLs + Interval + Duration + Run */}
             <div
@@ -1831,6 +1758,7 @@ export default function AttendanceReport() {
                     <thead>
                       <tr>
                         {[
+                          'Batch',
                           'Date',
                           'Slot',
                           'Subject',
@@ -1852,6 +1780,17 @@ export default function AttendanceReport() {
                           style={{ cursor: 'pointer' }}
                           onClick={() => openDetail(r._id)}
                         >
+                          <td
+                            style={{
+                              padding: '11px 14px',
+                              fontFamily: theme.fontMono,
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              color: theme.text,
+                            }}
+                          >
+                            {r.batch}
+                          </td>
                           <td style={{ padding: '11px 14px', color: theme.text }}>
                             {r.date}
                           </td>
@@ -2382,15 +2321,7 @@ function MultiRunTable({ report, readOnly, onOverride, theme, styles }) {
                 <td style={{ textAlign: 'center', padding: '9px 8px' }}>
                   {final?.isOverridden ? (
                     <span
-                      title={
-                        final.autoFinalStatus && final.autoFinalStatus !== final.finalStatus
-                          ? `Model said ${final.autoFinalStatus}, changed to ${final.finalStatus}`
-                          : 'Overridden'
-                      }
                       style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 5,
                         padding: '2px 8px',
                         borderRadius: 4,
                         fontSize: '11px',
@@ -2399,12 +2330,7 @@ function MultiRunTable({ report, readOnly, onOverride, theme, styles }) {
                         color: theme.accent,
                       }}
                     >
-                      ⚑ Overridden
-                      {final.autoFinalStatus && final.autoFinalStatus !== final.finalStatus && (
-                        <span style={{ fontFamily: theme.fontMono, fontWeight: 700 }}>
-                          ({final.autoFinalStatus}→{final.finalStatus})
-                        </span>
-                      )}
+                      Overridden
                     </span>
                   ) : (
                     <span style={{ color: theme.textMuted, fontSize: '11px' }}>—</span>
