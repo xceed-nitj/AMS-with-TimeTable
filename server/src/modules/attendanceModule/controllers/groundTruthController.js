@@ -9,8 +9,6 @@ const LockSem             = require('../../../models/locksem');
 const TimeTable           = require('../../../models/timetable');
 const AddSem              = require('../../../models/addsem');
 const AcquisitionControl  = require('../../../models/acquisitionControl');
-const Subject             = require('../../../models/subject');
-const AttendanceReport    = require('../../../models/attendanceReport');
 const {
     updateStudentEmbedding: syncUpdateStudentEmbedding,
     buildBatchEmbeddingsPkl,
@@ -52,34 +50,34 @@ async function rebuildSubjectPklsForStudent(rollNo, batch) {
     console.log(`[rebuildSubjectPkls] ${rollNo} → ${subjectRecords.length} subject PKL(s) to rebuild`);
 
     // Deduplicate: group records by their resolved pklPath so the same file is only rebuilt once
-    const pklGroups = new Map(); // pklPath → { record, rollNos: Set }
-    for (const record of subjectRecords) {
-        const pklPath = findFileInDir(EMBEDDINGS_DIR, record.embeddingFile);
-        if (!pklPath) {
-            console.warn(`[rebuildSubjectPkls] PKL not found on disk: ${record.embeddingFile}`);
-            continue;
-        }
-        if (!pklGroups.has(pklPath)) {
-            pklGroups.set(pklPath, { record, rollNos: new Set(record.rollNos) });
-        } else {
-            // merge rollNos from duplicate records pointing to the same file
-            for (const r of record.rollNos) pklGroups.get(pklPath).rollNos.add(r);
-        }
+const pklGroups = new Map(); // pklPath → { record, rollNos: Set }
+for (const record of subjectRecords) {
+    const pklPath = findFileInDir(EMBEDDINGS_DIR, record.embeddingFile);
+    if (!pklPath) {
+        console.warn(`[rebuildSubjectPkls] PKL not found on disk: ${record.embeddingFile}`);
+        continue;
     }
-
-    const batchDir = path.join(GROUND_TRUTH_DIR, batch);
-    if (!fs.existsSync(batchDir)) return;
-
-    for (const [pklPath, { record }] of pklGroups) {
-        try {
-            console.log(`[rebuildSubjectPkls] Rebuilding ${record.embeddingFile} …`);
-            await buildBatchEmbeddingsPkl(batchDir, pklPath);
-            await axios.post(`${ML_SERVICE_URL}/reload-embeddings`, {}, { timeout: 30000 });
-            console.log(`[rebuildSubjectPkls] ✓ Done ${record.embeddingFile}`);
-        } catch (err) {
-            console.warn(`[rebuildSubjectPkls] Failed ${record.embeddingFile}:`, err.message);
-        }
+    if (!pklGroups.has(pklPath)) {
+        pklGroups.set(pklPath, { record, rollNos: new Set(record.rollNos) });
+    } else {
+        // merge rollNos from duplicate records pointing to the same file
+        for (const r of record.rollNos) pklGroups.get(pklPath).rollNos.add(r);
     }
+}
+
+const batchDir = path.join(GROUND_TRUTH_DIR, batch);
+if (!fs.existsSync(batchDir)) return;
+
+for (const [pklPath, { record }] of pklGroups) {
+    try {
+        console.log(`[rebuildSubjectPkls] Rebuilding ${record.embeddingFile} …`);
+        await buildBatchEmbeddingsPkl(batchDir, pklPath);
+        await axios.post(`${ML_SERVICE_URL}/reload-embeddings`, {}, { timeout: 30000 });
+        console.log(`[rebuildSubjectPkls] ✓ Done ${record.embeddingFile}`);
+    } catch (err) {
+        console.warn(`[rebuildSubjectPkls] Failed ${record.embeddingFile}:`, err.message);
+    }
+}
 }
 
 
@@ -158,7 +156,7 @@ class GroundTruthController {
                     && !req.attendanceDepartment
                 ) continue;
                 if (
-                    !req.attendanceFullAccess 
+                    !req.attendanceFullAccess
                     && !new RegExp(
                         `^[^_]+_${req.attendanceDepartment.trim().replace(/[\s-]+/g, '_').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}_`,
                         'i',
@@ -317,44 +315,44 @@ class GroundTruthController {
 
     // ─── Delete a single photo ───────────────────────────────────────────────
     async deletePhoto(req, res) {
-        try {
-            const { batch, rollNo, filename } = req.params;
-            const filePath = path.join(GROUND_TRUTH_DIR, batch, rollNo, filename);
-            if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Photo not found' });
-            await fsPromises.unlink(filePath);
+    try {
+        const { batch, rollNo, filename } = req.params;
+        const filePath = path.join(GROUND_TRUTH_DIR, batch, rollNo, filename);
+        if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Photo not found' });
+        await fsPromises.unlink(filePath);
 
         // Remove the deleted file from _info.json, and if it was a marked
         // embedding photo, recompute mean_embedding so stale data from the
         // deleted photo doesn't linger in subject PKLs.
-            const studentDir = path.join(GROUND_TRUTH_DIR, batch, rollNo);
-            const infoPath   = path.join(studentDir, '_info.json');
-            let needsRecompute = false;
-            let remainingEmbeddingFiles = [];
-            if (fs.existsSync(infoPath)) {
-                try {
-                    const info = JSON.parse(await fsPromises.readFile(infoPath, 'utf8'));
-                    needsRecompute = (info.embedding_files || []).includes(filename);
-                    info.embedding_files = (info.embedding_files || []).filter(f => f !== filename);
-                    info.backup_files    = (info.backup_files    || []).filter(f => f !== filename);
-                    info.approved_files  = (info.approved_files  || []).filter(f => f !== filename);
-                    remainingEmbeddingFiles = info.embedding_files;
-                    if (needsRecompute && remainingEmbeddingFiles.length === 0) delete info.mean_embedding;
-                    await fsPromises.writeFile(infoPath, JSON.stringify(info, null, 2));
-                } catch (_) {}
-            }
-
+        const studentDir = path.join(GROUND_TRUTH_DIR, batch, rollNo);
+        const infoPath   = path.join(studentDir, '_info.json');
+        let needsRecompute = false;
+        let remainingEmbeddingFiles = [];
+        if (fs.existsSync(infoPath)) {
             try {
-                if (needsRecompute && remainingEmbeddingFiles.length > 0) {
-                    await syncUpdateStudentEmbedding(studentDir, rollNo, remainingEmbeddingFiles);
-                }
-                await rebuildSubjectPklsForStudent(rollNo, batch);
-            } catch (err) {
-                console.warn(`[deletePhoto] PKL rebuild failed:`, err.message);
-            }
+                const info = JSON.parse(await fsPromises.readFile(infoPath, 'utf8'));
+                needsRecompute = (info.embedding_files || []).includes(filename);
+                info.embedding_files = (info.embedding_files || []).filter(f => f !== filename);
+                info.backup_files    = (info.backup_files    || []).filter(f => f !== filename);
+                info.approved_files  = (info.approved_files  || []).filter(f => f !== filename);
+                remainingEmbeddingFiles = info.embedding_files;
+                if (needsRecompute && remainingEmbeddingFiles.length === 0) delete info.mean_embedding;
+                await fsPromises.writeFile(infoPath, JSON.stringify(info, null, 2));
+            } catch (_) {}
+        }
 
-            res.json({ message: `Removed ${filename}` });
-        } catch (err) { res.status(500).json({ error: err.message }); }
-    }
+        try {
+            if (needsRecompute && remainingEmbeddingFiles.length > 0) {
+                await syncUpdateStudentEmbedding(studentDir, rollNo, remainingEmbeddingFiles);
+            }
+            await rebuildSubjectPklsForStudent(rollNo, batch);
+        } catch (err) {
+            console.warn(`[deletePhoto] PKL rebuild failed:`, err.message);
+        }
+
+res.json({ message: `Removed ${filename}` });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+}
 
     // ─── Get student ground truth ────────────────────────────────────────────
     async getStudentGroundTruth(req, res) {
@@ -393,98 +391,98 @@ class GroundTruthController {
     // ─── Approve photos for a student ────────────────────────────────────────
     // Marks photos as approved and adds them to embedding (or backup if already have enough).
     // After approving, calls ML service to rebuild the embedding.
-    async approvePhotos(req, res) {
-        try {
-            const { batch, rollNo, filenames } = req.body;
-            if (!batch || !rollNo || !Array.isArray(filenames) || filenames.length === 0)
-                return res.status(400).json({ error: 'batch, rollNo, and filenames[] required' });
+  async approvePhotos(req, res) {
+    try {
+        const { batch, rollNo, filenames } = req.body;
+        if (!batch || !rollNo || !Array.isArray(filenames) || filenames.length === 0)
+            return res.status(400).json({ error: 'batch, rollNo, and filenames[] required' });
 
-            const studentDir = path.join(GROUND_TRUTH_DIR, batch, rollNo);
-            if (!fs.existsSync(studentDir))
-                return res.status(404).json({ error: 'Student folder not found' });
+        const studentDir = path.join(GROUND_TRUTH_DIR, batch, rollNo);
+        if (!fs.existsSync(studentDir))
+            return res.status(404).json({ error: 'Student folder not found' });
 
-            const allFiles = (await fsPromises.readdir(studentDir))
-            .filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f));     
+        const allFiles = (await fsPromises.readdir(studentDir))
+            .filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f));
 
-            const infoPath = path.join(studentDir, '_info.json');
-            let info = { embedding_files: [], backup_files: [], approved_files: [], scores: {} };
-            if (fs.existsSync(infoPath)) {
-                try { info = JSON.parse(await fsPromises.readFile(infoPath, 'utf8')); } catch (_) {}
+        const infoPath = path.join(studentDir, '_info.json');
+        let info = { embedding_files: [], backup_files: [], approved_files: [], scores: {} };
+        if (fs.existsSync(infoPath)) {
+            try { info = JSON.parse(await fsPromises.readFile(infoPath, 'utf8')); } catch (_) {}
+        }
+
+        const validFiles = filenames.filter(f => allFiles.includes(f));
+        const approvedSet  = new Set([...(info.approved_files  || []), ...validFiles]);
+        const embeddingSet = new Set(info.embedding_files || []);
+        const backupSet    = new Set(info.backup_files    || []);
+
+        const MAX_EMBEDDING_FILES = 5;
+        for (const f of validFiles) {
+            backupSet.delete(f);
+            // Cap embedding_files at 5 — overflow goes to backup instead.
+            if (embeddingSet.has(f) || embeddingSet.size < MAX_EMBEDDING_FILES) {
+                embeddingSet.add(f);
+            } else {
+                backupSet.add(f);
             }
+        }
 
-            const validFiles = filenames.filter(f => allFiles.includes(f));
-            const approvedSet  = new Set([...(info.approved_files  || []), ...validFiles]);
-            const embeddingSet = new Set(info.embedding_files || []);
-            const backupSet    = new Set(info.backup_files    || []);
+        info.approved_files  = [...approvedSet].filter(f => allFiles.includes(f));
+        info.embedding_files = [...embeddingSet].filter(f => allFiles.includes(f));
+        info.backup_files    = [...backupSet].filter(f => allFiles.includes(f));
 
-            const MAX_EMBEDDING_FILES = 5;
-            for (const f of validFiles) {
-                backupSet.delete(f);
-                // Cap embedding_files at 5 — overflow goes to backup instead.
-                if (embeddingSet.has(f) || embeddingSet.size < MAX_EMBEDDING_FILES) {
-                    embeddingSet.add(f);
-                } else {
-                    backupSet.add(f);
-                }
-            }
+        await fsPromises.writeFile(infoPath, JSON.stringify(info, null, 2));
 
-            info.approved_files  = [...approvedSet].filter(f => allFiles.includes(f));
-            info.embedding_files = [...embeddingSet].filter(f => allFiles.includes(f));
-            info.backup_files    = [...backupSet].filter(f => allFiles.includes(f));
+        // ✅ Respond immediately — don't wait for ML
+        res.json({
+            ok: true,
+            approvedCount:  info.approved_files.length,
+            embeddingCount: info.embedding_files.length,
+            backupCount:    info.backup_files.length,
+            embeddingStatus: 'queued',
+        });
 
-            await fsPromises.writeFile(infoPath, JSON.stringify(info, null, 2));
-
-            // ✅ Respond immediately — don't wait for ML
-            res.json({
-                ok: true,
-                approvedCount:  info.approved_files.length,
-                embeddingCount: info.embedding_files.length,
-                backupCount:    info.backup_files.length,
-                embeddingStatus: 'queued',
-            });
-
-            // 🔥 Rebuild embedding in background — fire and forget
+        // 🔥 Rebuild embedding in background — fire and forget
         // REPLACE WITH THIS:
-            setImmediate(async () => {
-                try {
-                    await syncUpdateStudentEmbedding(studentDir, rollNo, info.embedding_files);
-                    console.log(`[approvePhotos] Base embedding updated for ${rollNo}`);
-                    await rebuildSubjectPklsForStudent(rollNo, batch);
-                } catch (err) {
-                    console.warn(`[approvePhotos] Background rebuild failed for ${rollNo}:`, err.message);
-                }
-            });
-
-        } catch (err) { res.status(500).json({ error: err.message }); }
+setImmediate(async () => {
+    try {
+        await syncUpdateStudentEmbedding(studentDir, rollNo, info.embedding_files);
+        console.log(`[approvePhotos] Base embedding updated for ${rollNo}`);
+        await rebuildSubjectPklsForStudent(rollNo, batch);
+    } catch (err) {
+        console.warn(`[approvePhotos] Background rebuild failed for ${rollNo}:`, err.message);
     }
+});
+
+    } catch (err) { res.status(500).json({ error: err.message }); }
+}
 
     // ─── Update embedding for a student ─────────────────────────────────────
-    async updateStudentEmbedding(req, res) {
-        try {
-            const { batch, rollNo, embeddingFiles } = req.body;
-            if (!batch || !rollNo || !Array.isArray(embeddingFiles) || embeddingFiles.length === 0)
-                return res.status(400).json({ error: 'batch, rollNo, and embeddingFiles[] required' });
-            if (embeddingFiles.length > 5)
-                return res.status(400).json({ error: 'Maximum 5 embedding images allowed' });
+   async updateStudentEmbedding(req, res) {
+    try {
+        const { batch, rollNo, embeddingFiles } = req.body;
+        if (!batch || !rollNo || !Array.isArray(embeddingFiles) || embeddingFiles.length === 0)
+            return res.status(400).json({ error: 'batch, rollNo, and embeddingFiles[] required' });
+        if (embeddingFiles.length > 5)
+            return res.status(400).json({ error: 'Maximum 5 embedding images allowed' });
 
-            const studentDir = path.join(GROUND_TRUTH_DIR, batch, rollNo);
+        const studentDir = path.join(GROUND_TRUTH_DIR, batch, rollNo);
 
-            // 1. Update the student embedding in ML service
-            const response = await syncUpdateStudentEmbedding(studentDir, rollNo, embeddingFiles);
+        // 1. Update the student embedding in ML service
+        const response = await syncUpdateStudentEmbedding(studentDir, rollNo, embeddingFiles);
 
-            // 2. Rebuild all subject PKLs where this student is enrolled — wait for completion
-            try {
-                await rebuildSubjectPklsForStudent(rollNo, batch);
-            } catch (err) {
-                console.warn(`[updateStudentEmbedding] PKL rebuild failed:`, err.message);
-            }
+        // 2. Rebuild all subject PKLs where this student is enrolled — wait for completion
+try {
+    await rebuildSubjectPklsForStudent(rollNo, batch);
+} catch (err) {
+    console.warn(`[updateStudentEmbedding] PKL rebuild failed:`, err.message);
+}
 
-            // 3. Respond only after rebuild is done
-            res.json({ ...response, embedding_files_used: embeddingFiles.length });
+// 3. Respond only after rebuild is done
+res.json({ ...response, embedding_files_used: embeddingFiles.length });
 
 
-        } catch (err) { res.status(500).json({ error: mlError(err) }); }
-    }
+    } catch (err) { res.status(500).json({ error: mlError(err) }); }
+}
 
     // ─── Generate embeddings + reload into Python memory ────────────────────
     async generateEmbeddings(req, res) {
@@ -524,13 +522,7 @@ class GroundTruthController {
     //
     async runAttendance(req, res) {
         try {
-            const {
-                videoLink, room, slot, date, batch: batchOverride,
-                checkInterval, durationPerCheck,
-            } = req.body;
-            
-            const _checkInterval    = parseInt(checkInterval)    || 0;   // 0 = single sweep
-            const _durationPerCheck = parseInt(durationPerCheck) || 120; // default duration parameters
+            const { videoLink, room, slot, date, batch: batchOverride } = req.body;
 
             if (!videoLink)     return res.status(400).json({ error: 'videoLink is required' });
             if (!room || !slot) return res.status(400).json({ error: 'room and slot are required' });
@@ -542,7 +534,7 @@ class GroundTruthController {
             try {
                 // Strip hyphens/spaces from room for a flexible DB match
                 // e.g. user types "lt203" → matches "LT-203", "LT 203", "lt203"
-                const roomCore = room.trim().replace(/[\s\-\.]/g, ''); // "lt203" 
+                const roomCore = room.trim().replace(/[\s\-\.]/g, ''); // "lt203"
 
                 const pipeline = [
                     {
@@ -596,8 +588,8 @@ class GroundTruthController {
                     faculty   = sd?.faculty || '';
                     subject   = sd?.subject || '';
                     sem       = doc.sem      || '';
-                    dept      = tt.dept      || '';   // e.g. "CIVIL ENGINEERING"  
-                    session   = tt.session   || '';   // e.g. "2024-25-ODD"   
+                    dept      = tt.dept      || '';   // e.g. "CIVIL ENGINEERING"
+                    session   = tt.session   || '';   // e.g. "2024-25-ODD"
                     locksemId = doc._id;
 
                     console.log('[runAttendance] LockSem found →',
@@ -630,7 +622,11 @@ class GroundTruthController {
                         batch = matched;
                         console.log(`[runAttendance] Ground truth folder matched: "${batch}"`);
                     } else {
-                        console.warn(`[runAttendance] No ground_truth folder for BTECH / "${dept}" / ${admissionYear}.`);
+                        console.warn(
+                            `[runAttendance] No ground_truth folder for ` +
+                            `BTECH / "${dept}" / ${admissionYear}. ` +
+                            `Available: ${fs.readdirSync(GROUND_TRUTH_DIR).join(', ')}`
+                        );
                     }
                 }
             }
@@ -646,73 +642,63 @@ class GroundTruthController {
                     error: 'Could not determine batch.',
                     details: [
                         !dept
-                            ? `No LockSem entry found for room="${room}" slot="${slot}". Ensure the timetable is locked.`
-                            : `LockSem found dept="${dept}" sem=${sem} but no matching ground_truth folder exists.`,
+                            ? `No LockSem entry found for room="${room}" slot="${slot}". ` +
+                              `Ensure the timetable is locked for this room.`
+                            : `LockSem found dept="${dept}" sem=${sem} but no matching ` +
+                              `ground_truth folder exists. ` +
+                              `Run Ground Truth Generation first, or use the batch override.`,
                     ],
                     debug: { room, slot, dept, sem, session },
                 });
             }
 
-            // ── STEP 4 : Load subject-specific embeddings or batch embeddings ─
-            function safeSubjectLocal(raw) {
-                return (raw || '').trim().replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/, '');
+            // ── STEP 4 : load subject-specific embeddings if available, else fall back to batch ─
+try {
+    // Build the subject-specific .pkl filename — same formula as embeddingController.js
+    function safeSubjectLocal(raw) {
+        return (raw || '').trim().replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/, '');
+    }
+    const semSafe      = (sem || '').toString().trim();
+    const subjectSafe  = safeSubjectLocal(subject);
+    const subjectPkl   = semSafe && subjectSafe ? `${semSafe}_${subjectSafe}.pkl` : null;
+    const subjectPklPath = subjectPkl ? path.join(EMBEDDINGS_DIR, subjectPkl) : null;
+
+    const health = await axios.get(`${ML_SERVICE_URL}/health`, { timeout: 5000 });
+    const enrolledCount = health.data.students_enrolled || 0;
+
+    if (subjectPklPath && fs.existsSync(subjectPklPath)) {
+        // ── Subject-specific .pkl exists (generated via embedding page) ──
+        // Always reload it so the ML service only recognises students
+        // enrolled in THIS subject, not the entire batch.
+        console.log(`[runAttendance] Loading subject-specific embeddings: ${subjectPkl}`);
+        const pklBytes = fs.readFileSync(subjectPklPath);
+        await axios.post(`${ML_SERVICE_URL}/reload-embeddings`, {
+            pkl_data: pklBytes.toString('base64')   // bytes, not a path — Python may run on a separate machine
+        }, { timeout: 30000 });
+        console.log(`[runAttendance] Subject embeddings loaded from ${subjectPkl}`);
+
+    } else {
+        // ── No subject-specific .pkl — fall back to full batch ──
+        if (subjectPkl) {
+            console.warn(`[runAttendance] Subject pkl not found (${subjectPkl}), falling back to full batch.`);
+        }
+        if (enrolledCount === 0) {
+            const batchDir = path.join(GROUND_TRUTH_DIR, batch);
+            if (fs.existsSync(batchDir)) {
+                console.log(`[runAttendance] Building batch embeddings for "${batch}"...`);
+                await buildBatchEmbeddingsPkl(batchDir, path.join(EMBEDDINGS_DIR, `${batch}.pkl`));
+            } else {
+                console.warn(`[runAttendance] Folder does not exist: ${batchDir}`);
             }
-            const semSafe      = (sem || '').toString().trim();
-            const subjectSafe  = safeSubjectLocal(subject);
-            const subjectPkl   = semSafe && subjectSafe ? `${semSafe}_${subjectSafe}.pkl` : null;
-            const subjectPklPath = subjectPkl ? path.join(EMBEDDINGS_DIR, subjectPkl) : null;
-            let loadedPklFile  = null;
+            await axios.post(`${ML_SERVICE_URL}/reload-embeddings`, {}, { timeout: 30000 });
+        }
+        // If enrolledCount > 0 and no subject pkl, trust whatever is already loaded.
+    }
+} catch (e) {
+    console.warn('[runAttendance] Embedding load skipped:', e.message);
+}
 
-            try {
-                const health = await axios.get(`${ML_SERVICE_URL}/health`, { timeout: 5000 });
-                const enrolledCount = health.data.students_enrolled || 0;
-
-                if (subjectPklPath && fs.existsSync(subjectPklPath)) {
-                    // ── Subject-specific .pkl exists (generated via embedding page) ──
-                    // Always reload it so the ML service only recognises students
-                    // enrolled in THIS subject, not the entire batch.
-                    console.log(`[runAttendance] Loading subject-specific embeddings: ${subjectPkl}`);
-                    const pklBytes = fs.readFileSync(subjectPklPath);
-                    await axios.post(`${ML_SERVICE_URL}/reload-embeddings`, {
-                        pkl_data: pklBytes.toString('base64')   // bytes, not a path — Python may run on a separate machine
-                    }, { timeout: 30000 });
-                    loadedPklFile = subjectPkl;
-                    console.log(`[runAttendance] Subject embeddings loaded from ${subjectPkl}`);
-
-                } else {
-                    // ── No subject-specific .pkl — fall back to full batch ──
-                    if (subjectPkl) {
-                        console.warn(`[runAttendance] Subject pkl not found (${subjectPkl}), falling back to full batch.`);
-                    }
-                    const batchPklPath = path.join(EMBEDDINGS_DIR, `${batch}.pkl`);
-                    if (fs.existsSync(batchPklPath)) {
-                        console.log(`[runAttendance] Loading fallback batch embeddings: ${batch}.pkl`);
-                        const pklBytes = fs.readFileSync(batchPklPath);
-                        await axios.post(`${ML_SERVICE_URL}/reload-embeddings`, {
-                            pkl_data: pklBytes.toString('base64')
-                        }, { timeout: 30000 });
-                        loadedPklFile = `${batch}.pkl`;
-                    } else if (enrolledCount === 0) {
-                        const batchDir = path.join(GROUND_TRUTH_DIR, batch);
-                        if (fs.existsSync(batchDir)) {
-                            console.log(`[runAttendance] Building batch embeddings for "${batch}"...`);
-                            await buildBatchEmbeddingsPkl(batchDir, batchPklPath);
-                            if (fs.existsSync(batchPklPath)) {
-                                const pklBytes = fs.readFileSync(batchPklPath);
-                                await axios.post(`${ML_SERVICE_URL}/reload-embeddings`, {
-                                    pkl_data: pklBytes.toString('base64')
-                                }, { timeout: 30000 });
-                                loadedPklFile = `${batch}.pkl`;
-                            }
-                        }
-                    }
-                    // If enrolledCount > 0 and no subject pkl, trust whatever is already loaded.
-                }
-            } catch (e) {
-                console.warn('[runAttendance] Embedding load skipped:', e.message);
-            }
-
-            // ── STEP 5 : Run ML Face Recognition with dynamic configurations ──
+            // ── STEP 5 : run ML face recognition ────────────────────────────
             const videoPath = videoLink.trim().replace(/^["']+|["']+$/g, '').trim();
 
             const acqConfig = await AcquisitionControl.findOne({ profileName: 'default' }).lean();
@@ -732,101 +718,9 @@ class GroundTruthController {
                     auto_enroll:            true,
                     auto_enroll_threshold:  t.auto_enroll_threshold  ?? 0.75,
                     max_gt_images:          10,
-                    check_interval:         _checkInterval,   // Dynamic tracking controls
-                    check_duration:         _durationPerCheck // Dynamic duration parameter parameters
                 },
                 { timeout: 600000 }
             );
-
-            // ── STEP 6 : Query Subject metadata for ERP Shorthand Code ────────
-            let subjectMeta = null;
-            try {
-                if (subject && sem) {
-                    const subj = await Subject.findOne({
-                        subjectFullName: { $regex: (subject || '').trim(), $options: 'i' },
-                        sem,
-                    }).lean();
-                    if (subj) {
-                        subjectMeta = {
-                            subName:         subj.subName || '',
-                            subCode:         subj.subCode || '',
-                            subjectFullName: subj.subjectFullName || '',
-                            credits:         subj.credits ?? null,
-                        };
-                    }
-                }
-            } catch (e) {
-                console.warn('[runAttendance] Subject shorthand metadata query failed:', e.message);
-            }
-
-            // ── STEP 7 : Persistent Report Saving with subAbbreviation & sem ─
-            try {
-                const attendance = mlResp.data.attendance || {};
-                const students = Object.entries(attendance).map(([rollNo, data]) => ({
-                    rollNo,
-                    status: data.status || 'absent',
-                    avgConfidence: data.avg_confidence || 0,
-                    confidenceZone: data.confidence_zone || 'low',
-                    firstSeenSec: data.first_seen_sec || null,
-                    finalStatus: data.status === 'present' ? 'P' : data.status === 'review' ? 'R' : 'A',
-                }));
-
-                const slotResult = {
-                    slot,
-                    videoLink: videoPath,
-                    processedAt: new Date(),
-                    students,
-                    summary: {
-                        present: mlResp.data.summary?.present || 0,
-                        absent: mlResp.data.summary?.absent || 0,
-                        review: mlResp.data.summary?.review || 0,
-                        total: students.length,
-                        processingTimeSec: mlResp.data.summary?.processing_time || 0,
-                    },
-                };
-
-                let report = await AttendanceReport.findOne({ batch, date, timeSlot: slot });
-                if (report) {
-                    report.slotResults.push(slotResult);
-                } else {
-                    report = new AttendanceReport({
-                        batch,
-                        department: dept,
-                        semester: sem,
-                        subject,
-                        faculty,
-                        room,
-                        date,
-                        timeSlot: slot,
-                        locksemId: locksemId || undefined,
-                        subjectMeta: subjectMeta || undefined,
-                        slotResults: [slotResult],
-                        status: 'draft',
-                    });
-                }
-                
-                if (subjectMeta) {
-                    report.subjectMeta = subjectMeta;
-                    report.subAbbreviation = subjectMeta.subName || ''; // Set stand-alone shorthand index for ERP Sync script
-                }
-
-                report.finalReport = students.map((s) => ({ ...s }));
-                report.summary = {
-                    totalStudents: students.length,
-                    present: students.filter((s) => s.finalStatus === 'P').length,
-                    absent: students.filter((s) => s.finalStatus === 'A').length,
-                    review: students.filter((s) => s.finalStatus === 'R').length,
-                    attendancePct: students.length
-                        ? Math.round((students.filter((s) => s.finalStatus === 'P').length / students.length) * 100)
-                        : 0,
-                };
-                await report.save();
-                console.log(`[runAttendance] Report saved/updated: ${batch} ${date} ${slot}`);
-            } catch (e) {
-                console.warn('[runAttendance] Persistent report document commit failed:', e.message);
-            }
-
-            // Return ML response payload
 
             // Return ML result + all context so the frontend can display and save
             res.json({
@@ -842,9 +736,6 @@ class GroundTruthController {
                     faculty,
                     subject,
                     locksemId: locksemId ? String(locksemId) : null,
-                    subjectMeta,
-                    pklFile: loadedPklFile,
-                    reportSaved: true,
                 },
             });
 
