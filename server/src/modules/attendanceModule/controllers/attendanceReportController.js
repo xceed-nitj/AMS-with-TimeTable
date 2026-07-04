@@ -3,6 +3,15 @@
 const AttendanceReport = require("../../../models/attendanceReport");
 const LockSem = require("../../../models/locksem");
 const Student = require("../../../models/student");
+const { batchBelongsToDepartment } = require("../middleware/attendanceAccess");
+
+// Case/space/underscore-insensitive department -> regex, matching the
+// convention already used by getReports() below.
+function departmentRegex(dept) {
+  const escapeRegex = (v) => String(v).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const norm = escapeRegex(String(dept).trim().replace(/\s+/g, "_"));
+  return new RegExp(`^${norm.replace(/_/g, "[ _]")}$`, "i");
+}
 
 function mergeStudentStatus(slotResults) {
   const rollMap = {};
@@ -338,12 +347,18 @@ class AttendanceReportController {
       } = req.query;
       const filter = {};
       if (batch) filter.batch = batch;
-      if (department) {
-        // Dept-admins pass their locked department; match case/space/underscore-insensitively
-        const escapeRegex = (v) => String(v).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const norm = escapeRegex(department.trim().replace(/\s+/g, '_'));
-        filter.department = new RegExp(`^${norm.replace(/_/g, '[ _]')}$`, 'i');
+
+      // Dept-admins are always scoped to their own department server-side —
+      // req.attendanceDepartment (set by resolveAttendanceAccess) wins over
+      // any client-supplied `department`, and applies even if the client
+      // omitted it entirely (otherwise an unfiltered query would return
+      // every department's reports).
+      if (!req.attendanceFullAccess) {
+        filter.department = departmentRegex(req.attendanceDepartment);
+      } else if (department) {
+        filter.department = departmentRegex(department);
       }
+
       if (date) filter.date = date;
       if (faculty) filter.faculty = faculty;
       if (subject) filter.subject = subject;
@@ -534,6 +549,10 @@ class AttendanceReportController {
       const { batch } = req.query;
       if (!batch) return res.status(400).json({ error: "batch is required" });
 
+      if (!req.attendanceFullAccess && !batchBelongsToDepartment(batch, req.attendanceDepartment)) {
+        return res.status(403).json({ error: "Batch access denied." });
+      }
+
       const now = new Date();
       const weekAgo = new Date(now);
       const days = parseInt(req.query.days) || 7;
@@ -612,7 +631,11 @@ class AttendanceReportController {
   // Attendance Reports history tab (see getReports()).
   async getModelPerformanceMetrics(req, res) {
     try {
-      const { department, semester } = req.query;
+      const { semester } = req.query;
+      // Dept-admins are always scoped to their own department server-side —
+      // never trust a client-supplied `department` for this, same fix as
+      // getReports() above.
+      const department = req.attendanceFullAccess ? req.query.department : req.attendanceDepartment;
       if (!department || !semester) {
         return res
           .status(400)
@@ -626,15 +649,8 @@ class AttendanceReportController {
       const fromStr = fromDate.toISOString().slice(0, 10);
       const toStr = now.toISOString().slice(0, 10);
 
-      // Case/space/underscore-insensitive department match — same pattern
-      // as getReports() above, since dept strings vary in casing/separator
-      // between the timetable module and stored reports.
-      const escapeRegex = (v) => String(v).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      const deptNorm = escapeRegex(department.trim().replace(/\s+/g, "_"));
-      const deptRegex = new RegExp(`^${deptNorm.replace(/_/g, "[ _]")}$`, "i");
-
       const reports = await AttendanceReport.find({
-        department: deptRegex,
+        department: departmentRegex(department),
         semester: String(semester),
         date: { $gte: fromStr },
       })
@@ -741,6 +757,9 @@ class AttendanceReportController {
           .status(400)
           .json({ error: "batch, mode, and value are required" });
       }
+      if (!req.attendanceFullAccess && !batchBelongsToDepartment(batch, req.attendanceDepartment)) {
+        return res.status(403).json({ error: "Batch access denied." });
+      }
       if (mode !== "subject" && mode !== "semester") {
         return res
           .status(400)
@@ -832,6 +851,9 @@ class AttendanceReportController {
     try {
       const { batch } = req.query;
       if (!batch) return res.status(400).json({ error: "batch is required" });
+      if (!req.attendanceFullAccess && !batchBelongsToDepartment(batch, req.attendanceDepartment)) {
+        return res.status(403).json({ error: "Batch access denied." });
+      }
 
       const [subjects, semesters, subjectFacultyDocs] = await Promise.all([
         AttendanceReport.distinct("subject", {

@@ -150,6 +150,57 @@ function dailySummaryTemplate({ dept, date, frequencyLabel, mode, threshold, row
   `;
 }
 
+const STATUS_COLORS = {
+  'Completed':   '#16a34a',
+  'Pending':     '#d97706',
+  'Not Started': '#dc2626',
+};
+
+function embeddingProgressTemplate({ dept, semesterGroups }) {
+  const tablesHtml = semesterGroups
+    .map(({ sem, rows }) => {
+      const rowsHtml = rows
+        .map((r) => {
+          const color = STATUS_COLORS[r.status] || '#888';
+          return `
+      <tr>
+        <td style="padding:4px 12px 4px 0;">${r.subject || 'N/A'}</td>
+        <td style="padding:4px 12px 4px 0;">${r.faculty || 'N/A'}</td>
+        <td style="padding:4px 12px 4px 0;">${r.submitted ?? '—'}</td>
+        <td style="padding:4px 12px 4px 0;">${r.groundTruthReady ?? '—'}</td>
+        <td style="padding:4px 12px 4px 0;">${r.missing ?? '—'}</td>
+        <td style="padding:4px 12px 4px 0;"><strong style="color:${color};">${r.status}</strong></td>
+      </tr>`;
+        })
+        .join('');
+
+      return `
+    <h4 style="margin:18px 0 6px;">Semester ${sem}</h4>
+    <table style="border-collapse:collapse;font-size:14px;width:100%;">
+      <thead>
+        <tr style="color:#888;text-align:left;">
+          <th style="padding:4px 12px 4px 0;">Subject</th>
+          <th style="padding:4px 12px 4px 0;">Faculty</th>
+          <th style="padding:4px 12px 4px 0;">Submitted</th>
+          <th style="padding:4px 12px 4px 0;">Ground Truth Ready</th>
+          <th style="padding:4px 12px 4px 0;">Missing</th>
+          <th style="padding:4px 12px 4px 0;">Status</th>
+        </tr>
+      </thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>`;
+    })
+    .join('');
+
+  return `
+    <h3>📸 Weekly Embedding/Ground-Truth Progress — ${dept}</h3>
+    <p>Per-subject embedding status across all semesters in <strong>${dept}</strong>, as of this week. "Not Started" means no roll numbers have been submitted for that subject yet.</p>
+    ${tablesHtml}
+    <hr/>
+    <p style="color:#888;font-size:12px;">This is an automated alert from iAMS. Do not reply to this email.</p>
+  `;
+}
+
 module.exports = {
   serverDownTemplate,
   noReportSavedTemplate,
@@ -157,4 +208,5 @@ module.exports = {
   lowConfidenceTemplate,
   duplicateAttendanceTemplate,
   dailySummaryTemplate,
+  embeddingProgressTemplate,
 };
