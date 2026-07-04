@@ -83,12 +83,42 @@ const ALERT_TYPES = [
       </svg>
     ),
   },
+  {
+    key: 'dailySummary',
+    label: 'Attendance Summary',
+    description: 'Daily/weekly attendance summary for HODs (configured below)',
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+        <rect x="2" y="2" width="12" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.4"/>
+        <line x1="4.5" y1="11" x2="4.5" y2="8.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+        <line x1="8" y1="11" x2="8" y2="6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+        <line x1="11.5" y1="11" x2="11.5" y2="4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+      </svg>
+    ),
+  },
+];
+
+const FREQUENCIES = [
+  { value: 'daily', label: 'Daily' },
+  { value: 'weekly', label: 'Weekly' },
+];
+
+const MODES = [
+  { value: 'all', label: 'All classes' },
+  { value: 'threshold', label: 'Only below threshold' },
 ];
 
 export default function NotificationSettingsTab() {
   const [enabled, setEnabled] = useState(false);
   const [roles, setRoles] = useState([]);
   const [recipients, setRecipients] = useState([]);
+  const [dailySummaryConfig, setDailySummaryConfig] = useState({
+    enabled: false,
+    frequency: 'daily',
+    mode: 'all',
+    threshold: 75,
+  });
+  const [savingDailySummary, setSavingDailySummary] = useState(false);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('admin');
@@ -107,6 +137,7 @@ export default function NotificationSettingsTab() {
         setEnabled(!!d.settings?.enabled);
         setRoles(d.settings?.roles || []);
         setRecipients(d.settings?.recipients || []);
+        if (d.settings?.dailySummaryConfig) setDailySummaryConfig(d.settings.dailySummaryConfig);
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -166,6 +197,27 @@ export default function NotificationSettingsTab() {
       showMsg('Error: ' + err.message, 'error');
     } finally {
       setUpdatingRole(null);
+    }
+  };
+
+  const handleDailySummaryChange = async (patch) => {
+    const next = { ...dailySummaryConfig, ...patch };
+    setDailySummaryConfig(next);
+    setSavingDailySummary(true);
+    try {
+      const res = await fetch(`${BASE}/daily-summary`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(next),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update');
+      setDailySummaryConfig(data.settings.dailySummaryConfig);
+    } catch (err) {
+      showMsg('Error: ' + err.message, 'error');
+    } finally {
+      setSavingDailySummary(false);
     }
   };
 
@@ -498,7 +550,7 @@ export default function NotificationSettingsTab() {
         </div>
         <div className="ns-card-body">
           <p style={{ fontSize: 12.5, color: T.textMuted, margin: '0 0 18px', lineHeight: 1.5 }}>
-            Select which alert types each role receives. Recipients inherit their role's settings.
+            Select which alert types each role receives. Recipients inherit their role&apos;s settings.
           </p>
           <div style={{ overflowX: 'auto' }}>
             <table className="ns-role-table">
@@ -550,6 +602,117 @@ export default function NotificationSettingsTab() {
               </tbody>
             </table>
           </div>
+        </div>
+      </div>
+
+      {/* Daily/Weekly HOD attendance summary settings */}
+      <div className="ns-card">
+        <div className="ns-card-header">
+          <span className="ns-section-title">Attendance summary schedule</span>
+        </div>
+        <div className="ns-card-body">
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: dailySummaryConfig.enabled ? 18 : 0,
+            }}
+          >
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: T.text, marginBottom: 2 }}>
+                Send attendance summary emails
+              </div>
+              <div style={{ fontSize: 12, color: T.textMuted }}>
+                Sent to roles with &quot;Attendance Summary&quot; checked above, scoped to each
+                recipient&apos;s department.
+              </div>
+            </div>
+            <div
+              onClick={() => !savingDailySummary && handleDailySummaryChange({ enabled: !dailySummaryConfig.enabled })}
+              title={dailySummaryConfig.enabled ? 'Click to disable' : 'Click to enable'}
+              style={{
+                width: 46,
+                height: 26,
+                borderRadius: 26,
+                cursor: savingDailySummary ? 'not-allowed' : 'pointer',
+                opacity: savingDailySummary ? 0.6 : 1,
+                background: dailySummaryConfig.enabled ? T.accent : '#d1d5db',
+                transition: 'background .2s',
+                position: 'relative',
+                flexShrink: 0,
+              }}
+            >
+              <span
+                style={{
+                  position: 'absolute',
+                  height: 20,
+                  width: 20,
+                  left: dailySummaryConfig.enabled ? 23 : 3,
+                  top: 3,
+                  background: '#fff',
+                  borderRadius: '50%',
+                  transition: 'left .2s',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                }}
+              />
+            </div>
+          </div>
+
+          {dailySummaryConfig.enabled && (
+            <div className="ns-add-row">
+              <div style={{ flex: 1, minWidth: 150 }}>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 6 }}>
+                  Frequency
+                </label>
+                <select
+                  className="native-input"
+                  value={dailySummaryConfig.frequency}
+                  onChange={(e) => handleDailySummaryChange({ frequency: e.target.value })}
+                  disabled={savingDailySummary}
+                  style={{ width: '100%' }}
+                >
+                  {FREQUENCIES.map((f) => (
+                    <option key={f.value} value={f.value}>{f.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ flex: 1, minWidth: 180 }}>
+                <label style={{ fontSize: 11, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 6 }}>
+                  Include
+                </label>
+                <select
+                  className="native-input"
+                  value={dailySummaryConfig.mode}
+                  onChange={(e) => handleDailySummaryChange({ mode: e.target.value })}
+                  disabled={savingDailySummary}
+                  style={{ width: '100%' }}
+                >
+                  {MODES.map((m) => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
+              </div>
+              {dailySummaryConfig.mode === 'threshold' && (
+                <div style={{ flex: 1, minWidth: 150 }}>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 6 }}>
+                    Threshold (%)
+                  </label>
+                  <input
+                    type="number"
+                    className="native-input"
+                    min={0}
+                    max={100}
+                    value={dailySummaryConfig.threshold}
+                    onChange={(e) => setDailySummaryConfig({ ...dailySummaryConfig, threshold: Number(e.target.value) })}
+                    onBlur={(e) => handleDailySummaryChange({ threshold: Number(e.target.value) })}
+                    disabled={savingDailySummary}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
