@@ -374,11 +374,25 @@ export default function InstituteGateIdentification() {
               ) : (
                 Object.entries(markedStudents).map(([roll, data]) => (
                   <div key={roll} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', border: `1px solid ${T.border}`, borderRadius: '8px', background: '#f8fafc' }}>
-                    {data.evidence ? (
-                       <img src={`data:image/jpeg;base64,${data.evidence}`} alt={roll} style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #e2e8f0' }} />
-                    ) : (
-                       <div style={{ width: '48px', height: '48px', background: '#e2e8f0', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '20px', fontWeight: 'bold' }}>?</div>
-                    )}
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                        {data.ground_truth ? (
+                           <img src={`data:image/jpeg;base64,${data.ground_truth}`} title="Ground Truth (Database)" alt={`${roll} Database`} style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '6px', border: '2px solid #10b981' }} />
+                        ) : (
+                           <div style={{ width: '64px', height: '64px', background: '#e2e8f0', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '12px', fontWeight: 'bold', textAlign: 'center' }}>No<br/>DB Pic</div>
+                        )}
+                        <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#10b981' }}>Ground Truth</span>
+                      </div>
+                      
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                        {data.evidence ? (
+                           <img src={`data:image/jpeg;base64,${data.evidence}`} title="Live Evidence (Camera)" alt={`${roll} Evidence`} style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '6px', border: '2px solid #3b82f6' }} />
+                        ) : (
+                           <div style={{ width: '64px', height: '64px', background: '#e2e8f0', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '20px', fontWeight: 'bold' }}>?</div>
+                        )}
+                        <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#3b82f6' }}>LIVE CAMERA</span>
+                      </div>
+                    </div>
                     <div>
                       <div style={{ fontWeight: '600', fontSize: '14px', color: T.text }}>{roll}</div>
                       <div style={{ fontSize: '12px', color: '#10b981', fontWeight: '500' }}>Match: {(data.score * 100).toFixed(0)}%</div>

@@ -15,6 +15,24 @@ import logging
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+def get_ground_truth_b64(roll: str) -> str:
+    CLIENT_GROUND_TRUTH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "server", "ml-data", "ground_truth")
+    if not os.path.exists(CLIENT_GROUND_TRUTH): return ""
+    try:
+        for batch in os.listdir(CLIENT_GROUND_TRUTH):
+            batch_path = os.path.join(CLIENT_GROUND_TRUTH, batch)
+            if not os.path.isdir(batch_path): continue
+            for folder in os.listdir(batch_path):
+                if folder == roll or folder.startswith(f"{roll}_"):
+                    student_path = os.path.join(batch_path, folder)
+                    if not os.path.isdir(student_path): continue
+                    photos = [f for f in os.listdir(student_path) if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
+                    if photos:
+                        with open(os.path.join(student_path, photos[0]), "rb") as f:
+                            return base64.b64encode(f.read()).decode('utf-8')
+    except Exception: pass
+    return ""
+
 class LiveStreamReader:
     def __init__(self, url):
         self.url = url
@@ -144,8 +162,15 @@ def process_video_stream(video_path: str, is_live_url: bool = False):
                     cv2.putText(vis_frame, label, (x1, max(y1 - 10, 0)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
                     
                     if roll and roll not in marked_students:
-                        c_y1, c_y2 = max(0, y1), min(frame.shape[0], y2)
-                        c_x1, c_x2 = max(0, x1), min(frame.shape[1], x2)
+                        # Pad the bounding box by 40% to show more of the head and shoulders
+                        pad_x = int((x2 - x1) * 0.40)
+                        pad_y = int((y2 - y1) * 0.40)
+                        
+                        c_y1 = max(0, y1 - pad_y)
+                        c_y2 = min(frame.shape[0], y2 + pad_y)
+                        c_x1 = max(0, x1 - pad_x)
+                        c_x2 = min(frame.shape[1], x2 + pad_x)
+                        
                         crop = frame[c_y1:c_y2, c_x1:c_x2]
                         
                         evidence_b64 = ""
@@ -156,7 +181,8 @@ def process_video_stream(video_path: str, is_live_url: bool = False):
                         record = {
                             "score": round(score, 3), 
                             "time": time.strftime("%H:%M:%S"), 
-                            "evidence": evidence_b64
+                            "evidence": evidence_b64,
+                            "ground_truth": get_ground_truth_b64(roll)
                         }
                         marked_students[roll] = record
                 
