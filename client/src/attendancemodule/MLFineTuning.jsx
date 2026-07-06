@@ -12,6 +12,7 @@ const CONFIG_API      = `${apiUrl}/api/v1/ml/liveness-config`;
 const GT_CONFIG_API   = `${apiUrl}/api/v1/ml/gt-config`;
 const ATTEND_API      = `${apiUrl}/attendancemodule/acquisitioncontrol/attendance-thresholds`;
 const FAISS_CONFIG_API = `${apiUrl}/api/v1/ml/faiss-config`;
+const MAX_K_CONFIG_API = `${apiUrl}/api/v1/ml/max-k-config`;
 
 const HEURISTIC_OPTIONS = [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.40];
 const ONNX_OPTIONS      = [0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90];
@@ -98,6 +99,14 @@ const FAISS_DEFAULTS = {
     reverify_low_score: 0.45, reverify_low_ttl: 12,
 };
 
+// Max-of-K shadow comparison — Hungarian batch-matching pipeline (RTSP
+// attendance runs, both "Run Once" and scheduled sessions)
+const MAX_K_OPTIONS = { top_k: [1, 2, 3] };
+const MAX_K_LABELS = {
+    top_k: { label: 'Top-K embeddings per student', unit: '', hint: 'How many of each student’s stored embeddings to score against (max-similarity across the K). Capped by how many were retained the last time that student’s embedding was regenerated (up to 3).' },
+};
+const MAX_K_DEFAULTS = { enabled: false, top_k: 3 };
+
 function Toggle({ checked, onChange, disabled, label }) {
     return (
         <label style={{
@@ -140,6 +149,10 @@ export default function MLFineTuning() {
     const [faissConfig,  setFaissConfig]  = useState(null);
     const [faissLoading, setFaissLoading] = useState(true);
     const [faissSaving,  setFaissSaving]  = useState(false);
+
+    const [maxKConfig,  setMaxKConfig]  = useState(null);
+    const [maxKLoading, setMaxKLoading] = useState(true);
+    const [maxKSaving,  setMaxKSaving]  = useState(false);
 
     const showToast = (msg, type = 'success') => {
         setToast({ msg, type });
@@ -205,6 +218,42 @@ export default function MLFineTuning() {
     }, []);
 
     useEffect(() => { loadFaissConfig(); }, [loadFaissConfig]);
+
+    const loadMaxKConfig = useCallback(async () => {
+        setMaxKLoading(true);
+        try {
+            const res = await fetch(MAX_K_CONFIG_API);
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+            setMaxKConfig(data);
+        } catch (err) {
+            showToast(`Failed to load Max-of-K config: ${err.message}`, 'error');
+        }
+        setMaxKLoading(false);
+    }, []);
+
+    useEffect(() => { loadMaxKConfig(); }, [loadMaxKConfig]);
+
+    const updateMaxKConfig = async (patch) => {
+        setMaxKSaving(true);
+        const prev = maxKConfig;
+        setMaxKConfig({ ...maxKConfig, ...patch });
+        try {
+            const res = await fetch(MAX_K_CONFIG_API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(patch),
+            });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+            setMaxKConfig(data);
+            showToast('Max-of-K setting updated');
+        } catch (err) {
+            setMaxKConfig(prev);
+            showToast(`Update failed: ${err.message}`, 'error');
+        }
+        setMaxKSaving(false);
+    };
 
     const updateFaissConfig = async (patch) => {
         setFaissSaving(true);
@@ -621,6 +670,64 @@ export default function MLFineTuning() {
                             );
                         })()}
                     </>
+                )}
+            </div>
+
+            {/* ── Max-of-K Shadow Comparison (Hungarian batch matching) ────── */}
+            <div style={{ ...styles.card, marginBottom: 20 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                    <div>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: theme.text }}>Max-of-K Matching (Comparison)</div>
+                        <div style={{ fontSize: 12, color: theme.textMuted, marginTop: 2 }}>
+                            When enabled, every RTSP attendance run (&quot;Run Once&quot; and each period of a
+                            scheduled session) additionally scores clusters against each student&rsquo;s
+                            top-K individually stored embeddings instead of one mean vector, and
+                            reports how often that agrees with the real assignment. Diagnostic only —
+                            never changes the actual attendance decision.
+                        </div>
+                    </div>
+                    {maxKConfig && (
+                        <Toggle
+                            checked={!!maxKConfig.enabled}
+                            disabled={maxKSaving}
+                            onChange={(val) => updateMaxKConfig({ enabled: val })}
+                            label={maxKConfig.enabled ? 'Enabled' : 'Disabled'}
+                        />
+                    )}
+                </div>
+
+                {maxKLoading ? (
+                    <div style={{ fontSize: 13, color: theme.textMuted }}>Loading…</div>
+                ) : !maxKConfig ? (
+                    <div style={{ fontSize: 13, color: theme.danger }}>Could not load Max-of-K config.</div>
+                ) : (
+                    <div style={{
+                        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 18,
+                        opacity: maxKConfig.enabled ? 1 : 0.45, pointerEvents: maxKConfig.enabled ? 'auto' : 'none',
+                    }}>
+                        {['top_k'].map(key => {
+                            const meta = MAX_K_LABELS[key];
+                            const opts = MAX_K_OPTIONS[key];
+                            return (
+                                <div key={key}>
+                                    <label style={styles.label}>{meta.label}{meta.unit ? ` (${meta.unit})` : ''}</label>
+                                    <select
+                                        value={maxKConfig[key] ?? MAX_K_DEFAULTS[key]}
+                                        disabled={maxKSaving || !maxKConfig.enabled}
+                                        onChange={e => updateMaxKConfig({ [key]: parseInt(e.target.value, 10) })}
+                                        style={styles.select}
+                                    >
+                                        {opts.map(v => (
+                                            <option key={v} value={v}>
+                                                {v}{v === MAX_K_DEFAULTS[key] ? ' (default)' : ''}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <div style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>{meta.hint}</div>
+                                </div>
+                            );
+                        })}
+                    </div>
                 )}
             </div>
 

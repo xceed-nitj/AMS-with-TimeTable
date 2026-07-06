@@ -99,3 +99,19 @@ faiss_config = {
     "reverify_low_ttl":    12.0,  # reverify_low_score, always re-verify (0s).
 }
 faiss_config_lock = threading.Lock()
+
+# ─── Max-of-K shadow comparison (Hungarian batch-matching pipeline) ───────────
+# Editable at runtime via GET/POST /max-k-config (see rtsp_routes.py), backed
+# by ml-data/max_k_config.json — same persisted-runtime-knob pattern as
+# faiss_config above. When enabled, _attendance_pipeline additionally scores
+# each detected face cluster against every enrolled student's top-K
+# individually stored embeddings (max-similarity across the K vectors,
+# rather than similarity to one pre-averaged mean vector) and reports how
+# often that alternative scoring agrees with the primary mean-embedding
+# assignment. This is a side-by-side comparison only — it never changes the
+# primary (mean-embedding) assignment or the resulting attendance decision.
+max_k_config = {
+    "enabled": False,
+    "top_k":   3,    # how many of each student's stored embeddings to score against (<= what's cached)
+}
+max_k_config_lock = threading.Lock()

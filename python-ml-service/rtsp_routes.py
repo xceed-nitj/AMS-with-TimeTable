@@ -6,6 +6,7 @@ import uuid
 import json
 import time
 import base64
+import pickle
 import logging
 import threading
 from concurrent.futures import ThreadPoolExecutor
@@ -24,6 +25,7 @@ import state
 import clustering_service
 import liveness_config_store
 import faiss_config_store
+import max_k_config_store
 from clustering_service import (
     _detect_faces_tiled, _build_ui_mask,
     reset_liveness_rejection_count, get_liveness_rejection_count,
@@ -221,6 +223,20 @@ class RTSPAttendanceRequest(BaseModel):
     # this process never needs direct filesystem access to ground_truth/ (may
     # run on a separate machine).
     enrolledEmbeddings: dict = {}
+    # { rollNo: [embedding, ...] } — each student's top-K individually stored
+    # embeddings (falls back to a 1-item list built from mean_embedding for
+    # students not yet regenerated). Used only for the optional "max-of-K"
+    # shadow comparison (state.max_k_config) run alongside the primary
+    # mean-embedding assignment below — never for the actual attendance
+    # decision. See /max-k-config (ML Fine Tuning page).
+    enrolledEmbeddingsTopK: dict = {}
+    # Alternative enrollment source: a base64-encoded subject-level .pkl
+    # ({roll_no: {name, embedding, num_photos}}), as built by
+    # /build-embeddings-sync and sent by schedulerController.js /
+    # autoAttendanceScheduler.js. Used only as a fallback when
+    # enrolledEmbeddings is empty — both are never sent together in
+    # practice, but enrolledEmbeddings wins if both are present.
+    embeddingsPklData: Optional[str] = None
 
 
 # ── Preview endpoint ──────────────────────────────────────────────────────────
@@ -546,6 +562,114 @@ def extract_rtsp_stream(req: RTSPRequest):
                  "Content-Type": "text/event-stream; charset=utf-8"})
 
 
+def _max_k_shadow_comparison(cluster_means, cluster_meta,
+                              primary_matches, enrolled_topk_raw, top_k, review_threshold):
+    """
+    Optional diagnostic pass (state.max_k_config) — scores the same cluster
+    means already computed for the primary mean-embedding assignment against
+    each enrolled student's top-K individually stored embeddings instead
+    (max-similarity across the K vectors), then compares the resulting
+    assignment to the primary one. Read-only: never mutates `attendance` or
+    any of the primary-path variables it's passed.
+
+    primary_matches: {cluster_row_index: (roll_no, score)} from the primary
+                      mean-embedding Hungarian assignment, for the same
+                      cluster rows this function scores.
+    enrolled_topk_raw: {roll_no: [vec, ...]} — req.enrolledEmbeddingsTopK,
+                       already restricted to the same roster the primary
+                       assignment matched against (in-list students only,
+                       mirroring `match_enrolled`).
+    Returns a JSON-safe summary dict, or None if there was nothing to compare
+    (e.g. no cached top-K embeddings yet for anyone in this roster).
+    """
+    ids, row_owner, vectors = [], [], []
+    for roll_no, vecs in enrolled_topk_raw.items():
+        for vec in (vecs or [])[:top_k]:
+            arr = np.array(vec, dtype=np.float32)
+            norm = np.linalg.norm(arr)
+            if norm == 0:
+                continue
+            vectors.append(arr / norm)
+            row_owner.append(roll_no)
+    if not vectors or not cluster_means:
+        return None
+    ids = sorted(set(row_owner))
+    id_index = {roll_no: i for i, roll_no in enumerate(ids)}
+
+    big_matrix  = np.array(vectors, dtype=np.float32)                       # (n_vecs, 512)
+    raw_scores  = np.array(cluster_means, dtype=np.float32) @ big_matrix.T  # (n_clusters, n_vecs)
+
+    # Collapse each student's K columns down to one via max — same
+    # (n_clusters, n_students) shape the mean-mode score matrix has, so the
+    # exact same Hungarian assignment logic applies unchanged.
+    score_matrix = np.full((len(cluster_means), len(ids)), -1.0, dtype=np.float32)
+    for col, roll_no in enumerate(row_owner):
+        sid = id_index[roll_no]
+        score_matrix[:, sid] = np.maximum(score_matrix[:, sid], raw_scores[:, col])
+
+    row_ind, col_ind = linear_sum_assignment(-score_matrix)
+    shadow_matches = {}
+    for r, c in zip(row_ind, col_ind):
+        score = float(score_matrix[r, c])
+        if score >= review_threshold:
+            shadow_matches[r] = (ids[c], score)
+
+    agree, disagree, mean_only, max_k_only, details = 0, 0, 0, 0, []
+    # Roll-indexed view — one entry per roll_no that either mode matched, so
+    # the frontend can render a per-student "Max-of-K" table column rather
+    # than only an aggregate count. Keyed by roll_no (not cluster row), since
+    # the attendance table itself is roll-indexed.
+    per_student = {}
+    compared_rows = set(primary_matches) | set(shadow_matches)
+    for r in compared_rows:
+        mean_roll, mean_score   = primary_matches.get(r, (None, 0.0))
+        max_k_roll, max_k_score = shadow_matches.get(r, (None, 0.0))
+        row_agree = (mean_roll == max_k_roll)
+        if row_agree:
+            agree += 1
+        else:
+            disagree += 1
+            if mean_roll and not max_k_roll:
+                mean_only += 1
+            elif max_k_roll and not mean_roll:
+                max_k_only += 1
+            cluster_id, _ = cluster_meta[r]
+            details.append({
+                "cluster_id":   int(cluster_id),
+                "mean_roll":    mean_roll,
+                "mean_score":   round(mean_score, 4),
+                "max_k_roll":   max_k_roll,
+                "max_k_score":  round(max_k_score, 4),
+            })
+        if mean_roll:
+            per_student[mean_roll] = {
+                "mean_score":  round(mean_score, 4),
+                "max_k_score": round(max_k_score, 4) if row_agree else None,
+                "max_k_roll":  max_k_roll if not row_agree else None,
+                "agree":       row_agree,
+            }
+        if max_k_roll and not row_agree:
+            per_student[max_k_roll] = {
+                "mean_score":  None,
+                "max_k_score": round(max_k_score, 4),
+                "max_k_roll":  None,
+                "agree":       False,
+            }
+
+    return {
+        "enabled":           True,
+        "top_k":             top_k,
+        "students_compared":  len(ids),
+        "clusters_compared":  len(compared_rows),
+        "agree":              agree,
+        "disagree":           disagree,
+        "mean_only_matches":  mean_only,
+        "max_k_only_matches": max_k_only,
+        "details":            details[:20],  # cap payload size
+        "per_student":        per_student,
+    }
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # ATTENDANCE PIPELINE — shared generator (yields plain dicts, not SSE strings)
 # Both the SSE route and the sync route consume this.
@@ -589,8 +713,23 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
         if norm > 0:
             enrolled[roll_no] = arr / norm
 
+    # Fallback: subject-level .pkl bytes (schedulerController.js /
+    # autoAttendanceScheduler.js send this instead of enrolledEmbeddings —
+    # a pre-built {roll_no: {name, embedding, num_photos}} pickle rather
+    # than per-roll cached mean_embedding values from ground_truth/).
+    if not enrolled and req.embeddingsPklData:
+        try:
+            pkl_db = pickle.loads(base64.b64decode(req.embeddingsPklData))
+            for roll_no, data in (pkl_db or {}).items():
+                arr = np.array(data.get("embedding"), dtype=np.float32)
+                norm = np.linalg.norm(arr)
+                if norm > 0:
+                    enrolled[roll_no] = arr / norm
+        except Exception:
+            logger.exception("Failed to decode embeddingsPklData")
+
     if not enrolled:
-        yield {"type": "error", "message": f"No enrolled students found for batch '{req.batch}' (enrolledEmbeddings empty)."}
+        yield {"type": "error", "message": f"No enrolled students found for batch '{req.batch}' (enrolledEmbeddings/embeddingsPklData empty)."}
         return
  
     # Sir's list filter
@@ -835,22 +974,24 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
  
     # ── One-to-one Hungarian assignment ───────────────────────────────────
     assigned_cluster_rows = set()  # row indices (into cluster_meta) with a valid assignment
- 
+    primary_matches = {}  # row index -> (roll_no, score), for the max-of-K shadow comparison below
+
     if cluster_means and len(enroll_matrix) > 0:
         score_matrix = np.array(cluster_means, dtype=np.float32) @ enroll_matrix.T
         # shape: (n_clusters, n_enrolled)
- 
+
         row_ind, col_ind = linear_sum_assignment(-score_matrix)  # negate → maximise similarity
- 
+
         for r, c in zip(row_ind, col_ind):
             score   = float(score_matrix[r, c])
             roll_no = enrolled_ids[c]
             _, indices = cluster_meta[r]
- 
+
             if score < req.reviewThreshold:
                 continue  # below threshold → treat as unmatched
- 
+
             assigned_cluster_rows.add(r)
+            primary_matches[r] = (roll_no, score)
             rec    = attendance[roll_no]
             status = "present" if score >= req.autoThreshold else "review"
             zone   = "high"    if score >= req.autoThreshold else "medium"
@@ -880,7 +1021,33 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
             if genders:
                 rec["gender_samples"] = rec.get("gender_samples", []) + genders
                 rec["gender"] = max(set(rec["gender_samples"]), key=rec["gender_samples"].count)
- 
+
+    # ── Max-of-K shadow comparison (diagnostic only, ML Fine Tuning toggle) ──
+    # Never touches `attendance` — purely reports how often scoring against
+    # each student's top-K individual embeddings would have agreed with the
+    # primary mean-embedding assignment above.
+    matching_comparison = None
+    with state.max_k_config_lock:
+        max_k_enabled = state.max_k_config["enabled"]
+        max_k_top_k   = state.max_k_config["top_k"]
+    if max_k_enabled:
+        enrolled_topk_raw = {
+            roll_no: vecs for roll_no, vecs in (req.enrolledEmbeddingsTopK or {}).items()
+            if roll_no in match_enrolled
+        }
+        try:
+            matching_comparison = _max_k_shadow_comparison(
+                cluster_means, cluster_meta, primary_matches,
+                enrolled_topk_raw, max_k_top_k, req.reviewThreshold,
+            )
+        except Exception:
+            logger.exception("Max-of-K shadow comparison failed — skipping")
+        if matching_comparison is None:
+            matching_comparison = {"enabled": True, "top_k": max_k_top_k, "skipped": True,
+                                    "reason": "No cached top_k_embeddings yet for this roster."}
+    else:
+        matching_comparison = {"enabled": False}
+
     # ── Unmatched clusters ─────────────────────────────────────────────────
     unmatched_clusters = []
     for r, (cluster_id, indices) in enumerate(cluster_meta):
@@ -1008,6 +1175,10 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
             "unmatched_clusters": unmatched_clusters,
             "frame_snapshots":    frame_snapshots,
             "snapshot_folder":    snap_folder_name if frame_snapshots else "",
+            # Diagnostic-only side-by-side comparison against max-of-K
+            # embedding scoring (state.max_k_config, ML Fine Tuning page).
+            # Never factored into `attendance` above.
+            "matching_comparison": matching_comparison,
         },
     }
 
@@ -1697,6 +1868,40 @@ def update_faiss_config_ep(req: FaissConfigUpdate):
 
     new_config = faiss_config_store.update_faiss_config(updates)
     logger.info(f"[FaissConfig] Updated: {updates} → {new_config}")
+    return new_config
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Max-of-K shadow comparison config  (ML Fine Tuning page)
+# ═══════════════════════════════════════════════════════════════════════════
+# Controls the optional shadow comparison run inside _attendance_pipeline
+# (Hungarian batch-matching, RTSP attendance). When enabled, every batch
+# attendance run additionally scores each detected face cluster against
+# enrolled students' top-K individually stored embeddings (max-similarity)
+# and reports agreement with the primary mean-embedding assignment — purely
+# for tuning/comparison, never affecting the actual attendance decision.
+
+class MaxKConfigUpdate(BaseModel):
+    enabled: Optional[bool] = None
+    top_k:   Optional[int]  = None
+
+
+@router.get("/max-k-config")
+def get_max_k_config_ep():
+    with state.max_k_config_lock:
+        return dict(state.max_k_config)
+
+
+@router.post("/max-k-config")
+def update_max_k_config_ep(req: MaxKConfigUpdate):
+    updates = req.dict(exclude_none=True)
+
+    if "top_k" in updates and not (1 <= updates["top_k"] <= 10):
+        return JSONResponse(status_code=400,
+            content={"error": f"top_k must be 1–10, got {updates['top_k']}"})
+
+    new_config = max_k_config_store.update_max_k_config(updates)
+    logger.info(f"[MaxKConfig] Updated: {updates} → {new_config}")
     return new_config
 
 

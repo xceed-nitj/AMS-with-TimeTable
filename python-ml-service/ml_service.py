@@ -239,6 +239,8 @@ async def lifespan(app: FastAPI):
     load_liveness_config()
     from faiss_config_store import load_faiss_config
     load_faiss_config()
+    from max_k_config_store import load_max_k_config
+    load_max_k_config()
     load_embeddings()
     yield
 
