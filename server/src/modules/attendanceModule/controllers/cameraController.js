@@ -392,39 +392,44 @@ async listRecordings(req, res) {
 }
 
 async downloadRecording(req, res) {
+    // The recording lives on the ML service's own disk (it's the process that
+    // ran ffmpeg), not Node's — stream the bytes from there rather than
+    // assuming a local copy exists.
     const path = require('path');
-    const fs   = require('fs');
     const safe = path.basename(req.params.filename);
-     const filePath = path.join(process.cwd(), 'recordings', safe);
-
-    if (!fs.existsSync(filePath))
-        return res.status(404).json({ error: 'File not found' });
-    const stat = fs.statSync(filePath);
-    res.setHeader('Content-Type', 'video/mp4');
-    res.setHeader('Content-Disposition', `attachment; filename="${safe}"`);
-    res.setHeader('Content-Length', stat.size);
-    fs.createReadStream(filePath).pipe(res);
+    try {
+        const upstream = await axios.get(
+            `${ML_URL}/recordings/${encodeURIComponent(safe)}/download`,
+            { responseType: 'stream', timeout: 30000 },
+        );
+        res.setHeader('Content-Type', 'video/mp4');
+        res.setHeader('Content-Disposition', `attachment; filename="${safe}"`);
+        upstream.data.pipe(res);
+    } catch (error) {
+        if (error.response?.status === 404) return res.status(404).json({ error: 'File not found' });
+        return sendKnownError(res, error);
+    }
 }
 
 async downloadAudio(req, res) {
-    const { spawn } = require('child_process');
-    const path      = require('path');
-    const fs        = require('fs');
-    const safe      = path.basename(req.params.filename);
-  
-    const filePath = path.join(process.cwd(), 'recordings', safe);
-    if (!fs.existsSync(filePath))
-        return res.status(404).json({ error: 'File not found' });
-    const audioName = safe.replace(/\.mp4$/, '.mp3');
-    res.setHeader('Content-Type', 'audio/mpeg');
-    res.setHeader('Content-Disposition', `attachment; filename="${audioName}"`);
-    const ff = spawn('ffmpeg', [
-        '-i', filePath, '-vn', '-acodec', 'mp3',
-        '-q:a', '2', '-f', 'mp3', 'pipe:1',
-    ]);
-    ff.stdout.pipe(res);
-    ff.stderr.on('data', () => {});
-    req.on('close', () => ff.kill());
+    // Audio is extracted by ffmpeg on the ML service's machine (where the
+    // video actually is), then streamed here — Node no longer assumes ffmpeg
+    // or the video file exist locally.
+    const path = require('path');
+    const safe = path.basename(req.params.filename);
+    try {
+        const upstream = await axios.get(
+            `${ML_URL}/recordings/${encodeURIComponent(safe)}/audio`,
+            { responseType: 'stream', timeout: 30000 },
+        );
+        const audioName = safe.replace(/\.mp4$/, '.mp3');
+        res.setHeader('Content-Type', 'audio/mpeg');
+        res.setHeader('Content-Disposition', `attachment; filename="${audioName}"`);
+        upstream.data.pipe(res);
+    } catch (error) {
+        if (error.response?.status === 404) return res.status(404).json({ error: 'File not found' });
+        return sendKnownError(res, error);
+    }
 }
 // ── Scheduled recording methods ────────────────────────────────────────────
 // In-memory store (survives server restart as long as the process runs;

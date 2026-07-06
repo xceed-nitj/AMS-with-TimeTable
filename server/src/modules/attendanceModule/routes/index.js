@@ -1,5 +1,7 @@
 const express = require("express");
 const router  = express.Router();
+const path    = require("path");
+const fs      = require("fs");
 const acquisitionControlRoutes = require('./acquisitionControlRoutes');
 const schedulerRoutes = require('./schedulerRoutes');
 
@@ -8,6 +10,8 @@ const {
     enforceAttendanceDepartment,
 } = require("../middleware/attendanceAccess");
 const deptAdminController = require("../controllers/deptAdminController");
+
+const GROUND_TRUTH_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'ground_truth');
 
 router.use('/student',      ...attendanceRoleAccess, require("./student"));
 router.get(
@@ -128,5 +132,41 @@ router.use(
     enforceAttendanceDepartment,
     require("./instituteIdentificationRoutes"),
 );
+
+// INTENTIONALLY LEFT UNAUTHENTICATED: called by the Python ML service itself
+// (institute_identification_routes.py's get_ground_truth_b64()), not a
+// browser session — Python has no JWT cookie to present. Same class of
+// exception as the ERP override PATCH in attendanceReportRoutes.js. Read-only,
+// single-photo lookup by roll number, low sensitivity.
+router.get('/ground-truth-photo-by-roll/:rollNo', async (req, res) => {
+    try {
+        const rollNo = String(req.params.rollNo || '').trim();
+        if (!rollNo) return res.json({ photo: '' });
+
+        if (fs.existsSync(GROUND_TRUTH_DIR)) {
+            const batches = await fs.promises.readdir(GROUND_TRUTH_DIR, { withFileTypes: true });
+            for (const batchEntry of batches) {
+                if (!batchEntry.isDirectory()) continue;
+                const batchPath = path.join(GROUND_TRUTH_DIR, batchEntry.name);
+                const folders = await fs.promises.readdir(batchPath, { withFileTypes: true });
+                const match = folders.find(
+                    (f) => f.isDirectory() && (f.name === rollNo || f.name.startsWith(`${rollNo}_`)),
+                );
+                if (!match) continue;
+
+                const studentPath = path.join(batchPath, match.name);
+                const photos = (await fs.promises.readdir(studentPath))
+                    .filter((f) => /\.(jpg|jpeg|png)$/i.test(f));
+                if (photos.length === 0) continue;
+
+                const bytes = await fs.promises.readFile(path.join(studentPath, photos[0]));
+                return res.json({ photo: bytes.toString('base64') });
+            }
+        }
+        res.json({ photo: '' });
+    } catch (err) {
+        res.json({ photo: '' });
+    }
+});
 
 module.exports = router;

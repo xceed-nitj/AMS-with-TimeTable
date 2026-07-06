@@ -406,7 +406,7 @@ function MLDashboard() {
                       >
                         {student.first_photo ? (
                           <Image
-                            src={`http://localhost:8500${student.first_photo}`}
+                            src={`${apiUrl}${student.first_photo}`}
                             alt={student.name}
                             boxSize="48px" borderRadius="full"
                             objectFit="cover" mx="auto" mb={1}

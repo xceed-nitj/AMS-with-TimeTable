@@ -374,10 +374,55 @@ router.post('/restart', async (req, res) => {
 });
 
 // ─── Enrolled Students ────────────────────────────────────────
+// Computed entirely from Node's own local ground_truth/ + StudentEmbedding
+// records — never proxied to Python, which has no access to this disk when
+// running on a separate machine (and its own version of this endpoint only
+// ever walked one directory level, not the real ground_truth/{batch}/{rollNo}
+// structure, so it was already broken independent of that).
 router.get('/enrolled-students', async (req, res) => {
     try {
-        const result = await axios.get(`${ML_URL}/enrolled-students`);
-        res.json(result.data);
+        const StudentEmbedding = require('../../../models/attendanceModule/studentEmbedding');
+        const embeddedRolls = new Set();
+        const embeddingDocs = await StudentEmbedding.find({}, { rollNos: 1 }).lean();
+        for (const doc of embeddingDocs) {
+            for (const roll of doc.rollNos || []) embeddedRolls.add(roll);
+        }
+
+        const students = [];
+        if (fs.existsSync(GROUND_TRUTH_DIR)) {
+            const batches = await fs.promises.readdir(GROUND_TRUTH_DIR, { withFileTypes: true });
+            for (const batchEntry of batches) {
+                if (!batchEntry.isDirectory()) continue;
+                const batchPath = path.join(GROUND_TRUTH_DIR, batchEntry.name);
+                const folders = await fs.promises.readdir(batchPath, { withFileTypes: true });
+                for (const folder of folders) {
+                    if (!folder.isDirectory() || folder.name.startsWith('_')) continue;
+                    const studentPath = path.join(batchPath, folder.name);
+                    const parts = folder.name.split('_', 2);
+                    const studentId = parts[0];
+                    const name = parts.length > 1 ? folder.name.slice(parts[0].length + 1).replace(/_/g, ' ') : folder.name;
+                    const photos = (await fs.promises.readdir(studentPath))
+                        .filter((f) => /\.(jpg|jpeg|png)$/i.test(f));
+                    students.push({
+                        student_id: studentId,
+                        name,
+                        batch: batchEntry.name,
+                        folder: folder.name,
+                        photo_count: photos.length,
+                        enrolled_in_db: embeddedRolls.has(studentId),
+                        first_photo: photos.length
+                            ? `/attendancemodule/ground-truth/photo/${batchEntry.name}/${folder.name}/${photos[0]}`
+                            : null,
+                    });
+                }
+            }
+        }
+
+        res.json({
+            total: students.length,
+            enrolled_in_db: students.filter((s) => s.enrolled_in_db).length,
+            students,
+        });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }

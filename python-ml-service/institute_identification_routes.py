@@ -4,6 +4,7 @@ import json
 import base64
 import time
 import tempfile
+import requests
 from fastapi import APIRouter, UploadFile, File
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -15,22 +16,21 @@ import logging
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+# Node owns server/ml-data/ground_truth — this service may run on a separate
+# machine with no access to that disk, so the reference photo is fetched over
+# HTTP from Node instead of scanned off a local path.
+NODE_SERVER_URL = os.environ.get("NODE_SERVER_URL", "http://localhost:8010")
+
 def get_ground_truth_b64(roll: str) -> str:
-    CLIENT_GROUND_TRUTH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "server", "ml-data", "ground_truth")
-    if not os.path.exists(CLIENT_GROUND_TRUTH): return ""
     try:
-        for batch in os.listdir(CLIENT_GROUND_TRUTH):
-            batch_path = os.path.join(CLIENT_GROUND_TRUTH, batch)
-            if not os.path.isdir(batch_path): continue
-            for folder in os.listdir(batch_path):
-                if folder == roll or folder.startswith(f"{roll}_"):
-                    student_path = os.path.join(batch_path, folder)
-                    if not os.path.isdir(student_path): continue
-                    photos = [f for f in os.listdir(student_path) if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
-                    if photos:
-                        with open(os.path.join(student_path, photos[0]), "rb") as f:
-                            return base64.b64encode(f.read()).decode('utf-8')
-    except Exception: pass
+        resp = requests.get(
+            f"{NODE_SERVER_URL}/api/v1/attendancemodule/ground-truth-photo-by-roll/{roll}",
+            timeout=5,
+        )
+        if resp.ok:
+            return resp.json().get("photo", "") or ""
+    except Exception as e:
+        logger.warning(f"get_ground_truth_b64: Node lookup failed for {roll}: {e}")
     return ""
 
 class LiveStreamReader:

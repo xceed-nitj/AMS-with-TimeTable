@@ -16,7 +16,7 @@ import cv2
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.responses import StreamingResponse, JSONResponse, FileResponse
 from pydantic import BaseModel
 from sklearn.cluster import DBSCAN as _DBSCAN
 
@@ -1471,6 +1471,50 @@ def list_recordings_ep():
                 "format":      rec.get("format", "video+audio"),
             })
     return result
+
+
+def _recording_path(filename: str) -> str:
+    # Recordings live wherever RECORDINGS_DIR points on THIS (the ML service's)
+    # machine — Node has no local copy, so it must stream bytes from here
+    # rather than reading its own disk.
+    safe = os.path.basename(filename)  # prevent path traversal
+    path = os.path.join(RECORDINGS_DIR, safe)
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="Recording not found")
+    return path
+
+
+@router.get("/recordings/{filename}/download")
+def download_recording(filename: str):
+    path = _recording_path(filename)
+    return FileResponse(path, media_type="video/mp4", filename=os.path.basename(path))
+
+
+@router.get("/recordings/{filename}/audio")
+def download_recording_audio(filename: str):
+    path = _recording_path(filename)
+    audio_name = re.sub(r"\.mp4$", ".mp3", os.path.basename(path))
+
+    def generate():
+        proc = subprocess.Popen(
+            ["ffmpeg", "-i", path, "-vn", "-acodec", "mp3", "-q:a", "2", "-f", "mp3", "pipe:1"],
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+        )
+        try:
+            while True:
+                chunk = proc.stdout.read(65536)
+                if not chunk:
+                    break
+                yield chunk
+        finally:
+            proc.stdout.close()
+            proc.wait()
+
+    return StreamingResponse(
+        generate(),
+        media_type="audio/mpeg",
+        headers={"Content-Disposition": f'attachment; filename="{audio_name}"'},
+    )
 
 
 # ═══════════════════════════════════════════════════════════════════════════

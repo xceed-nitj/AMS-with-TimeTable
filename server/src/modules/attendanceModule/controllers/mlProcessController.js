@@ -1,5 +1,6 @@
 const { spawn } = require('child_process');
 const path = require('path');
+const { getTargetInfo } = require('./mlServiceClient');
 
 let pythonProcess = null;
 
@@ -10,8 +11,23 @@ const PYTHON_PATH = path.join(BASE, 'venv', 'Scripts', 'python.exe');
 const SCRIPT_PATH = path.join(BASE, 'ml_service.py');
 const CWD = BASE;
 
+// Spawning a local child process can only ever reach a Python service on
+// THIS machine — if ML_SERVICE_URL points elsewhere, fail with a clear
+// message instead of a confusing ENOENT (missing venv/python.exe) from
+// trying to spawn a path that only makes sense for a co-located setup.
+function assertLocalTarget() {
+    const target = getTargetInfo();
+    if (target.kind !== 'local') {
+        throw new Error(
+            `Cannot manage a remote ML service process from this server (target: ${target.display}). `
+            + `Start/stop/restart it directly on that machine instead.`
+        );
+    }
+}
+
 function startPython() {
     return new Promise((resolve, reject) => {
+        assertLocalTarget();
         if (pythonProcess) {
             return resolve({ status: 'already_running', pid: pythonProcess.pid });
         }
@@ -55,7 +71,12 @@ function startPython() {
 }
 
 function stopPython() {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
+        try {
+            assertLocalTarget();
+        } catch (err) {
+            return reject(err);
+        }
         if (!pythonProcess) {
             return resolve({ status: 'already_stopped' });
         }

@@ -266,6 +266,9 @@ load_faiss_index()
 from institute_identification_routes import router as institute_router
 app.include_router(institute_router)
 
+from session_cluster_routes import router as session_cluster_router
+app.include_router(session_cluster_router)
+
 # Serve ground-truth photos as static files
 if os.path.exists(CLIENT_GROUND_TRUTH):
     app.mount(
