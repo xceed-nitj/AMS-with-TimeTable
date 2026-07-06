@@ -99,6 +99,14 @@ def _tracked_attendance_pipeline(req: RTSPTrackedAttendanceRequest, job: dict):
     frame_count = 0
     start_t   = time.time()
 
+    # Per-request override if provided, else the global ML Fine Tuning value.
+    with state.faiss_config_lock:
+        recog_threshold = (
+            req.recogThreshold if req.recogThreshold is not None
+            else state.faiss_config["recog_threshold"]
+        )
+        recog_top_k = state.faiss_config["top_k"]
+
     yield {"type": "stage", "message": f"Stream open {W}x{H} — tracking live…"}
 
     try:
@@ -184,7 +192,7 @@ def _tracked_attendance_pipeline(req: RTSPTrackedAttendanceRequest, job: dict):
                 # Recognition — searches the WHOLE FAISS index
                 roll, score = _recognize_face(
                     best_d["embedding"], state.faiss_index, state.vid_to_roll,
-                    top_k=5, threshold=req.recogThreshold,
+                    top_k=recog_top_k, threshold=recog_threshold,
                 )
 
                 ttl = _get_reverify_interval(score) if roll else 0.0

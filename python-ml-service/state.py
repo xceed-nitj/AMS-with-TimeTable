@@ -82,3 +82,20 @@ faiss_index = None
 # faiss_utils._recognize_face()/_topk_roll_scores() can translate a
 # similarity-search hit back into a roll number.
 vid_to_roll: dict = {}
+
+# ─── FAISS recognition tuning knobs ────────────────────────────────────────────
+# Editable at runtime via GET/POST /faiss-config (see rtsp_routes.py), backed
+# by ml-data/faiss_config.json so changes survive a server restart — same
+# pattern as liveness_config above. faiss_utils.py reads these on every
+# recognition call rather than from hardcoded literals.
+faiss_config = {
+    "top_k":               5,     # nearest-neighbor candidates considered per detection
+    "recog_threshold":     0.35,  # minimum similarity to accept a match
+    "reverify_high_score": 0.80,  # score cutoffs + cache TTLs for the live
+    "reverify_high_ttl":   60.0,  # tracked-attendance re-verify cache — a
+    "reverify_med_score":  0.65,  # confidently-matched track doesn't need to
+    "reverify_med_ttl":    30.0,  # re-run recognition every frame, so higher-
+    "reverify_low_score":  0.45,  # confidence matches get longer TTLs. Below
+    "reverify_low_ttl":    12.0,  # reverify_low_score, always re-verify (0s).
+}
+faiss_config_lock = threading.Lock()

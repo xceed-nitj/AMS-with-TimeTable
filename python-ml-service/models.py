@@ -126,7 +126,9 @@ class RTSPTrackedAttendanceRequest(BaseModel):
     rtspUrl:          str
     frameSkip:        int   = 5
     durationSec:      int   = 0      # 0 = no auto-stop; caller hits /stop-rtsp-stream
-    recogThreshold:   float = 0.35
+    # None = fall back to the global state.faiss_config["recog_threshold"]
+    # (ML Fine Tuning page); an explicit value here overrides it per-request.
+    recogThreshold:   Optional[float] = None
     iouMin:           float = 0.30
     driftThresholdPx: float = 40.0
     trackExpirySec:   float = 30.0

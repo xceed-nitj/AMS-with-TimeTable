@@ -11,6 +11,7 @@ const apiUrl = getEnvironment();
 const CONFIG_API      = `${apiUrl}/api/v1/ml/liveness-config`;
 const GT_CONFIG_API   = `${apiUrl}/api/v1/ml/gt-config`;
 const ATTEND_API      = `${apiUrl}/attendancemodule/acquisitioncontrol/attendance-thresholds`;
+const FAISS_CONFIG_API = `${apiUrl}/api/v1/ml/faiss-config`;
 
 const HEURISTIC_OPTIONS = [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.40];
 const ONNX_OPTIONS      = [0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90];
@@ -67,6 +68,36 @@ const ATTEND_DEFAULTS = {
     min_detections: 3, auto_enroll_threshold: 0.75, alert_confidence: 0.60,
 };
 
+// FAISS Recognition — live tracked-attendance matching pipeline
+const FAISS_OPTIONS = {
+    top_k:               [3, 5, 7, 10, 15, 20],
+    recog_threshold:     [0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60],
+    reverify_high_score: [0.70, 0.75, 0.80, 0.85, 0.90, 0.95],
+    reverify_high_ttl:   [15, 20, 30, 45, 60, 90, 120],
+    reverify_med_score:  [0.50, 0.55, 0.60, 0.65, 0.70, 0.75],
+    reverify_med_ttl:    [5, 10, 15, 20, 30, 45, 60],
+    reverify_low_score:  [0.30, 0.35, 0.40, 0.45, 0.50, 0.55],
+    reverify_low_ttl:    [0, 5, 8, 10, 12, 15, 20, 30],
+};
+
+const FAISS_LABELS = {
+    top_k:               { label: 'Top-K candidates',        unit: '',    hint: 'Nearest-neighbor candidates considered per detection before vote-matching.' },
+    recog_threshold:     { label: 'Recognition threshold',   unit: '',    hint: 'Minimum similarity to accept a FAISS match.' },
+    reverify_high_score: { label: 'High-confidence score',   unit: '',    hint: 'Scores at or above this use the longest re-verify cache TTL.' },
+    reverify_high_ttl:   { label: 'High-confidence TTL',     unit: 'sec', hint: 'How long a high-confidence track skips re-recognition.' },
+    reverify_med_score:  { label: 'Medium-confidence score', unit: '',    hint: 'Scores at or above this (below high) use the medium TTL.' },
+    reverify_med_ttl:    { label: 'Medium-confidence TTL',   unit: 'sec', hint: 'Cache duration for medium-confidence tracks.' },
+    reverify_low_score:  { label: 'Low-confidence score',    unit: '',    hint: 'Scores at or above this (below medium) use the low TTL. Below this, always re-verify.' },
+    reverify_low_ttl:    { label: 'Low-confidence TTL',      unit: 'sec', hint: 'Cache duration for low-confidence tracks.' },
+};
+
+const FAISS_DEFAULTS = {
+    top_k: 5, recog_threshold: 0.35,
+    reverify_high_score: 0.80, reverify_high_ttl: 60,
+    reverify_med_score: 0.65, reverify_med_ttl: 30,
+    reverify_low_score: 0.45, reverify_low_ttl: 12,
+};
+
 function Toggle({ checked, onChange, disabled, label }) {
     return (
         <label style={{
@@ -105,6 +136,10 @@ export default function MLFineTuning() {
     const [attendThresh, setAttendThresh] = useState(null);
     const [attendLoading, setAttendLoading] = useState(true);
     const [attendSaving,  setAttendSaving]  = useState(false);
+
+    const [faissConfig,  setFaissConfig]  = useState(null);
+    const [faissLoading, setFaissLoading] = useState(true);
+    const [faissSaving,  setFaissSaving]  = useState(false);
 
     const showToast = (msg, type = 'success') => {
         setToast({ msg, type });
@@ -155,6 +190,42 @@ export default function MLFineTuning() {
     }, []);
 
     useEffect(() => { loadAttendThresh(); }, [loadAttendThresh]);
+
+    const loadFaissConfig = useCallback(async () => {
+        setFaissLoading(true);
+        try {
+            const res = await fetch(FAISS_CONFIG_API);
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+            setFaissConfig(data);
+        } catch (err) {
+            showToast(`Failed to load FAISS config: ${err.message}`, 'error');
+        }
+        setFaissLoading(false);
+    }, []);
+
+    useEffect(() => { loadFaissConfig(); }, [loadFaissConfig]);
+
+    const updateFaissConfig = async (patch) => {
+        setFaissSaving(true);
+        const prev = faissConfig;
+        setFaissConfig({ ...faissConfig, ...patch });
+        try {
+            const res = await fetch(FAISS_CONFIG_API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(patch),
+            });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+            setFaissConfig(data);
+            showToast('FAISS setting updated');
+        } catch (err) {
+            setFaissConfig(prev);
+            showToast(`Update failed: ${err.message}`, 'error');
+        }
+        setFaissSaving(false);
+    };
 
     const updateAttendThresh = async (patch) => {
         setAttendSaving(true);
@@ -457,6 +528,98 @@ export default function MLFineTuning() {
                                 ⚠ Review threshold must be lower than auto-present threshold.
                             </div>
                         )}
+                    </>
+                )}
+            </div>
+
+            {/* ── FAISS Recognition Thresholds ───────────────────────────── */}
+            <div style={{ ...styles.card, marginBottom: 20 }}>
+                <div style={{ marginBottom: 16 }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: theme.text }}>FAISS Recognition Thresholds</div>
+                    <div style={{ fontSize: 12, color: theme.textMuted, marginTop: 2 }}>
+                        Controls the live tracked-attendance FAISS matching pipeline (top-k voting,
+                        recognition threshold, re-verify cache). Changes apply to the next recognition
+                        call — no restart needed.
+                    </div>
+                </div>
+
+                {faissLoading ? (
+                    <div style={{ fontSize: 13, color: theme.textMuted }}>Loading…</div>
+                ) : !faissConfig ? (
+                    <div style={{ fontSize: 13, color: theme.danger }}>Could not load FAISS config.</div>
+                ) : (
+                    <>
+                        {/* Group 1 — Matching */}
+                        <div style={{ fontSize: 11, fontWeight: 700, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
+                            Matching
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 20 }}>
+                            {['top_k', 'recog_threshold'].map(key => {
+                                const meta = FAISS_LABELS[key];
+                                const opts = FAISS_OPTIONS[key];
+                                const isFloat = key !== 'top_k';
+                                return (
+                                    <div key={key}>
+                                        <label style={styles.label}>{meta.label}{meta.unit ? ` (${meta.unit})` : ''}</label>
+                                        <select
+                                            value={faissConfig[key] ?? FAISS_DEFAULTS[key]}
+                                            disabled={faissSaving}
+                                            onChange={e => updateFaissConfig({ [key]: isFloat ? parseFloat(e.target.value) : parseInt(e.target.value, 10) })}
+                                            style={styles.select}
+                                        >
+                                            {opts.map(v => (
+                                                <option key={v} value={v}>
+                                                    {isFloat ? v.toFixed(2) : v}{v === FAISS_DEFAULTS[key] ? ' (default)' : ''}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <div style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>{meta.hint}</div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Group 2 — Re-verify cache */}
+                        <div style={{ fontSize: 11, fontWeight: 700, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
+                            Re-verify Cache
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+                            {['reverify_high_score', 'reverify_high_ttl', 'reverify_med_score', 'reverify_med_ttl', 'reverify_low_score', 'reverify_low_ttl'].map(key => {
+                                const meta = FAISS_LABELS[key];
+                                const opts = FAISS_OPTIONS[key];
+                                const isScore = key.endsWith('_score');
+                                return (
+                                    <div key={key}>
+                                        <label style={styles.label}>{meta.label}{meta.unit ? ` (${meta.unit})` : ''}</label>
+                                        <select
+                                            value={faissConfig[key] ?? FAISS_DEFAULTS[key]}
+                                            disabled={faissSaving}
+                                            onChange={e => updateFaissConfig({ [key]: isScore ? parseFloat(e.target.value) : parseInt(e.target.value, 10) })}
+                                            style={styles.select}
+                                        >
+                                            {opts.map(v => (
+                                                <option key={v} value={v}>
+                                                    {isScore ? v.toFixed(2) : v}{v === FAISS_DEFAULTS[key] ? ' (default)' : ''}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <div style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>{meta.hint}</div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {(() => {
+                            const high = faissConfig.reverify_high_score ?? FAISS_DEFAULTS.reverify_high_score;
+                            const med  = faissConfig.reverify_med_score  ?? FAISS_DEFAULTS.reverify_med_score;
+                            const low  = faissConfig.reverify_low_score  ?? FAISS_DEFAULTS.reverify_low_score;
+                            if (high > med && med > low) return null;
+                            return (
+                                <div style={{ marginTop: 12, fontSize: 12, color: theme.danger }}>
+                                    ⚠ Score tiers must satisfy High &gt; Medium &gt; Low ({high.toFixed(2)} / {med.toFixed(2)} / {low.toFixed(2)}).
+                                </div>
+                            );
+                        })()}
                     </>
                 )}
             </div>

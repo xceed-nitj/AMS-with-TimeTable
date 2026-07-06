@@ -23,6 +23,7 @@ from sklearn.cluster import DBSCAN as _DBSCAN
 import state
 import clustering_service
 import liveness_config_store
+import faiss_config_store
 from clustering_service import (
     _detect_faces_tiled, _build_ui_mask,
     reset_liveness_rejection_count, get_liveness_rejection_count,
@@ -1637,6 +1638,66 @@ def update_gt_config_ep(req: GTConfigUpdate):
 
     logger.info(f"[GTConfig] Updated: {updates} → {cfg}")
     return cfg
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# FAISS recognition config  (ML Fine Tuning page — FAISS Recognition Thresholds)
+# ═══════════════════════════════════════════════════════════════════════════
+# Backs the live tracked-attendance recognition pipeline (faiss_utils.py,
+# tracked_routes.py, institute_identification_routes.py). Persisted to
+# ml-data/faiss_config.json via faiss_config_store.py so changes survive a
+# restart — those modules read state.faiss_config fresh on every recognition
+# call, so a change here takes effect on the very next detection.
+
+class FaissConfigUpdate(BaseModel):
+    top_k:               Optional[int]   = None
+    recog_threshold:      Optional[float] = None
+    reverify_high_score:  Optional[float] = None
+    reverify_high_ttl:    Optional[float] = None
+    reverify_med_score:   Optional[float] = None
+    reverify_med_ttl:     Optional[float] = None
+    reverify_low_score:   Optional[float] = None
+    reverify_low_ttl:     Optional[float] = None
+
+
+@router.get("/faiss-config")
+def get_faiss_config_ep():
+    with state.faiss_config_lock:
+        return dict(state.faiss_config)
+
+
+@router.post("/faiss-config")
+def update_faiss_config_ep(req: FaissConfigUpdate):
+    updates = req.dict(exclude_none=True)
+
+    if "top_k" in updates and not (1 <= updates["top_k"] <= 50):
+        return JSONResponse(status_code=400,
+            content={"error": f"top_k must be 1–50, got {updates['top_k']}"})
+    if "recog_threshold" in updates and not (0.0 <= updates["recog_threshold"] <= 1.0):
+        return JSONResponse(status_code=400,
+            content={"error": f"recog_threshold must be 0.0–1.0, got {updates['recog_threshold']}"})
+    for key in ("reverify_high_score", "reverify_med_score", "reverify_low_score"):
+        if key in updates and not (0.0 <= updates[key] <= 1.0):
+            return JSONResponse(status_code=400,
+                content={"error": f"{key} must be 0.0–1.0, got {updates[key]}"})
+    for key in ("reverify_high_ttl", "reverify_med_ttl", "reverify_low_ttl"):
+        if key in updates and updates[key] < 0:
+            return JSONResponse(status_code=400,
+                content={"error": f"{key} must be >= 0, got {updates[key]}"})
+
+    # Cross-field: score tiers must stay strictly ordered high > med > low,
+    # otherwise faiss_utils._get_reverify_interval()'s cascading if/elif
+    # would silently pick the wrong tier.
+    high = updates.get("reverify_high_score", state.faiss_config["reverify_high_score"])
+    med  = updates.get("reverify_med_score",  state.faiss_config["reverify_med_score"])
+    low  = updates.get("reverify_low_score",  state.faiss_config["reverify_low_score"])
+    if not (high > med > low):
+        return JSONResponse(status_code=400,
+            content={"error": f"Score tiers must satisfy high > med > low, got {high} > {med} > {low}"})
+
+    new_config = faiss_config_store.update_faiss_config(updates)
+    logger.info(f"[FaissConfig] Updated: {updates} → {new_config}")
+    return new_config
 
 
 def _parse_dept_from_filename(fname: str) -> str:

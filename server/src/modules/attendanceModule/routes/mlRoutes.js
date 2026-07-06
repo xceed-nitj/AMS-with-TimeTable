@@ -327,6 +327,30 @@ router.post('/liveness-config', async (req, res) => {
     }
 });
 
+// ─── FAISS Recognition Config (ML Fine Tuning page) ───
+router.get('/faiss-config', async (req, res) => {
+    try {
+        const result = await axios.get(`${ML_URL}/faiss-config`, { timeout: 5000 });
+        res.json(result.data);
+    } catch (e) {
+        res.status(503).json({
+            error: e.response?.data?.error || e.message || 'FAISS config unavailable',
+        });
+    }
+});
+
+router.post('/faiss-config', async (req, res) => {
+    try {
+        const result = await axios.post(`${ML_URL}/faiss-config`, req.body, { timeout: 5000 });
+        res.json(result.data);
+    } catch (e) {
+        const status = e.response?.status || 503;
+        res.status(status).json({
+            error: e.response?.data?.error || e.message || 'Failed to update FAISS config',
+        });
+    }
+});
+
 router.get('/liveness-rejected-samples', async (req, res) => {
     try {
         const limit = Number.parseInt(req.query.limit, 10) || 50;
