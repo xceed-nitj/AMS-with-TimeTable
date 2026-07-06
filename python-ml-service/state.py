@@ -97,6 +97,14 @@ faiss_config = {
     "reverify_med_ttl":    30.0,  # re-run recognition every frame, so higher-
     "reverify_low_score":  0.45,  # confidence matches get longer TTLs. Below
     "reverify_low_ttl":    12.0,  # reverify_low_score, always re-verify (0s).
+    # Optional shadow comparison inside the Hungarian batch-matching pipeline
+    # (_attendance_pipeline in rtsp_routes.py): scores each cluster mean
+    # against the FULL FAISS index (top_k/recog_threshold above) and reports
+    # agreement with the primary mean-embedding assignment — diagnostic
+    # only, fires on at most one run per period (the middle one). Off by
+    # default; toggle from the FAISS Recognition Thresholds section (ML
+    # Fine Tuning page).
+    "shadow_enabled":      False,
 }
 faiss_config_lock = threading.Lock()
 
@@ -115,3 +123,20 @@ max_k_config = {
     "top_k":   3,    # how many of each student's stored embeddings to score against (<= what's cached)
 }
 max_k_config_lock = threading.Lock()
+
+# ─── AdaFace — second, independent face-recognition model ─────────────────────
+# Entirely separate from InsightFace/ArcFace: its own optional ONNX session
+# (None until load_adaface_model() finds a model file — see adaface_utils.py,
+# mirrors liveness_session's graceful-absence pattern), its own embedding
+# space, its own ground-truth/subject-embedding files and DB fields, and its
+# own optional mid-period shadow comparison in _attendance_pipeline —
+# gated on adaface_config["enabled"] below, same as faiss_config/max_k_config.
+adaface_session    = None
+adaface_input_name = None
+
+adaface_config = {
+    "enabled":         False,
+    "recog_threshold": 0.30,  # AdaFace has its own similarity scale — don't reuse InsightFace/FAISS thresholds
+    "top_k":           3,     # how many of each student's stored AdaFace embeddings to score against
+}
+adaface_config_lock = threading.Lock()

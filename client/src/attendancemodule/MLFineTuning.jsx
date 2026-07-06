@@ -13,6 +13,7 @@ const GT_CONFIG_API   = `${apiUrl}/api/v1/ml/gt-config`;
 const ATTEND_API      = `${apiUrl}/attendancemodule/acquisitioncontrol/attendance-thresholds`;
 const FAISS_CONFIG_API = `${apiUrl}/api/v1/ml/faiss-config`;
 const MAX_K_CONFIG_API = `${apiUrl}/api/v1/ml/max-k-config`;
+const ADAFACE_CONFIG_API = `${apiUrl}/api/v1/ml/adaface-config`;
 
 const HEURISTIC_OPTIONS = [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.40];
 const ONNX_OPTIONS      = [0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90];
@@ -107,6 +108,18 @@ const MAX_K_LABELS = {
 };
 const MAX_K_DEFAULTS = { enabled: false, top_k: 3 };
 
+// AdaFace shadow comparison — independent face-recognition model, compared
+// mid-period against the primary (InsightFace mean-embedding) assignment.
+const ADAFACE_OPTIONS = {
+    top_k:           [1, 2, 3],
+    recog_threshold: [0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50],
+};
+const ADAFACE_LABELS = {
+    top_k:           { label: 'Top-K embeddings per student', unit: '', hint: 'How many of each student’s stored AdaFace embeddings to score against (max-similarity across the K).' },
+    recog_threshold: { label: 'Recognition threshold',        unit: '', hint: 'Minimum AdaFace similarity to accept a match. AdaFace has its own similarity scale — don’t assume it matches InsightFace/FAISS thresholds.' },
+};
+const ADAFACE_DEFAULTS = { enabled: false, recog_threshold: 0.30, top_k: 3 };
+
 function Toggle({ checked, onChange, disabled, label }) {
     return (
         <label style={{
@@ -153,6 +166,10 @@ export default function MLFineTuning() {
     const [maxKConfig,  setMaxKConfig]  = useState(null);
     const [maxKLoading, setMaxKLoading] = useState(true);
     const [maxKSaving,  setMaxKSaving]  = useState(false);
+
+    const [adafaceConfig,  setAdafaceConfig]  = useState(null);
+    const [adafaceLoading, setAdafaceLoading] = useState(true);
+    const [adafaceSaving,  setAdafaceSaving]  = useState(false);
 
     const showToast = (msg, type = 'success') => {
         setToast({ msg, type });
@@ -253,6 +270,42 @@ export default function MLFineTuning() {
             showToast(`Update failed: ${err.message}`, 'error');
         }
         setMaxKSaving(false);
+    };
+
+    const loadAdafaceConfig = useCallback(async () => {
+        setAdafaceLoading(true);
+        try {
+            const res = await fetch(ADAFACE_CONFIG_API);
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+            setAdafaceConfig(data);
+        } catch (err) {
+            showToast(`Failed to load AdaFace config: ${err.message}`, 'error');
+        }
+        setAdafaceLoading(false);
+    }, []);
+
+    useEffect(() => { loadAdafaceConfig(); }, [loadAdafaceConfig]);
+
+    const updateAdafaceConfig = async (patch) => {
+        setAdafaceSaving(true);
+        const prev = adafaceConfig;
+        setAdafaceConfig({ ...adafaceConfig, ...patch });
+        try {
+            const res = await fetch(ADAFACE_CONFIG_API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(patch),
+            });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+            setAdafaceConfig(data);
+            showToast('AdaFace setting updated');
+        } catch (err) {
+            setAdafaceConfig(prev);
+            showToast(`Update failed: ${err.message}`, 'error');
+        }
+        setAdafaceSaving(false);
     };
 
     const updateFaissConfig = async (patch) => {
@@ -583,13 +636,23 @@ export default function MLFineTuning() {
 
             {/* ── FAISS Recognition Thresholds ───────────────────────────── */}
             <div style={{ ...styles.card, marginBottom: 20 }}>
-                <div style={{ marginBottom: 16 }}>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: theme.text }}>FAISS Recognition Thresholds</div>
-                    <div style={{ fontSize: 12, color: theme.textMuted, marginTop: 2 }}>
-                        Controls the live tracked-attendance FAISS matching pipeline (top-k voting,
-                        recognition threshold, re-verify cache). Changes apply to the next recognition
-                        call — no restart needed.
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                    <div>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: theme.text }}>FAISS Recognition Thresholds</div>
+                        <div style={{ fontSize: 12, color: theme.textMuted, marginTop: 2 }}>
+                            Controls the live tracked-attendance FAISS matching pipeline (top-k voting,
+                            recognition threshold, re-verify cache). Changes apply to the next recognition
+                            call — no restart needed.
+                        </div>
                     </div>
+                    {faissConfig && (
+                        <Toggle
+                            checked={!!faissConfig.shadow_enabled}
+                            disabled={faissSaving}
+                            onChange={(val) => updateFaissConfig({ shadow_enabled: val })}
+                            label={faissConfig.shadow_enabled ? 'Shadow comparison on' : 'Shadow comparison off'}
+                        />
+                    )}
                 </div>
 
                 {faissLoading ? (
@@ -598,6 +661,13 @@ export default function MLFineTuning() {
                     <div style={{ fontSize: 13, color: theme.danger }}>Could not load FAISS config.</div>
                 ) : (
                     <>
+                        <div style={{ fontSize: 12, color: theme.textMuted, marginBottom: 16, padding: '8px 10px', background: theme.bg, borderRadius: 6 }}>
+                            When the toggle above is on, every scheduled RTSP attendance period additionally
+                            scores the run nearest its middle against the full FAISS index (using the Top-K
+                            candidates / Recognition threshold below) and reports agreement with the primary
+                            mean-embedding assignment — diagnostic only, never affects the actual attendance
+                            decision.
+                        </div>
                         {/* Group 1 — Matching */}
                         <div style={{ fontSize: 11, fontWeight: 700, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
                             Matching
@@ -720,6 +790,68 @@ export default function MLFineTuning() {
                                         {opts.map(v => (
                                             <option key={v} value={v}>
                                                 {v}{v === MAX_K_DEFAULTS[key] ? ' (default)' : ''}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <div style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>{meta.hint}</div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+
+            {/* ── AdaFace Recognition (Comparison) ─────────────────────────── */}
+            <div style={{ ...styles.card, marginBottom: 20 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                    <div>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: theme.text }}>AdaFace Recognition (Comparison)</div>
+                        <div style={{ fontSize: 12, color: theme.textMuted, marginTop: 2 }}>
+                            AdaFace is a second, independent face-recognition model — its own embeddings,
+                            its own storage, entirely separate from InsightFace. When enabled, the run
+                            nearest the middle of a scheduled period additionally scores clusters with
+                            AdaFace and reports how often that agrees with the real (InsightFace)
+                            assignment. Diagnostic only — never changes the actual attendance decision.
+                            {adafaceConfig && !adafaceConfig.model_loaded && (
+                                <>{' '}<span style={{ color: theme.warning }}>● No AdaFace ONNX model loaded — see README_ADAFACE.md.</span></>
+                            )}
+                        </div>
+                    </div>
+                    {adafaceConfig && (
+                        <Toggle
+                            checked={!!adafaceConfig.enabled}
+                            disabled={adafaceSaving}
+                            onChange={(val) => updateAdafaceConfig({ enabled: val })}
+                            label={adafaceConfig.enabled ? 'Enabled' : 'Disabled'}
+                        />
+                    )}
+                </div>
+
+                {adafaceLoading ? (
+                    <div style={{ fontSize: 13, color: theme.textMuted }}>Loading…</div>
+                ) : !adafaceConfig ? (
+                    <div style={{ fontSize: 13, color: theme.danger }}>Could not load AdaFace config.</div>
+                ) : (
+                    <div style={{
+                        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 18,
+                        opacity: adafaceConfig.enabled ? 1 : 0.45, pointerEvents: adafaceConfig.enabled ? 'auto' : 'none',
+                    }}>
+                        {['top_k', 'recog_threshold'].map(key => {
+                            const meta = ADAFACE_LABELS[key];
+                            const opts = ADAFACE_OPTIONS[key];
+                            const isFloat = key === 'recog_threshold';
+                            return (
+                                <div key={key}>
+                                    <label style={styles.label}>{meta.label}{meta.unit ? ` (${meta.unit})` : ''}</label>
+                                    <select
+                                        value={adafaceConfig[key] ?? ADAFACE_DEFAULTS[key]}
+                                        disabled={adafaceSaving || !adafaceConfig.enabled}
+                                        onChange={e => updateAdafaceConfig({ [key]: isFloat ? parseFloat(e.target.value) : parseInt(e.target.value, 10) })}
+                                        style={styles.select}
+                                    >
+                                        {opts.map(v => (
+                                            <option key={v} value={v}>
+                                                {isFloat ? v.toFixed(2) : v}{v === ADAFACE_DEFAULTS[key] ? ' (default)' : ''}
                                             </option>
                                         ))}
                                     </select>

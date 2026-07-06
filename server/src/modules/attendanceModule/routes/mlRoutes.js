@@ -375,6 +375,30 @@ router.post('/max-k-config', async (req, res) => {
     }
 });
 
+// ─── AdaFace Recognition Config (ML Fine Tuning page) ───
+router.get('/adaface-config', async (req, res) => {
+    try {
+        const result = await axios.get(`${ML_URL}/adaface-config`, { timeout: 5000 });
+        res.json(result.data);
+    } catch (e) {
+        res.status(503).json({
+            error: e.response?.data?.error || e.message || 'AdaFace config unavailable',
+        });
+    }
+});
+
+router.post('/adaface-config', async (req, res) => {
+    try {
+        const result = await axios.post(`${ML_URL}/adaface-config`, req.body, { timeout: 5000 });
+        res.json(result.data);
+    } catch (e) {
+        const status = e.response?.status || 503;
+        res.status(status).json({
+            error: e.response?.data?.error || e.message || 'Failed to update AdaFace config',
+        });
+    }
+});
+
 router.get('/liveness-rejected-samples', async (req, res) => {
     try {
         const limit = Number.parseInt(req.query.limit, 10) || 50;

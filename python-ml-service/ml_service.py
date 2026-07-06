@@ -241,6 +241,10 @@ async def lifespan(app: FastAPI):
     load_faiss_config()
     from max_k_config_store import load_max_k_config
     load_max_k_config()
+    from adaface_utils import load_adaface_model
+    load_adaface_model()
+    from adaface_config_store import load_adaface_config
+    load_adaface_config()
     load_embeddings()
     yield
 

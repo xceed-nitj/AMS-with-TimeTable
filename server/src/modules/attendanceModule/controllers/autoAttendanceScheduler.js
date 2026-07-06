@@ -18,7 +18,7 @@ const AttendanceReport = require("../../../models/attendanceReport");
 const { saveAttendanceDailyData } = require("./attendanceDailyDataSaver");
 const { saveUnknownFaces } = require("./unknownFaceWriter");
 const { saveFrameSnapshots } = require("./frameSnapshotWriter");
-const { buildEnrolledEmbeddingsTopK } = require("./embeddingSyncHelper");
+const { buildEnrolledEmbeddingsTopK, buildEnrolledEmbeddingsAdafaceTopK } = require("./embeddingSyncHelper");
 const alertNotifier = require("./alertNotifier");
 
 const ML_URL = process.env.ML_SERVICE_URL || "http://localhost:8500";
@@ -231,6 +231,8 @@ async function saveCheckResult({ ctx, subjectMeta, date, slot, checkIndex, mlRes
       processingTimeSec: mlResult.summary?.processing_time || 0,
     },
     matchingComparison: mlResult.matching_comparison || null,
+    faissComparison: mlResult.faiss_comparison || null,
+    adafaceComparison: mlResult.adaface_comparison || null,
   };
 
   let report = await AttendanceReport.findOne({ batch: ctx.batch, date, timeSlot: slot });
@@ -319,11 +321,16 @@ async function runOneCheck({ room, slot, date, ctx, subjectMeta, cameras, pkl, r
       autoThreshold:   runConfig.auto_present_threshold,
       reviewThreshold: runConfig.review_threshold,
     };
-    // Max-of-K shadow comparison — only requested on the one check nearest
-    // the middle of this period, never on every check (diagnostic only, see
-    // state.max_k_config on the ML Fine Tuning page).
+    // Max-of-K / FAISS / AdaFace shadow comparisons — only requested on the
+    // one check nearest the middle of this period, never on every check
+    // (diagnostic only, see state.max_k_config / state.faiss_config
+    // ["shadow_enabled"] / state.adaface_config["enabled"] on the ML Fine
+    // Tuning page).
     if (checkIndex === runConfig.middleRunIndex) {
       payload.enrolledEmbeddingsTopK = buildEnrolledEmbeddingsTopK(GROUND_TRUTH_DIR, ctx.batch);
+      payload.runFaissShadow = true;
+      payload.enrolledEmbeddingsAdafaceTopK = buildEnrolledEmbeddingsAdafaceTopK(GROUND_TRUTH_DIR, ctx.batch);
+      payload.runAdafaceShadow = true;
     }
 
     const res = await axios.post(`${ML_URL}/run-attendance-rtsp-sync`, payload, { timeout: 300000 });

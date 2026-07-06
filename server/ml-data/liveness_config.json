@@ -1,6 +1,6 @@
 {
-  "enabled": true,
+  "enabled": false,
   "heuristic_threshold": 0.15,
   "onnx_threshold": 0.5,
-  "save_rejected_crops": true
+  "save_rejected_crops": false
 }

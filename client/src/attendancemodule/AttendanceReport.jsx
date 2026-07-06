@@ -2183,6 +2183,18 @@ function MultiRunTable({ report, readOnly, onOverride, theme, styles }) {
   );
   const comparisonByRoll = comparisonRun?.matchingComparison?.per_student || {};
 
+  // Same idea, for the FAISS shadow comparison (independent on/off toggle).
+  const faissRun = [...runs].reverse().find(
+    (r) => r.faissComparison?.enabled && !r.faissComparison?.skipped,
+  );
+  const faissByRoll = faissRun?.faissComparison?.per_student || {};
+
+  // Same idea, for the AdaFace shadow comparison (independent on/off toggle).
+  const adafaceRun = [...runs].reverse().find(
+    (r) => r.adafaceComparison?.enabled && !r.adafaceComparison?.skipped,
+  );
+  const adafaceByRoll = adafaceRun?.adafaceComparison?.per_student || {};
+
   const cellStyle = (status) => ({
     padding: '2px 6px',
     borderRadius: 4,
@@ -2259,6 +2271,30 @@ function MultiRunTable({ report, readOnly, onOverride, theme, styles }) {
                 <div style={{ fontSize: '9px', color: theme.textMuted, fontWeight: 400, marginTop: 2 }}>
                   {comparisonRun.matchingComparison.agree}/
                   {comparisonRun.matchingComparison.clusters_compared} agree
+                </div>
+              </th>
+            )}
+            {faissRun && (
+              <th
+                title="FAISS shadow comparison — diagnostic only, does not affect Final"
+                style={{ textAlign: 'center', borderLeft: '2px solid #e4e8f5', color: theme.accent }}
+              >
+                FAISS
+                <div style={{ fontSize: '9px', color: theme.textMuted, fontWeight: 400, marginTop: 2 }}>
+                  {faissRun.faissComparison.agree}/
+                  {faissRun.faissComparison.clusters_compared} agree
+                </div>
+              </th>
+            )}
+            {adafaceRun && (
+              <th
+                title="AdaFace shadow comparison — diagnostic only, does not affect Final"
+                style={{ textAlign: 'center', borderLeft: '2px solid #e4e8f5', color: theme.accent }}
+              >
+                AdaFace
+                <div style={{ fontSize: '9px', color: theme.textMuted, fontWeight: 400, marginTop: 2 }}>
+                  {adafaceRun.adafaceComparison.agree}/
+                  {adafaceRun.adafaceComparison.clusters_compared} agree
                 </div>
               </th>
             )}
@@ -2351,6 +2387,62 @@ function MultiRunTable({ report, readOnly, onOverride, theme, styles }) {
                             cmp.max_k_roll
                               ? `Max-of-K would instead match ${cmp.max_k_roll} (score ${cmp.max_k_score ?? '—'})`
                               : `Max-of-K found no match here (mean score ${cmp.mean_score ?? '—'})`
+                          }
+                          style={{ ...cellStyle('review'), background: theme.warningDim, color: theme.warning }}
+                        >
+                          ⚠
+                        </span>
+                      )}
+                    </td>
+                  );
+                })()}
+                {faissRun && (() => {
+                  const cmp = faissByRoll[rollNo];
+                  return (
+                    <td style={{ textAlign: 'center', borderLeft: '2px solid #e4e8f5' }}>
+                      {!cmp ? (
+                        <span style={{ color: theme.textMuted, fontSize: '11px' }}>—</span>
+                      ) : cmp.agree ? (
+                        <span
+                          title={`Agrees (FAISS score ${cmp.faiss_score ?? '—'})`}
+                          style={{ ...cellStyle('present'), background: theme.successDim, color: theme.success }}
+                        >
+                          ✓
+                        </span>
+                      ) : (
+                        <span
+                          title={
+                            cmp.faiss_roll
+                              ? `FAISS would instead match ${cmp.faiss_roll} (score ${cmp.faiss_score ?? '—'})`
+                              : `FAISS found no match here (mean score ${cmp.mean_score ?? '—'})`
+                          }
+                          style={{ ...cellStyle('review'), background: theme.warningDim, color: theme.warning }}
+                        >
+                          ⚠
+                        </span>
+                      )}
+                    </td>
+                  );
+                })()}
+                {adafaceRun && (() => {
+                  const cmp = adafaceByRoll[rollNo];
+                  return (
+                    <td style={{ textAlign: 'center', borderLeft: '2px solid #e4e8f5' }}>
+                      {!cmp ? (
+                        <span style={{ color: theme.textMuted, fontSize: '11px' }}>—</span>
+                      ) : cmp.agree ? (
+                        <span
+                          title={`Agrees (AdaFace score ${cmp.adaface_score ?? '—'})`}
+                          style={{ ...cellStyle('present'), background: theme.successDim, color: theme.success }}
+                        >
+                          ✓
+                        </span>
+                      ) : (
+                        <span
+                          title={
+                            cmp.adaface_roll
+                              ? `AdaFace would instead match ${cmp.adaface_roll} (score ${cmp.adaface_score ?? '—'})`
+                              : `AdaFace found no match here (mean score ${cmp.mean_score ?? '—'})`
                           }
                           style={{ ...cellStyle('review'), background: theme.warningDim, color: theme.warning }}
                         >

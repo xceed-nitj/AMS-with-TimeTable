@@ -31,6 +31,7 @@ from models import (
 from pydantic import BaseModel
 from typing import List, Optional
 from clustering_service import _detect_faces_tiled, _build_ui_mask
+import adaface_utils
 
 logger = logging.getLogger("ml_service.ground_truth_routes")
 router = APIRouter()
@@ -123,9 +124,16 @@ def _decode_photo(photo) -> np.ndarray:
 def _compute_mean_embedding_from_bytes(photos):
     """Same as _compute_mean_embedding, but reads from in-memory PhotoBytes
     (base64) instead of files on disk — used so the ML service never needs
-    filesystem access to server/ml-data/ground_truth/."""
+    filesystem access to server/ml-data/ground_truth/.
+
+    Also computes an AdaFace mean embedding from the same detected faces,
+    entirely separate from and never affecting the InsightFace computation
+    above — a no-op (adaface_mean_emb stays None) when no AdaFace ONNX
+    model is loaded (state.adaface_session is None). See adaface_utils.py.
+    """
     embeddings  = []
     emb_weights = []
+    adaface_embeddings = []
     for photo in photos:
         img = _decode_photo(photo)
         if img is None:
@@ -145,14 +153,30 @@ def _compute_mean_embedding_from_bytes(photos):
         embeddings.append(emb / norm)
         emb_weights.append(max(det_score, 0.01))
 
-    if embeddings:
-        weights  = np.array(emb_weights, dtype=np.float32)
-        weights /= weights.sum()
-        mean_emb = np.average(np.array(embeddings, dtype=np.float32), axis=0, weights=weights)
-        norm     = np.linalg.norm(mean_emb)
-        mean_emb = mean_emb / norm
-        return mean_emb, len(embeddings)
-    return None, 0
+        if state.adaface_session is not None:
+            ada_emb = adaface_utils.get_adaface_embedding_for_face(img, getattr(face, 'kps', None))
+            if ada_emb is not None:
+                adaface_embeddings.append(ada_emb)
+
+    if not embeddings:
+        return None, 0, None
+
+    weights  = np.array(emb_weights, dtype=np.float32)
+    weights /= weights.sum()
+    mean_emb = np.average(np.array(embeddings, dtype=np.float32), axis=0, weights=weights)
+    norm     = np.linalg.norm(mean_emb)
+    mean_emb = mean_emb / norm
+
+    adaface_mean_emb = None
+    if adaface_embeddings:
+        adaface_mean_emb = np.mean(np.array(adaface_embeddings, dtype=np.float32), axis=0)
+        ada_norm = np.linalg.norm(adaface_mean_emb)
+        if ada_norm > 0:
+            adaface_mean_emb = adaface_mean_emb / ada_norm
+        else:
+            adaface_mean_emb = None
+
+    return mean_emb, len(embeddings), adaface_mean_emb
 
 
 def _build_embeddings_sync(req: BuildEmbeddingsRequest):
@@ -164,8 +188,13 @@ def _build_embeddings_sync(req: BuildEmbeddingsRequest):
     fresh from student.photos (base64 bytes Node read from its own disk).
     The resulting pickle is returned as base64 ("pkl_data") for Node to
     write wherever server/ml-data/embeddings/ actually lives.
+
+    Also builds a second, independent {roll_no: {name, embedding, num_photos}}
+    pickle for AdaFace (adaface_pkl_data), only populated when an AdaFace
+    ONNX model is loaded — never affects the InsightFace pickle above.
     """
     db = {}
+    adaface_db = {}
 
     for student in req.students:
         roll_no = student.roll_no
@@ -180,23 +209,36 @@ def _build_embeddings_sync(req: BuildEmbeddingsRequest):
                     "embedding":  mean_emb / norm,
                     "num_photos": student.num_photos_cached,
                 }
+                if student.cached_adaface_mean_embedding:
+                    ada_emb  = np.array(student.cached_adaface_mean_embedding, dtype=np.float32)
+                    ada_norm = np.linalg.norm(ada_emb)
+                    if ada_norm > 0:
+                        adaface_db[roll_no] = {
+                            "name": name, "embedding": ada_emb / ada_norm,
+                            "num_photos": student.num_photos_cached,
+                        }
                 logger.info(f"✓ {roll_no}: used cached embedding")
                 continue
 
-        mean_emb, num_photos_used = _compute_mean_embedding_from_bytes(student.photos)
+        mean_emb, num_photos_used, adaface_mean_emb = _compute_mean_embedding_from_bytes(student.photos)
         if mean_emb is not None:
             db[roll_no] = {"name": name, "embedding": mean_emb, "num_photos": num_photos_used}
+            if adaface_mean_emb is not None:
+                adaface_db[roll_no] = {"name": name, "embedding": adaface_mean_emb, "num_photos": num_photos_used}
         else:
             logger.warning(f"✗ {roll_no}: no faces detected")
 
     pkl_bytes = pickle.dumps(db)
     state.embeddings_db.update(db)
 
-    return {
+    result = {
         "status":            "done",
         "students_enrolled": len(db),
         "pkl_data":          base64.b64encode(pkl_bytes).decode('ascii'),
     }
+    if adaface_db:
+        result["adaface_pkl_data"] = base64.b64encode(pickle.dumps(adaface_db)).decode('ascii')
+    return result
 
 # ─── ERP Embeddings Automation ────────────────────────────────────────────────
 # Stateless: Node owns server/ml-data/erp_photos and server/ml-data/embeddings/erp.
@@ -217,7 +259,9 @@ def _erp_sync_sync(req: ERPSyncRequest) -> dict:
     skipped   = []
     for student in req.students:
         roll_no = student.roll_no
-        mean_emb, num_photos_used = _compute_mean_embedding_from_bytes(student.photos)
+        # ERP cross-department matching is a separate, out-of-scope store
+        # (see class comment above) — AdaFace mean is computed but not used here.
+        mean_emb, num_photos_used, _adaface_mean_emb = _compute_mean_embedding_from_bytes(student.photos)
         if mean_emb is not None:
             db[roll_no] = {
                 "name":       roll_no,
@@ -395,6 +439,11 @@ def _update_student_embedding_sync(req: UpdateEmbeddingRequest):
     new_embeddings = []
     new_weights    = []
     missing        = []
+    # AdaFace — entirely separate embedding space, computed from the same
+    # detected face/photo, ranked by the same quality weight. No-op (stays
+    # empty) when no AdaFace ONNX model is loaded. See adaface_utils.py.
+    adaface_embeddings = []
+    adaface_weights    = []
     for photo in req.photos:
         if photo.filename.startswith("_"):
             continue
@@ -425,6 +474,12 @@ def _update_student_embedding_sync(req: UpdateEmbeddingRequest):
         new_embeddings.append(emb / norm)
         new_weights.append(max(quality, 0.01))
 
+        if state.adaface_session is not None:
+            ada_emb = adaface_utils.get_adaface_embedding_for_face(img, getattr(face, 'kps', None))
+            if ada_emb is not None:
+                adaface_embeddings.append(ada_emb)
+                adaface_weights.append(max(quality, 0.01))
+
     if not new_embeddings:
         raise ValueError(f"No faces detected. Missing: {missing}")
 
@@ -440,6 +495,18 @@ def _update_student_embedding_sync(req: UpdateEmbeddingRequest):
     TOP_K = 3
     ranked_idx = np.argsort(new_weights)[::-1][:TOP_K]
     top_k_embeddings = [new_embeddings[i].tolist() for i in ranked_idx]
+
+    adaface_mean_embedding   = None
+    adaface_top_k_embeddings = None
+    if adaface_embeddings:
+        ada_weights  = np.array(adaface_weights, dtype=np.float32)
+        ada_weights /= ada_weights.sum()
+        ada_mean     = np.average(np.array(adaface_embeddings, dtype=np.float32), axis=0, weights=ada_weights)
+        ada_norm     = np.linalg.norm(ada_mean)
+        if ada_norm > 0:
+            adaface_mean_embedding = (ada_mean / ada_norm).tolist()
+            ada_ranked_idx = np.argsort(adaface_weights)[::-1][:TOP_K]
+            adaface_top_k_embeddings = [adaface_embeddings[i].tolist() for i in ada_ranked_idx]
 
     if req.roll_no in state.embeddings_db:
         state.embeddings_db[req.roll_no]["embedding"]  = mean_emb
@@ -463,6 +530,8 @@ def _update_student_embedding_sync(req: UpdateEmbeddingRequest):
         "missing_files":        missing,
         "mean_embedding":       mean_emb.tolist(),
         "top_k_embeddings":     top_k_embeddings,
+        "adaface_mean_embedding":   adaface_mean_embedding,
+        "adaface_top_k_embeddings": adaface_top_k_embeddings,
     }
 
 

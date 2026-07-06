@@ -48,6 +48,10 @@ class StudentEmbeddingInput(BaseModel):
     cached_mean_embedding: Optional[List[float]] = None
     num_photos_cached: int = 0
     photos: List[PhotoBytes] = []
+    # Same idea, for AdaFace's independent embedding (see adaface_utils.py) —
+    # Node's cached info.adaface_mean_embedding, if any. None when no AdaFace
+    # model has ever been run for this student (or no ONNX model is loaded).
+    cached_adaface_mean_embedding: Optional[List[float]] = None
 
 
 class BuildEmbeddingsRequest(BaseModel):

@@ -51,6 +51,12 @@ const slotResultSchema = new Schema({
     // {enabled:true, skipped:true, ...} | full agree/disagree breakdown), so
     // left schemaless.
     matchingComparison: { type: Schema.Types.Mixed, default: null },
+    // Same idea, but against the full FAISS index (state.faiss_config
+    // ["shadow_enabled"], ML Fine Tuning page) instead of top-K embeddings.
+    faissComparison: { type: Schema.Types.Mixed, default: null },
+    // Same idea, but against AdaFace — an entirely independent
+    // face-recognition model (state.adaface_config, ML Fine Tuning page).
+    adafaceComparison: { type: Schema.Types.Mixed, default: null },
 }, { _id: false });
 
 // Save data for proxy roll numbers: students appearing in different rooms at same time period
