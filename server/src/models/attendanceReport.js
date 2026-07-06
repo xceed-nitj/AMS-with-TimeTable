@@ -130,6 +130,9 @@ const attendanceReportSchema = new Schema({
         default: [],
     },
 
+    snapshotAttendance: { type: Schema.Types.Mixed, default: null },
+    snapshotFramePath: { type: String, default: null },
+
     status: {
         type: String,
         enum: ['draft', 'finalized','live'],

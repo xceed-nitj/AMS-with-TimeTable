@@ -200,6 +200,9 @@ class RTSPRequest(BaseModel):
     existingFolders:     list  = []
 
 
+class RTSPSnapshotRequest(BaseModel):
+    rtspUrl: str
+
 class RTSPAttendanceRequest(BaseModel):
     rtspUrl:          str
     rtspUrl2:         str   = ''
@@ -1253,6 +1256,70 @@ def run_attendance_rtsp_sync(req: RTSPAttendanceRequest):
 
     return JSONResponse(content={**result_payload, "stages": stages, "frame_files": frame_files})
 
+
+@router.post("/run-attendance-snapshot")
+def run_attendance_snapshot(req: RTSPSnapshotRequest):
+    """
+    Synchronous JSON endpoint — runs a single frame through the FAISS index
+    (Institute Identification logic) to generate a snapshot.
+    Returns the annotated frame as base64 and the list of detected rolls.
+    """
+    if state.face_app is None:
+        raise HTTPException(status_code=503, detail="Face model not loaded")
+    if getattr(state, 'faiss_index', None) is None:
+        raise HTTPException(status_code=503, detail="FAISS index not loaded")
+
+    from faiss_utils import _recognize_face
+    import base64
+    
+    cap = cv2.VideoCapture(req.rtspUrl, cv2.CAP_FFMPEG)
+    if not cap.isOpened():
+        raise HTTPException(status_code=400, detail="Failed to open RTSP stream")
+
+    # Read a few frames to let the stream stabilize
+    for _ in range(5):
+        cap.read()
+    
+    ret, frame = cap.read()
+    cap.release()
+    if not ret:
+        raise HTTPException(status_code=400, detail="Failed to read frame from stream")
+
+    faces = state.face_app.get(frame)
+    vis_frame = frame.copy()
+    
+    snapshot_attendance = []
+    
+    with state.faiss_config_lock:
+        recog_top_k = state.faiss_config.get("top_k", 5)
+        recog_threshold = state.faiss_config.get("recog_threshold", 0.35)
+
+    for face in faces:
+        roll, score = _recognize_face(
+            face.embedding,
+            state.faiss_index,
+            state.vid_to_roll,
+            top_k=recog_top_k,
+            threshold=recog_threshold,
+        )
+        
+        label = roll if roll else "Unknown"
+        color = (0, 255, 0) if roll else (0, 0, 255)
+        
+        x1, y1, x2, y2 = [int(v) for v in face.bbox]
+        cv2.rectangle(vis_frame, (x1, y1), (x2, y2), color, 2)
+        cv2.putText(vis_frame, label, (x1, max(y1 - 10, 0)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+        
+        if roll and roll not in snapshot_attendance:
+            snapshot_attendance.append(roll)
+            
+    _, buffer = cv2.imencode('.jpg', vis_frame, [cv2.IMWRITE_JPEG_QUALITY, 90])
+    b64_frame = base64.b64encode(buffer).decode('utf-8')
+    
+    return JSONResponse(content={
+        "snapshot_attendance": snapshot_attendance,
+        "base64_image": b64_frame
+    })
 
 # ── Per-job attendance preview (MJPEG, one stream per parallel run) ───────────
 

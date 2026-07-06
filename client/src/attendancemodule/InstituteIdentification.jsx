@@ -21,8 +21,42 @@ export default function InstituteGateIdentification() {
   const [zoomLevel, setZoomLevel] = useState(1);
   const [useStreamUrl, setUseStreamUrl] = useState(false);
   const [streamUrl, setStreamUrl] = useState('');
+  const [activeTab, setActiveTab] = useState('tool'); // 'tool' | 'reports'
+  const [reportDate, setReportDate] = useState(new Date().toISOString().split('T')[0]);
+  const [reports, setReports] = useState([]);
+  const [loadingReports, setLoadingReports] = useState(false);
+  const [reportError, setReportError] = useState(null);
+
   const fileInputRef = useRef(null);
   const abortControllerRef = useRef(null);
+
+  const fetchReports = async (date) => {
+    setLoadingReports(true);
+    setReportError(null);
+    try {
+      // Assuming apiUrl is something like http://localhost:8010/api/v1
+      // and we need to pass Authorization token if any
+      const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch(`${apiUrl}/attendancemodule/reports/faiss-snapshots?date=${date}`, { headers });
+      if (!res.ok) throw new Error("Failed to fetch reports");
+      const data = await res.json();
+      setReports(data);
+    } catch (err) {
+      setReportError(err.message);
+    } finally {
+      setLoadingReports(false);
+    }
+  };
+
+  // Fetch reports when switching to reports tab or changing date
+  React.useEffect(() => {
+    if (activeTab === 'reports') {
+      fetchReports(reportDate);
+    }
+  }, [activeTab, reportDate]);
 
   const handleStop = () => {
     if (abortControllerRef.current) {
@@ -160,10 +194,31 @@ export default function InstituteGateIdentification() {
 
   return (
     <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
-      <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: T.text, marginBottom: '8px' }}>Institute Identification</h1>
-      <p style={{ color: T.textMuted, marginBottom: '24px' }}>Identify students using the FAISS model.</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px' }}>
+        <div>
+          <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: T.text, marginBottom: '8px' }}>Institute Identification</h1>
+          <p style={{ color: T.textMuted, margin: 0 }}>Identify students using the FAISS model or view snapshot reports.</p>
+        </div>
+        
+        <div style={{ display: 'flex', gap: '8px', background: '#f1f5f9', padding: '4px', borderRadius: '8px' }}>
+          <button 
+            onClick={() => setActiveTab('tool')} 
+            style={{ padding: '8px 16px', background: activeTab === 'tool' ? '#fff' : 'transparent', color: activeTab === 'tool' ? T.accent : '#64748b', border: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', boxShadow: activeTab === 'tool' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none', transition: 'all 0.2s' }}
+          >
+            Identification Tool
+          </button>
+          <button 
+            onClick={() => setActiveTab('reports')} 
+            style={{ padding: '8px 16px', background: activeTab === 'reports' ? '#fff' : 'transparent', color: activeTab === 'reports' ? T.accent : '#64748b', border: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', boxShadow: activeTab === 'reports' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none', transition: 'all 0.2s' }}
+          >
+            Faiss Reports
+          </button>
+        </div>
+      </div>
 
-      {error && (
+      {activeTab === 'tool' && (
+        <>
+          {error && (
         <div style={{ padding: '12px', background: '#fee2e2', color: '#b91c1c', borderRadius: '8px', marginBottom: '16px' }}>
           {error}
         </div>
@@ -447,6 +502,100 @@ export default function InstituteGateIdentification() {
             <img src={liveFrame} alt="Zoomed Snapshot" style={{ width: `${zoomLevel * 100}%`, minWidth: `${zoomLevel * 100}%`, transition: 'width 0.2s, min-width 0.2s', objectFit: 'contain' }} />
           </div>
 
+        </div>
+      )}
+        </>
+      )}
+
+      {activeTab === 'reports' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <div style={{ background: '#fff', borderRadius: '12px', padding: '20px', border: `1px solid ${T.border}`, display: 'flex', gap: '16px', alignItems: 'center' }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: T.text, marginBottom: '8px' }}>Select Date</label>
+              <input 
+                type="date" 
+                value={reportDate}
+                onChange={(e) => setReportDate(e.target.value)}
+                style={{ padding: '10px 12px', borderRadius: '6px', border: `1px solid ${T.border}`, outline: 'none', fontSize: '14px', color: T.text }} 
+              />
+            </div>
+            <button 
+              onClick={() => fetchReports(reportDate)}
+              disabled={loadingReports}
+              style={{ padding: '10px 20px', background: T.accent, color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: loadingReports ? 'not-allowed' : 'pointer', alignSelf: 'flex-end' }}
+            >
+              {loadingReports ? 'Loading...' : 'Refresh'}
+            </button>
+          </div>
+
+          {reportError && (
+            <div style={{ padding: '12px', background: '#fee2e2', color: '#b91c1c', borderRadius: '8px' }}>
+              {reportError}
+            </div>
+          )}
+
+          {!loadingReports && reports.length === 0 && !reportError && (
+            <div style={{ padding: '48px', textAlign: 'center', background: '#fff', borderRadius: '12px', border: `1px dashed ${T.border}`, color: T.textMuted }}>
+              No FAISS snapshot reports found for {reportDate}.
+            </div>
+          )}
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {reports.map((report) => (
+              <div key={report._id} style={{ background: '#fff', borderRadius: '12px', overflow: 'hidden', border: `1px solid ${T.border}`, boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
+                <div style={{ padding: '16px 24px', background: '#f8fafc', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 'bold', color: T.text }}>{report.subject} ({report.timeSlot})</h3>
+                    <div style={{ fontSize: '13px', color: T.textMuted }}>Room: {report.room} &bull; Batch: {report.batch} &bull; Faculty: {report.faculty}</div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: T.accent }}>
+                      {report.snapshotAttendance?.length || 0}
+                    </div>
+                    <div style={{ fontSize: '12px', color: T.textMuted, textTransform: 'uppercase', fontWeight: '600' }}>Students Present</div>
+                  </div>
+                </div>
+                
+                <div style={{ padding: '24px', display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+                  <div style={{ flex: '1 1 300px' }}>
+                    <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '12px', color: T.text }}>Annotated Snapshot Frame</h4>
+                    {report.snapshotFramePath ? (
+                      <div style={{ background: '#000', borderRadius: '8px', overflow: 'hidden', border: `1px solid ${T.border}`, position: 'relative', width: '100%', height: '100%', cursor: 'pointer' }} onClick={() => {
+                        setZoomSnapshot(report);
+                        setZoomLevel(1);
+                      }}>
+                         <img 
+                            src={`${apiUrl.replace('/api/v1', '')}/${report.snapshotFramePath}`} 
+                            alt="Snapshot Frame" 
+                            style={{ width: '100%', display: 'block' }}
+                            onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<div style="padding: 32px; color: #ef4444; text-align: center;">Image not found or inaccessible.</div>'; }}
+                         />
+                      </div>
+                    ) : (
+                      <div style={{ padding: '32px', textAlign: 'center', background: '#f8fafc', borderRadius: '8px', color: T.textMuted }}>
+                        No snapshot frame available for this report.
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div style={{ flex: '2 1 400px' }}>
+                    <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '12px', color: T.text }}>Detected Roll Numbers</h4>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      {!report.snapshotAttendance || report.snapshotAttendance.length === 0 ? (
+                        <div style={{ color: T.textMuted, fontSize: '14px' }}>No faces recognized.</div>
+                      ) : (
+                        report.snapshotAttendance.map((roll, idx) => (
+                          <div key={idx} style={{ padding: '6px 12px', background: '#e0e7ff', color: '#4338ca', borderRadius: '20px', fontSize: '13px', fontWeight: '600' }}>
+                            {roll}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

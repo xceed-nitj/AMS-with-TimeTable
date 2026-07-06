@@ -283,6 +283,7 @@ async function runRoom({ room, roomOverride, slot, date, config }) {
   const middleRunIndex = Math.ceil(numRuns / 2);
   const runResults = [];
   let middleRunComparison = null;
+  let snapshotPromise = null;
   for (let i = 1; i <= numRuns; i++) {
     if (i > 1) {
       push(`Waiting ${checkIntervalMin} min before run ${i}/${numRuns}`);
@@ -304,6 +305,18 @@ async function runRoom({ room, roomOverride, slot, date, config }) {
       };
       if (i === middleRunIndex) {
         payload.enrolledEmbeddingsTopK = buildEnrolledEmbeddingsTopK(GROUND_TRUTH_DIR, ctx.batch);
+        
+        // Run the FAISS snapshot BEFORE the main run to avoid camera deadlocks
+        push(`Running FAISS snapshot...`);
+        try {
+          snapshotPromise = await axios.post(`${ML_URL}/run-attendance-snapshot`, 
+            { rtspUrl: cameras.cam1 }, 
+            { timeout: 60000 }
+          );
+        } catch (err) {
+          push(`Snapshot failed: ${err.message}`);
+          snapshotPromise = null;
+        }
       }
       const res = await axios.post(`${ML_URL}/run-attendance-rtsp-sync`, payload, { timeout: 300000 });
       runResults.push(res.data);
@@ -409,6 +422,27 @@ async function runRoom({ room, roomOverride, slot, date, config }) {
   };
   await report.save();
   push('Report saved');
+
+  // Handle saving the snapshot via internal POST request, per user instruction
+  if (snapshotPromise && snapshotPromise.data) {
+    try {
+      const snapRes = snapshotPromise;
+      if (snapRes && snapRes.data) {
+        const port = process.env.PORT || 8010;
+        await axios.post(`http://localhost:${port}/api/v1/ml/save-snapshot-attendance`, {
+          reportId: report._id,
+          snapshotAttendance: snapRes.data.snapshot_attendance,
+          base64Image: snapRes.data.base64_image,
+          room: room,
+          slot: slot,
+          date: date
+        });
+        push('Snapshot saved successfully via POST request');
+      }
+    } catch (e) {
+      push(`Snapshot save failed: ${e.message}`);
+    }
+  }
 
   return {
     room,

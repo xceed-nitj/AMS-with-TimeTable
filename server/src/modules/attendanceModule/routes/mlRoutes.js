@@ -858,4 +858,51 @@ router.get('/attendance-daily-data/:filename', (req, res) => {
     res.json(data);
 });
 
+
+// ─── Save Faiss Snapshot Attendance ───────────────────────────
+router.post('/save-snapshot-attendance', async (req, res) => {
+    try {
+        const { reportId, snapshotAttendance, base64Image, room, slot, date } = req.body;
+        if (!reportId || !base64Image) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        const AttendanceReport = require('../../../models/attendanceReport');
+        const report = await AttendanceReport.findById(reportId);
+        if (!report) {
+            return res.status(404).json({ error: 'Report not found' });
+        }
+
+        // Create directory: server/ml-data/snapshot_frames/<room>_<slot>_<date>
+        const safeRoom = (room || 'Unknown').replace(/[^a-zA-Z0-9_-]/g, '');
+        const safeSlot = (slot || 'Unknown').replace(/[^a-zA-Z0-9_-]/g, '');
+        const safeDate = (date || 'Unknown').replace(/[^a-zA-Z0-9_-]/g, '');
+        const folderName = `${safeRoom}_${safeSlot}_${safeDate}`;
+        const basePath = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'snapshot_frames', folderName);
+
+        if (!fs.existsSync(basePath)) {
+            fs.mkdirSync(basePath, { recursive: true });
+        }
+
+        const fileName = `${reportId}.jpg`;
+        const filePath = path.join(basePath, fileName);
+
+        // Decode base64 image and save
+        const imageBuffer = Buffer.from(base64Image, 'base64');
+        fs.writeFileSync(filePath, imageBuffer);
+
+        // Save relative path to DB
+        const dbPath = `snapshot_frames/${folderName}/${fileName}`;
+        
+        report.snapshotAttendance = snapshotAttendance || [];
+        report.snapshotFramePath = dbPath;
+        await report.save();
+
+        res.json({ success: true, path: dbPath });
+    } catch (e) {
+        console.error('[SaveSnapshot] Error:', e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
 module.exports = router;

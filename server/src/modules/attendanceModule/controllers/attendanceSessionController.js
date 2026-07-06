@@ -144,6 +144,19 @@ async function runOneCheck(reportId, checkIndex, config) {
     console.log(`${tag} Starting…`);
 
     try {
+        let snapshotPromise = null;
+        if (checkIndex === 1) {
+            try {
+                snapshotPromise = await axios.post(`${ML_URL}/run-attendance-snapshot`, 
+                    { rtspUrl: config.rtspUrl }, 
+                    { timeout: 60000 }
+                );
+            } catch (err) {
+                console.warn(`[Session] Snapshot failed: ${err.message}`);
+                snapshotPromise = null;
+            }
+        }
+
         const res = await axios.post(
             `${ML_URL}/run-attendance-rtsp-sync`,
             {
@@ -165,10 +178,6 @@ async function runOneCheck(reportId, checkIndex, config) {
                 locksemId:        config.locksemId        || '',
                 enrolledRollNos:  config.enrolledRollNos  || [],
                 enrolledEmbeddings: buildEnrolledEmbeddings(GROUND_TRUTH_DIR, config.batch),
-                // Only used by Python for the optional max-of-K shadow
-                // comparison (state.max_k_config, ML Fine Tuning page) — the
-                // actual per-period attendance decision above always comes
-                // from enrolledEmbeddings (mean), unchanged.
                 enrolledEmbeddingsTopK: buildEnrolledEmbeddingsTopK(GROUND_TRUTH_DIR, config.batch),
             },
             { timeout: 300000 }   // 5 min timeout
@@ -240,6 +249,26 @@ async function runOneCheck(reportId, checkIndex, config) {
         report.summary.unknownFaceCount = currentUnknownCount; // saveUnknownFaces handles incrementing
         
         await report.save();
+
+        if (snapshotPromise && snapshotPromise.data) {
+            const snapRes = snapshotPromise;
+            if (snapRes && snapRes.data) {
+                try {
+                    const port = process.env.PORT || 8010;
+                    await axios.post(`http://localhost:${port}/api/v1/ml/save-snapshot-attendance`, {
+                        reportId: report._id,
+                        snapshotAttendance: snapRes.data.snapshot_attendance,
+                        base64Image: snapRes.data.base64_image,
+                        room: config.room,
+                        slot: config.slot,
+                        date: config.date
+                    });
+                    console.log(`${tag} Snapshot saved successfully via POST request`);
+                } catch (e) {
+                    console.warn(`${tag} Snapshot save failed: ${e.message}`);
+                }
+            }
+        }
 
         // Fire and forget unknown face processing
         if (newUnknownCount > 0) {

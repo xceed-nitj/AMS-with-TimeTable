@@ -145,6 +145,7 @@ app.use(cookieParser());
 app.use(checkDatabaseConnection);
 app.use(express.static(path.join(__dirname + "/../../client/dist")));
 app.use("/uploads",express.static(path.join(__dirname ,"..","uploads")));
+app.use("/snapshot_frames",express.static(path.join(__dirname ,"..","ml-data","snapshot_frames")));
 
 app.get('/proxy-image', async (req, res) => {
   try {

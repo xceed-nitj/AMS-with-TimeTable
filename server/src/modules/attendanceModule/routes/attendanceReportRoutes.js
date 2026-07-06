@@ -353,6 +353,24 @@ router.get("/lookup-context", ...attendanceRoleAccess, async (req, res) => {
   }
 });
 
+// Fetch reports that have Faiss snapshots
+router.get("/faiss-snapshots", ...attendanceRoleAccess, async (req, res) => {
+  try {
+    const { date } = req.query;
+    if (!date) return res.status(400).json({ error: "date query param required" });
+    
+    const AttendanceReport = require("../../../models/attendanceReport");
+    const reports = await AttendanceReport.find({
+      date,
+      snapshotAttendance: { $ne: null }
+    }).sort({ createdAt: -1 });
+    
+    res.json(reports);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Get full report by ID (keep last to avoid conflicts with named routes above)
 router.get("/:id", ...attendanceRoleAccess, async (req, res) => {
   try {
