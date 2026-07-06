@@ -664,7 +664,7 @@ class AttendanceReportController {
         semester: String(semester),
         date: { $gte: fromStr },
       })
-        .select("date department subject finalReport")
+        .select("date department subject finalReport slotResults")
         .sort({ date: 1 });
 
       let total = 0;
@@ -674,7 +674,71 @@ class AttendanceReportController {
       const dayMap = {}; // date -> { total, overrides }
       const studentMap = {}; // rollNo -> { total, overrides }
 
+      // ── Shadow-model comparison accumulators ──────────────────────────
+      // matchingComparison / faissComparison / adafaceComparison live on
+      // slotResults (written on the middle run of scheduled periods, only
+      // while each model's ML Fine Tuning toggle is on). They're
+      // Schema.Types.Mixed and null on older reports — everything below is
+      // defensive. All three share the relevant shape:
+      //   { enabled, skipped?, agree, disagree, clusters_compared,
+      //     per_student: { roll: { agree, ... } } }
+      const MODEL_DEFS = [
+        { key: "max_k",   label: "Max-of-K", field: "matchingComparison" },
+        { key: "faiss",   label: "FAISS",    field: "faissComparison" },
+        { key: "adaface", label: "AdaFace",  field: "adafaceComparison" },
+      ];
+      const modelAgg = {};
+      for (const m of MODEL_DEFS) {
+        modelAgg[m.key] = {
+          coverageReports: 0,
+          agree: 0, disagree: 0, clustersCompared: 0,
+          dayMap: {}, // date -> { agree, compared }
+          overriddenCompared: 0, overriddenDisagree: 0,
+          nonOverriddenCompared: 0, nonOverriddenDisagree: 0,
+        };
+      }
+
       for (const report of reports) {
+        // Same override definition as the per-student loop below —
+        // needed up front for bucketing shadow-model per_student entries.
+        const overriddenSet = new Set(
+          (report.finalReport || [])
+            .filter((s) => s.autoFinalStatus && s.finalStatus !== s.autoFinalStatus)
+            .map((s) => s.rollNo),
+        );
+
+        for (const m of MODEL_DEFS) {
+          const agg = modelAgg[m.key];
+          let reportHasData = false;
+          for (const sr of report.slotResults || []) {
+            const cmp = sr?.[m.field];
+            if (!cmp || !cmp.enabled || cmp.skipped) continue;
+            reportHasData = true;
+
+            const agree = Number(cmp.agree) || 0;
+            const compared = Number(cmp.clusters_compared) || 0;
+            agg.agree += agree;
+            agg.disagree += Number(cmp.disagree) || 0;
+            agg.clustersCompared += compared;
+
+            if (!agg.dayMap[report.date]) agg.dayMap[report.date] = { agree: 0, compared: 0 };
+            agg.dayMap[report.date].agree += agree;
+            agg.dayMap[report.date].compared += compared;
+
+            for (const [rollNo, entry] of Object.entries(cmp.per_student || {})) {
+              const rowAgree = !!entry?.agree;
+              if (overriddenSet.has(rollNo)) {
+                agg.overriddenCompared += 1;
+                if (!rowAgree) agg.overriddenDisagree += 1;
+              } else {
+                agg.nonOverriddenCompared += 1;
+                if (!rowAgree) agg.nonOverriddenDisagree += 1;
+              }
+            }
+          }
+          if (reportHasData) agg.coverageReports += 1;
+        }
+
         for (const s of report.finalReport) {
           if (!s.autoFinalStatus) continue; // no baseline — pre-dashboard record
 
@@ -738,6 +802,44 @@ class AttendanceReportController {
         .sort((a, b) => b.overrides - a.overrides)
         .slice(0, 20);
 
+      const modelComparison = {
+        reportsTotal: reports.length,
+        models: MODEL_DEFS.map((m) => {
+          const agg = modelAgg[m.key];
+          return {
+            key: m.key,
+            label: m.label,
+            coverageReports: agg.coverageReports,
+            clustersCompared: agg.clustersCompared,
+            agree: agg.agree,
+            disagree: agg.disagree,
+            agreementRate:
+              agg.clustersCompared > 0 ? agg.agree / agg.clustersCompared : null,
+            trend: Object.entries(agg.dayMap)
+              .map(([date, v]) => ({
+                date,
+                compared: v.compared,
+                agreementRate: v.compared > 0 ? v.agree / v.compared : null,
+              }))
+              .sort((a, b) => a.date.localeCompare(b.date)),
+            override: {
+              overriddenCompared: agg.overriddenCompared,
+              overriddenDisagree: agg.overriddenDisagree,
+              wouldHaveCaughtRate:
+                agg.overriddenCompared > 0
+                  ? agg.overriddenDisagree / agg.overriddenCompared
+                  : null,
+              nonOverriddenCompared: agg.nonOverriddenCompared,
+              nonOverriddenDisagree: agg.nonOverriddenDisagree,
+              nonOverriddenDisagreeRate:
+                agg.nonOverriddenCompared > 0
+                  ? agg.nonOverriddenDisagree / agg.nonOverriddenCompared
+                  : null,
+            },
+          };
+        }),
+      };
+
       res.json({
         department,
         semester,
@@ -752,6 +854,7 @@ class AttendanceReportController {
         confidenceCalibration,
         trend,
         topOverriddenStudents,
+        modelComparison,
       });
     } catch (err) {
       res.status(500).json({ error: err.message });

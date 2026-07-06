@@ -298,6 +298,28 @@ def health():
     }
 
 
+@app.post("/restart-service")
+def restart_service():
+    """
+    Restart this ML service process in place — used from the ML Fine Tuning
+    page when the service runs on a remote GPU machine (e.g. the H100) where
+    nobody can conveniently SSH in to bounce it. Responds first, then a
+    background thread re-execs the same interpreter/argv (`python
+    ml_service.py`), so the new process reloads models/configs from scratch
+    on the same host/port. In-flight requests on other threads are dropped —
+    callers should treat this like a brief outage (~model-load time).
+    """
+    import time
+
+    def _reexec():
+        time.sleep(0.75)  # let the HTTP response flush first
+        logger.warning("[Restart] Re-executing ML service via /restart-service request")
+        os.execv(sys.executable, [sys.executable] + sys.argv)
+
+    threading.Thread(target=_reexec, daemon=True).start()
+    return {"status": "restarting", "detail": "Service will re-exec in <1s; poll /health until it responds again."}
+
+
 @app.get("/logs")
 def logs(limit: int = 200):
     limit = max(1, min(limit, 1000))

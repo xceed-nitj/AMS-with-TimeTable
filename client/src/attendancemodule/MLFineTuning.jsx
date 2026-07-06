@@ -171,9 +171,50 @@ export default function MLFineTuning() {
     const [adafaceLoading, setAdafaceLoading] = useState(true);
     const [adafaceSaving,  setAdafaceSaving]  = useState(false);
 
+    const [restarting, setRestarting] = useState(false);
+
     const showToast = (msg, type = 'success') => {
         setToast({ msg, type });
         setTimeout(() => setToast(null), 4000);
+    };
+
+    // Restart the ML service (may be on a remote GPU box, e.g. the H100) —
+    // triggers its in-place re-exec, then polls /health until it's back,
+    // then reloads every config section so the page reflects fresh state.
+    const restartMlService = async () => {
+        if (!window.confirm(
+            'Restart the ML service? In-flight attendance/embedding runs will be dropped, '
+            + 'and the service will be unavailable while models reload (typically 30–90s).'
+        )) return;
+        setRestarting(true);
+        try {
+            const res = await fetch(`${apiUrl}/api/v1/ml/restart-ml-service`, { method: 'POST' });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+            showToast('Restart triggered — waiting for the service to come back…');
+
+            const HEALTH_API = `${apiUrl}/api/v1/ml/health`;
+            const deadline = Date.now() + 4 * 60 * 1000;
+            // Give the process a moment to actually go down before polling.
+            await new Promise(r => setTimeout(r, 5000));
+            while (Date.now() < deadline) {
+                try {
+                    const h = await fetch(HEALTH_API);
+                    const hd = await h.json();
+                    if (h.ok && hd.status === 'ok') {
+                        showToast(`ML service is back online${hd.model_loaded ? ' (model loaded)' : ''}.`);
+                        loadConfig(); loadGtConfig(); loadFaissConfig(); loadMaxKConfig(); loadAdafaceConfig();
+                        setRestarting(false);
+                        return;
+                    }
+                } catch (_) { /* still down — keep polling */ }
+                await new Promise(r => setTimeout(r, 4000));
+            }
+            showToast('Service did not come back within 4 minutes — check the ML machine.', 'error');
+        } catch (err) {
+            showToast(`Restart failed: ${err.message}`, 'error');
+        }
+        setRestarting(false);
     };
 
     const loadConfig = useCallback(async () => {
@@ -427,9 +468,22 @@ export default function MLFineTuning() {
                 </div>
             )}
 
-            <div style={{ marginBottom: 28 }}>
-                <div style={styles.heading}>ML Fine Tuning</div>
-                <div style={styles.subheading}>Tune model behaviour for attendance detection — no restart required, changes apply to the next face check.</div>
+            <div style={{ marginBottom: 28, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
+                <div>
+                    <div style={styles.heading}>ML Fine Tuning</div>
+                    <div style={styles.subheading}>Tune model behaviour for attendance detection — no restart required, changes apply to the next face check.</div>
+                </div>
+                <button
+                    onClick={restartMlService}
+                    disabled={restarting}
+                    style={{
+                        ...styles.btnPrimary,
+                        background: restarting ? theme.textMuted : theme.danger,
+                        whiteSpace: 'nowrap', flexShrink: 0,
+                    }}
+                >
+                    {restarting ? 'Restarting… waiting for service' : 'Restart ML Service'}
+                </button>
             </div>
 
             {/* ── GT Acquisition config ──────────────────────────────────── */}
