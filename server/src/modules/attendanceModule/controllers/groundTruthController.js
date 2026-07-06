@@ -71,7 +71,14 @@ if (!fs.existsSync(batchDir)) return;
 for (const [pklPath, { record }] of pklGroups) {
     try {
         console.log(`[rebuildSubjectPkls] Rebuilding ${record.embeddingFile} …`);
-        await buildBatchEmbeddingsPkl(batchDir, pklPath);
+        const buildResult = await buildBatchEmbeddingsPkl(batchDir, pklPath);
+        if (buildResult.adaface_written) {
+            const StudentEmbedding = require('../../../models/attendanceModule/studentEmbedding');
+            await StudentEmbedding.updateMany(
+                { embeddingFile: record.embeddingFile },
+                { adafaceEmbeddingFile: record.embeddingFile },
+            );
+        }
         // Bytes, not a path — the ML service may run on a separate machine.
         const pklBytes = fs.readFileSync(pklPath);
         await axios.post(`${ML_SERVICE_URL}/reload-embeddings`, {
@@ -343,6 +350,8 @@ class GroundTruthController {
                 if (needsRecompute && remainingEmbeddingFiles.length === 0) {
                     delete info.mean_embedding;
                     delete info.top_k_embeddings;
+                    delete info.adaface_mean_embedding;
+                    delete info.adaface_top_k_embeddings;
                 }
                 await fsPromises.writeFile(infoPath, JSON.stringify(info, null, 2));
             } catch (_) {}

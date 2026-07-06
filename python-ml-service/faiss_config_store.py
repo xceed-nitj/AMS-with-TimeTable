@@ -25,6 +25,7 @@ DEFAULTS = {
     "reverify_med_ttl":    30.0,
     "reverify_low_score":  0.45,
     "reverify_low_ttl":    12.0,
+    "shadow_enabled":      False,
 }
 
 

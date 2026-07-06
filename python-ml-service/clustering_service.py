@@ -453,6 +453,12 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
                 # for free on every detection — no extra inference cost.
                 getattr(face, "age", None),
                 getattr(face, "gender", None),  # 0 = Female, 1 = Male (insightface convention)
+                # 5-point landmarks, same coordinate space as `zoomed` (CLAHE
+                # doesn't change geometry) — a reference, not a copy, so this
+                # costs nothing extra unless a caller actually uses it (e.g.
+                # adaface_utils.align_for_adaface for the optional AdaFace
+                # shadow comparison). Never read by InsightFace's own path.
+                getattr(face, "kps", None),
             ))
  
     if not raw:
@@ -498,6 +504,7 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
          pass_lap_threshold,
          pass_min_face_px,
          face_age, face_gender,
+         face_kps,
         ) = raw[i]
  
         # ┌─────────────────────────────────────────────────────────────────┐
@@ -645,6 +652,12 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
             # detection — this is just reading values already computed.
             "age":       int(face_age) if face_age is not None else None,
             "gender":    ("M" if face_gender == 1 else "F") if face_gender is not None else None,
+            # 5-point landmarks + the frame they're relative to (a reference,
+            # not a copy — see raw.append above) — only consumed by the
+            # optional AdaFace shadow comparison (rtsp_routes.py), never by
+            # InsightFace's own matching/clustering.
+            "kps":         face_kps,
+            "align_frame": zoomed_frame,
         })
  
     if _debug:

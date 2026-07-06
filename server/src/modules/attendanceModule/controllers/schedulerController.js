@@ -14,7 +14,7 @@ const TimeTable = require('../../../models/timetable');
 const Camera = require('../../../models/attendanceModule/camera');
 const Subject = require('../../../models/subject');
 const AttendanceReport = require('../../../models/attendanceReport');
-const { buildEnrolledEmbeddings, buildEnrolledEmbeddingsTopK } = require('./embeddingSyncHelper');
+const { buildEnrolledEmbeddings, buildEnrolledEmbeddingsTopK, buildEnrolledEmbeddingsAdafaceTopK } = require('./embeddingSyncHelper');
 
 const ML_URL = process.env.ML_SERVICE_URL || 'http://localhost:8500';
 const EMBEDDINGS_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'embeddings');
@@ -283,6 +283,8 @@ async function runRoom({ room, roomOverride, slot, date, config }) {
   const middleRunIndex = Math.ceil(numRuns / 2);
   const runResults = [];
   let middleRunComparison = null;
+  let middleRunFaissComparison = null;
+  let middleRunAdafaceComparison = null;
   for (let i = 1; i <= numRuns; i++) {
     if (i > 1) {
       push(`Waiting ${checkIntervalMin} min before run ${i}/${numRuns}`);
@@ -304,10 +306,17 @@ async function runRoom({ room, roomOverride, slot, date, config }) {
       };
       if (i === middleRunIndex) {
         payload.enrolledEmbeddingsTopK = buildEnrolledEmbeddingsTopK(GROUND_TRUTH_DIR, ctx.batch);
+        payload.runFaissShadow = true;
+        payload.enrolledEmbeddingsAdafaceTopK = buildEnrolledEmbeddingsAdafaceTopK(GROUND_TRUTH_DIR, ctx.batch);
+        payload.runAdafaceShadow = true;
       }
       const res = await axios.post(`${ML_URL}/run-attendance-rtsp-sync`, payload, { timeout: 300000 });
       runResults.push(res.data);
-      if (i === middleRunIndex) middleRunComparison = res.data.matching_comparison || null;
+      if (i === middleRunIndex) {
+        middleRunComparison = res.data.matching_comparison || null;
+        middleRunFaissComparison = res.data.faiss_comparison || null;
+        middleRunAdafaceComparison = res.data.adaface_comparison || null;
+      }
       push(`Run ${i} done: P:${res.data.summary?.present} A:${res.data.summary?.absent} R:${res.data.summary?.review}`);
     } catch (err) {
       push(`Run ${i} failed: ${err.response?.data?.detail || err.message}`);
@@ -372,6 +381,8 @@ async function runRoom({ room, roomOverride, slot, date, config }) {
       processingTimeSec: mlResult.summary?.processing_time || 0,
     },
     matchingComparison: middleRunComparison,
+    faissComparison: middleRunFaissComparison,
+    adafaceComparison: middleRunAdafaceComparison,
   };
 
   let report = await AttendanceReport.findOne({ batch: ctx.batch, date, timeSlot: slot });

@@ -26,11 +26,14 @@ import clustering_service
 import liveness_config_store
 import faiss_config_store
 import max_k_config_store
+import adaface_config_store
+import adaface_utils
 from clustering_service import (
     _detect_faces_tiled, _build_ui_mask,
     reset_liveness_rejection_count, get_liveness_rejection_count,
 )
 from clustering_service import _detect_faces_tiled, _build_ui_mask
+from faiss_utils import _recognize_face
 
 logger = logging.getLogger("ml_service.rtsp_routes")
 router = APIRouter()
@@ -237,6 +240,25 @@ class RTSPAttendanceRequest(BaseModel):
     # enrolledEmbeddings is empty — both are never sent together in
     # practice, but enrolledEmbeddings wins if both are present.
     embeddingsPklData: Optional[str] = None
+    # Set by Node only on the one run nearest the middle of a scheduled
+    # period — requests the optional FAISS shadow comparison (state.
+    # faiss_config["shadow_enabled"], ML Fine Tuning page) for this run.
+    # Diagnostic only — searches the full FAISS index, never affects the
+    # primary mean-embedding assignment.
+    runFaissShadow: bool = False
+    # Set by Node only on the one run nearest the middle of a scheduled
+    # period — requests the optional AdaFace shadow comparison (state.
+    # adaface_config["enabled"], ML Fine Tuning page). AdaFace embeddings
+    # live in a different vector space than InsightFace's, so this also
+    # triggers AdaFace inference during live capture for that one run only
+    # (see _attendance_pipeline) — never affects the primary mean-embedding
+    # assignment, and is a no-op if no AdaFace ONNX model is loaded.
+    runAdafaceShadow: bool = False
+    # { rollNo: mean_adaface_embedding } / { rollNo: [adaface_embedding, ...] }
+    # — same shape/semantics as enrolledEmbeddings/enrolledEmbeddingsTopK,
+    # but for AdaFace's independent embedding space.
+    enrolledEmbeddingsAdaface: dict = {}
+    enrolledEmbeddingsAdafaceTopK: dict = {}
 
 
 # ── Preview endpoint ──────────────────────────────────────────────────────────
@@ -670,6 +692,173 @@ def _max_k_shadow_comparison(cluster_means, cluster_meta,
     }
 
 
+def _faiss_shadow_comparison(cluster_means, primary_matches, faiss_top_k, faiss_threshold):
+    """
+    Optional diagnostic pass (state.faiss_config["shadow_enabled"]) — scores
+    the same cluster means already computed for the primary mean-embedding
+    assignment against the FULL FAISS index (top-k voting, exactly like the
+    live tracked-attendance pipeline) instead, then compares the resulting
+    match to the primary assignment. Read-only: never mutates `attendance`.
+
+    Unlike _max_k_shadow_comparison, this searches the whole FAISS index
+    (all departments/batches), not just this session's enrolled roster —
+    a FAISS-only match outside the roster is itself a meaningful diagnostic
+    signal (surfaced as "no primary match" disagreement), not an error.
+    """
+    if state.faiss_index is None or not cluster_means:
+        return None
+
+    shadow_matches = {}
+    for r, cluster_mean in enumerate(cluster_means):
+        roll, score = _recognize_face(
+            np.array(cluster_mean, dtype=np.float32),
+            state.faiss_index, state.vid_to_roll,
+            top_k=faiss_top_k, threshold=faiss_threshold,
+        )
+        if roll:
+            shadow_matches[r] = (roll, score)
+
+    agree, disagree, mean_only, faiss_only = 0, 0, 0, 0
+    per_student = {}
+    compared_rows = set(primary_matches) | set(shadow_matches)
+    if not compared_rows:
+        return None
+
+    for r in compared_rows:
+        mean_roll, mean_score   = primary_matches.get(r, (None, 0.0))
+        faiss_roll, faiss_score = shadow_matches.get(r, (None, 0.0))
+        row_agree = (mean_roll == faiss_roll)
+        if row_agree:
+            agree += 1
+        else:
+            disagree += 1
+            if mean_roll and not faiss_roll:
+                mean_only += 1
+            elif faiss_roll and not mean_roll:
+                faiss_only += 1
+        if mean_roll:
+            per_student[mean_roll] = {
+                "mean_score":  round(mean_score, 4),
+                "faiss_score": round(faiss_score, 4) if row_agree else None,
+                "faiss_roll":  faiss_roll if not row_agree else None,
+                "agree":       row_agree,
+            }
+        if faiss_roll and not row_agree:
+            per_student[faiss_roll] = {
+                "mean_score":  None,
+                "faiss_score": round(faiss_score, 4),
+                "faiss_roll":  None,
+                "agree":       False,
+            }
+
+    return {
+        "enabled":            True,
+        "top_k":              faiss_top_k,
+        "recog_threshold":    faiss_threshold,
+        "clusters_compared":  len(compared_rows),
+        "agree":              agree,
+        "disagree":           disagree,
+        "mean_only_matches":  mean_only,
+        "faiss_only_matches": faiss_only,
+        "per_student":        per_student,
+    }
+
+
+def _adaface_shadow_comparison(adaface_cluster_rows, primary_matches, enrolled_adaface_topk, top_k, recog_threshold):
+    """
+    Optional diagnostic pass (state.adaface_config["enabled"]) — scores
+    AdaFace cluster means against each enrolled student's top-K AdaFace
+    embeddings via max-similarity (same technique as _max_k_shadow_comparison,
+    just in AdaFace's independent vector space), then compares the resulting
+    assignment to the primary mean-embedding (InsightFace) assignment.
+    Read-only: never mutates `attendance`.
+
+    adaface_cluster_rows: [(original_row_index, adaface_cluster_mean), ...] —
+    only clusters where at least one detection's AdaFace embedding succeeded
+    (built by averaging AdaFace vectors within each InsightFace-derived
+    cluster's member indices — no re-clustering). original_row_index matches
+    the same row indexing primary_matches uses (into cluster_meta/cluster_means).
+    """
+    if not adaface_cluster_rows:
+        return None
+
+    row_owner, vectors = [], []
+    for roll_no, vecs in enrolled_adaface_topk.items():
+        for vec in (vecs or [])[:top_k]:
+            arr = np.array(vec, dtype=np.float32)
+            norm = np.linalg.norm(arr)
+            if norm == 0:
+                continue
+            vectors.append(arr / norm)
+            row_owner.append(roll_no)
+    if not vectors:
+        return None
+    ids = sorted(set(row_owner))
+    id_index = {roll_no: i for i, roll_no in enumerate(ids)}
+
+    local_means  = np.array([m for _, m in adaface_cluster_rows], dtype=np.float32)
+    big_matrix   = np.array(vectors, dtype=np.float32)
+    raw_scores   = local_means @ big_matrix.T  # (n_local_clusters, n_vecs)
+
+    score_matrix = np.full((len(adaface_cluster_rows), len(ids)), -1.0, dtype=np.float32)
+    for col, roll_no in enumerate(row_owner):
+        sid = id_index[roll_no]
+        score_matrix[:, sid] = np.maximum(score_matrix[:, sid], raw_scores[:, col])
+
+    row_ind, col_ind = linear_sum_assignment(-score_matrix)
+    shadow_matches = {}
+    for local_r, c in zip(row_ind, col_ind):
+        score = float(score_matrix[local_r, c])
+        if score >= recog_threshold:
+            original_r = adaface_cluster_rows[local_r][0]
+            shadow_matches[original_r] = (ids[c], score)
+
+    agree, disagree, mean_only, adaface_only = 0, 0, 0, 0
+    per_student = {}
+    compared_rows = set(primary_matches) | set(shadow_matches)
+    if not compared_rows:
+        return None
+
+    for r in compared_rows:
+        mean_roll, mean_score       = primary_matches.get(r, (None, 0.0))
+        adaface_roll, adaface_score = shadow_matches.get(r, (None, 0.0))
+        row_agree = (mean_roll == adaface_roll)
+        if row_agree:
+            agree += 1
+        else:
+            disagree += 1
+            if mean_roll and not adaface_roll:
+                mean_only += 1
+            elif adaface_roll and not mean_roll:
+                adaface_only += 1
+        if mean_roll:
+            per_student[mean_roll] = {
+                "mean_score":    round(mean_score, 4),
+                "adaface_score": round(adaface_score, 4) if row_agree else None,
+                "adaface_roll":  adaface_roll if not row_agree else None,
+                "agree":         row_agree,
+            }
+        if adaface_roll and not row_agree:
+            per_student[adaface_roll] = {
+                "mean_score":    None,
+                "adaface_score": round(adaface_score, 4),
+                "adaface_roll":  None,
+                "agree":         False,
+            }
+
+    return {
+        "enabled":              True,
+        "top_k":                top_k,
+        "recog_threshold":      recog_threshold,
+        "clusters_compared":    len(compared_rows),
+        "agree":                agree,
+        "disagree":             disagree,
+        "mean_only_matches":    mean_only,
+        "adaface_only_matches": adaface_only,
+        "per_student":          per_student,
+    }
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # ATTENDANCE PIPELINE — shared generator (yields plain dicts, not SSE strings)
 # Both the SSE route and the sync route consume this.
@@ -763,6 +952,18 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
  
     all_embeddings, all_face_images, all_timestamps, all_quality = [], [], [], []
     all_demographics = []  # [{"age": int|None, "gender": "M"|"F"|None}, ...] — parallel to all_embeddings
+    # AdaFace — entirely separate embedding space (see adaface_utils.py),
+    # populated only when this is the one run requesting the shadow
+    # comparison (req.runAdafaceShadow) and a model is actually loaded.
+    # Parallel to all_embeddings (same index per detection, None on failure)
+    # so cluster means can be built later from the same DBSCAN cluster
+    # indices InsightFace's own clustering already produced — no re-clustering.
+    all_adaface_embeddings = []
+    with state.adaface_config_lock:
+        _adaface_enabled_at_start = state.adaface_config["enabled"]
+    run_adaface_shadow = (
+        req.runAdafaceShadow and _adaface_enabled_at_start and state.adaface_session is not None
+    )
     CAMERA_SWITCH_SEC = 30
     cameras = [req.rtspUrl]
     if req.rtspUrl2:
@@ -831,6 +1032,15 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
                 all_timestamps.append(round(elapsed, 2))
                 all_quality.append(d["quality"])
                 all_demographics.append({"age": d.get("age"), "gender": d.get("gender")})
+
+                if run_adaface_shadow:
+                    ada_emb = None
+                    try:
+                        ada_emb = adaface_utils.get_adaface_embedding_for_face(
+                            d.get("align_frame"), d.get("kps"))
+                    except Exception:
+                        logger.exception("[AdaFace] Shadow embedding failed for one detection")
+                    all_adaface_embeddings.append(ada_emb)
 
           # ── Emit raw + annotated frame every SNAP_EVERY_SEC seconds ──────
             # Encoded in-memory and shipped as a "frame_snapshot" event —
@@ -971,7 +1181,24 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
         cluster_mean /= norm
         cluster_means.append(cluster_mean)
         cluster_meta.append((cluster_id, indices))
- 
+
+    # AdaFace — average AdaFace vectors within these SAME cluster indices
+    # (no re-clustering; DBSCAN above stays driven entirely by InsightFace).
+    # Row index here matches cluster_means/cluster_meta's list position, so
+    # it lines up with primary_matches for the shadow comparison below.
+    # Empty whenever this wasn't the requested/enabled run (see run_adaface_shadow).
+    adaface_cluster_rows = []
+    if all_adaface_embeddings:
+        for row_idx, (_cluster_id, indices) in enumerate(cluster_meta):
+            vecs = [all_adaface_embeddings[i] for i in indices if all_adaface_embeddings[i] is not None]
+            if not vecs:
+                continue
+            ada_mean = np.mean(np.array(vecs, dtype=np.float32), axis=0)
+            ada_norm = np.linalg.norm(ada_mean)
+            if ada_norm == 0:
+                continue
+            adaface_cluster_rows.append((row_idx, ada_mean / ada_norm))
+
     # ── One-to-one Hungarian assignment ───────────────────────────────────
     assigned_cluster_rows = set()  # row indices (into cluster_meta) with a valid assignment
     primary_matches = {}  # row index -> (roll_no, score), for the max-of-K shadow comparison below
@@ -1047,6 +1274,59 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
                                     "reason": "No cached top_k_embeddings yet for this roster."}
     else:
         matching_comparison = {"enabled": False}
+
+    # ── FAISS shadow comparison (diagnostic only, ML Fine Tuning toggle) ────
+    # Never touches `attendance` — purely reports how often the FULL FAISS
+    # index's top-k voting would have agreed with the primary mean-embedding
+    # assignment above. Requested by Node only on the run nearest the middle
+    # of a scheduled period (req.runFaissShadow).
+    faiss_comparison = None
+    with state.faiss_config_lock:
+        faiss_shadow_enabled = state.faiss_config.get("shadow_enabled", False)
+        faiss_top_k          = state.faiss_config["top_k"]
+        faiss_recog_threshold = state.faiss_config["recog_threshold"]
+    if faiss_shadow_enabled and req.runFaissShadow:
+        try:
+            faiss_comparison = _faiss_shadow_comparison(
+                cluster_means, primary_matches, faiss_top_k, faiss_recog_threshold,
+            )
+        except Exception:
+            logger.exception("FAISS shadow comparison failed — skipping")
+        if faiss_comparison is None:
+            faiss_comparison = {"enabled": True, "top_k": faiss_top_k, "skipped": True,
+                                 "reason": "No FAISS index loaded, or no clusters/matches to compare."}
+    else:
+        faiss_comparison = {"enabled": False}
+
+    # ── AdaFace shadow comparison (diagnostic only, ML Fine Tuning toggle) ──
+    # Never touches `attendance` — purely reports how often AdaFace's
+    # independent embedding space would have agreed with the primary
+    # mean-embedding (InsightFace) assignment above. Requested by Node only
+    # on the run nearest the middle of a scheduled period (req.runAdafaceShadow);
+    # a no-op if no AdaFace ONNX model is loaded (see run_adaface_shadow above).
+    adaface_comparison = None
+    with state.adaface_config_lock:
+        adaface_shadow_enabled = state.adaface_config["enabled"]
+        adaface_top_k          = state.adaface_config["top_k"]
+        adaface_recog_threshold = state.adaface_config["recog_threshold"]
+    if adaface_shadow_enabled and run_adaface_shadow:
+        enrolled_adaface_topk = {
+            roll_no: vecs for roll_no, vecs in (req.enrolledEmbeddingsAdafaceTopK or {}).items()
+            if roll_no in match_enrolled
+        }
+        try:
+            adaface_comparison = _adaface_shadow_comparison(
+                adaface_cluster_rows, primary_matches,
+                enrolled_adaface_topk, adaface_top_k, adaface_recog_threshold,
+            )
+        except Exception:
+            logger.exception("AdaFace shadow comparison failed — skipping")
+        if adaface_comparison is None:
+            adaface_comparison = {"enabled": True, "top_k": adaface_top_k, "skipped": True,
+                                   "reason": "No cached AdaFace embeddings yet for this roster, "
+                                             "or no AdaFace ONNX model loaded."}
+    else:
+        adaface_comparison = {"enabled": False}
 
     # ── Unmatched clusters ─────────────────────────────────────────────────
     unmatched_clusters = []
@@ -1179,6 +1459,12 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
             # embedding scoring (state.max_k_config, ML Fine Tuning page).
             # Never factored into `attendance` above.
             "matching_comparison": matching_comparison,
+            # Same, but against the full FAISS index (state.faiss_config
+            # ["shadow_enabled"], ML Fine Tuning page).
+            "faiss_comparison": faiss_comparison,
+            # Same, but against AdaFace's independent embedding space
+            # (state.adaface_config["enabled"], ML Fine Tuning page).
+            "adaface_comparison": adaface_comparison,
         },
     }
 
@@ -1829,6 +2115,7 @@ class FaissConfigUpdate(BaseModel):
     reverify_med_ttl:     Optional[float] = None
     reverify_low_score:   Optional[float] = None
     reverify_low_ttl:     Optional[float] = None
+    shadow_enabled:       Optional[bool]  = None
 
 
 @router.get("/faiss-config")
@@ -1902,6 +2189,43 @@ def update_max_k_config_ep(req: MaxKConfigUpdate):
 
     new_config = max_k_config_store.update_max_k_config(updates)
     logger.info(f"[MaxKConfig] Updated: {updates} → {new_config}")
+    return new_config
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# AdaFace shadow comparison config  (ML Fine Tuning page)
+# ═══════════════════════════════════════════════════════════════════════════
+# Controls the optional AdaFace shadow comparison inside _attendance_pipeline
+# — an entirely independent face-recognition model (see adaface_utils.py),
+# never affecting the primary mean-embedding (InsightFace) assignment. Off by
+# default, and a no-op even when enabled if no AdaFace ONNX model is loaded.
+
+class AdafaceConfigUpdate(BaseModel):
+    enabled:         Optional[bool]  = None
+    recog_threshold: Optional[float] = None
+    top_k:           Optional[int]   = None
+
+
+@router.get("/adaface-config")
+def get_adaface_config_ep():
+    with state.adaface_config_lock:
+        config = dict(state.adaface_config)
+    return {**config, "model_loaded": state.adaface_session is not None}
+
+
+@router.post("/adaface-config")
+def update_adaface_config_ep(req: AdafaceConfigUpdate):
+    updates = req.dict(exclude_none=True)
+
+    if "top_k" in updates and not (1 <= updates["top_k"] <= 10):
+        return JSONResponse(status_code=400,
+            content={"error": f"top_k must be 1–10, got {updates['top_k']}"})
+    if "recog_threshold" in updates and not (0.0 <= updates["recog_threshold"] <= 1.0):
+        return JSONResponse(status_code=400,
+            content={"error": f"recog_threshold must be 0.0–1.0, got {updates['recog_threshold']}"})
+
+    new_config = adaface_config_store.update_adaface_config(updates)
+    logger.info(f"[AdafaceConfig] Updated: {updates} → {new_config}")
     return new_config
 
 

@@ -626,7 +626,11 @@ try {
                 ? path.join(GROUND_TRUTH_DIR, primaryBatch)
                 : GROUND_TRUTH_DIR;
 
-            await buildBatchEmbeddingsPkl(batchDir, outputPath);
+            const buildResult = await buildBatchEmbeddingsPkl(batchDir, outputPath);
+            // AdaFace's parallel .pkl (server/ml-data/embeddings_adaface/...) was
+            // written as a side effect above, only when an AdaFace ONNX model
+            // is loaded — same filename as embeddingFile, sibling root folder.
+            if (buildResult.adaface_written) record.adafaceEmbeddingFile = embeddingFile;
 
             // Send the .pkl we just built as bytes — never a path, since the
             // ML service may run on a separate machine with no access to this

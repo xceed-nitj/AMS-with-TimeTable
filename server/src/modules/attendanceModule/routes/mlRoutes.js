@@ -375,6 +375,52 @@ router.post('/max-k-config', async (req, res) => {
     }
 });
 
+// ─── Restart the remote ML service (ML Fine Tuning page) ───
+// The ML service may run on a separate GPU machine (e.g. the H100) — this
+// asks it to re-exec itself in place via its own /restart-service endpoint,
+// no SSH/local process control involved (unlike mlProcessController.js,
+// which only works when the service is on this same host). A dropped
+// connection right after triggering is expected — the process is going down.
+router.post('/restart-ml-service', async (req, res) => {
+    try {
+        const result = await axios.post(`${ML_URL}/restart-service`, {}, { timeout: 8000 });
+        res.json(result.data);
+    } catch (e) {
+        const code = e.code || '';
+        if (code === 'ECONNRESET' || code === 'ECONNABORTED' || code === 'ERR_BAD_RESPONSE') {
+            // Service dropped the connection while re-exec'ing — that IS the restart.
+            return res.json({ status: 'restarting', detail: 'Connection dropped during restart (expected).' });
+        }
+        res.status(503).json({
+            error: e.response?.data?.error || e.message || 'ML service unreachable',
+        });
+    }
+});
+
+// ─── AdaFace Recognition Config (ML Fine Tuning page) ───
+router.get('/adaface-config', async (req, res) => {
+    try {
+        const result = await axios.get(`${ML_URL}/adaface-config`, { timeout: 5000 });
+        res.json(result.data);
+    } catch (e) {
+        res.status(503).json({
+            error: e.response?.data?.error || e.message || 'AdaFace config unavailable',
+        });
+    }
+});
+
+router.post('/adaface-config', async (req, res) => {
+    try {
+        const result = await axios.post(`${ML_URL}/adaface-config`, req.body, { timeout: 5000 });
+        res.json(result.data);
+    } catch (e) {
+        const status = e.response?.status || 503;
+        res.status(status).json({
+            error: e.response?.data?.error || e.message || 'Failed to update AdaFace config',
+        });
+    }
+});
+
 router.get('/liveness-rejected-samples', async (req, res) => {
     try {
         const limit = Number.parseInt(req.query.limit, 10) || 50;

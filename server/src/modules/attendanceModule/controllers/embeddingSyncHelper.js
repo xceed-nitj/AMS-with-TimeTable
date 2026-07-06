@@ -70,6 +70,18 @@ async function updateStudentEmbedding(studentDir, rollNo, embeddingFiles) {
     } else {
         delete info.top_k_embeddings;
     }
+    // AdaFace — entirely separate embedding, only present when Python has an
+    // ONNX model loaded (state.adaface_session). Never affects the fields above.
+    if (Array.isArray(result.adaface_mean_embedding) && result.adaface_mean_embedding.length > 0) {
+        info.adaface_mean_embedding = result.adaface_mean_embedding;
+    } else {
+        delete info.adaface_mean_embedding;
+    }
+    if (Array.isArray(result.adaface_top_k_embeddings) && result.adaface_top_k_embeddings.length > 0) {
+        info.adaface_top_k_embeddings = result.adaface_top_k_embeddings;
+    } else {
+        delete info.adaface_top_k_embeddings;
+    }
     writeInfoJson(studentDir, info);
 
     return result;
@@ -92,6 +104,8 @@ function buildStudentPayload(rollNo, name, studentDir) {
             cached_mean_embedding: info.mean_embedding,
             num_photos_cached:     (info.embedding_files || []).length,
             photos:                [],
+            cached_adaface_mean_embedding: Array.isArray(info.adaface_mean_embedding)
+                ? info.adaface_mean_embedding : null,
         };
     }
 
@@ -110,6 +124,7 @@ function buildStudentPayload(rollNo, name, studentDir) {
         cached_mean_embedding: null,
         num_photos_cached:     0,
         photos:                readPhotoBytes(studentDir, photoFiles),
+        cached_adaface_mean_embedding: null,
     };
 }
 
@@ -195,6 +210,44 @@ function buildEnrolledEmbeddingsTopK(groundTruthDir, batch) {
     return enrolled;
 }
 
+/**
+ * AdaFace equivalents of buildEnrolledEmbeddings/buildEnrolledEmbeddingsTopK —
+ * entirely separate embedding space, read from the adaface_* keys in the
+ * same _info.json. No K=1 mean fallback here (unlike buildEnrolledEmbeddingsTopK):
+ * callers already gate the whole AdaFace shadow-comparison feature on
+ * state.adaface_config.enabled, so a student with no AdaFace data yet is
+ * simply omitted rather than backed by a meaningless cross-model fallback.
+ */
+function buildEnrolledEmbeddingsAdaface(groundTruthDir, batch) {
+    const batchDir = path.join(groundTruthDir, batch);
+    const enrolled = {};
+    if (!fs.existsSync(batchDir)) return enrolled;
+    for (const entry of fs.readdirSync(batchDir, { withFileTypes: true })) {
+        if (!entry.isDirectory() || entry.name.startsWith('_')) continue;
+        if (/^person_\d+$/i.test(entry.name)) continue;
+        const info = readInfoJson(path.join(batchDir, entry.name));
+        if (Array.isArray(info.adaface_mean_embedding) && info.adaface_mean_embedding.length > 0) {
+            enrolled[entry.name] = info.adaface_mean_embedding;
+        }
+    }
+    return enrolled;
+}
+
+function buildEnrolledEmbeddingsAdafaceTopK(groundTruthDir, batch) {
+    const batchDir = path.join(groundTruthDir, batch);
+    const enrolled = {};
+    if (!fs.existsSync(batchDir)) return enrolled;
+    for (const entry of fs.readdirSync(batchDir, { withFileTypes: true })) {
+        if (!entry.isDirectory() || entry.name.startsWith('_')) continue;
+        if (/^person_\d+$/i.test(entry.name)) continue;
+        const info = readInfoJson(path.join(batchDir, entry.name));
+        if (Array.isArray(info.adaface_top_k_embeddings) && info.adaface_top_k_embeddings.length > 0) {
+            enrolled[entry.name] = info.adaface_top_k_embeddings;
+        }
+    }
+    return enrolled;
+}
+
 // Mirrors Python's old folder-name parsing: "21CS001_John_Doe" → id="21CS001", name="John Doe"
 function parseStudentFolder(folder) {
     const idx = folder.indexOf('_');
@@ -203,10 +256,37 @@ function parseStudentFolder(folder) {
 }
 
 /**
+ * Given the InsightFace subject-embedding output path (under .../ml-data/
+ * embeddings/...), derive the parallel AdaFace path under .../ml-data/
+ * embeddings_adaface/... — same session/dept/filename structure, sibling
+ * root directory (per the "separate folder" requirement).
+ */
+function toAdafaceOutputPath(outputPath) {
+    const parts = outputPath.split(path.sep);
+    const idx = parts.lastIndexOf('embeddings');
+    if (idx === -1) return null;
+    parts[idx] = 'embeddings_adaface';
+    return parts.join(path.sep);
+}
+
+function writeAdafacePklIfPresent(responseData, outputPath) {
+    if (!responseData.adaface_pkl_data) return false;
+    const adafaceOutputPath = toAdafaceOutputPath(outputPath);
+    if (!adafaceOutputPath) return false;
+    fs.mkdirSync(path.dirname(adafaceOutputPath), { recursive: true });
+    fs.writeFileSync(adafaceOutputPath, Buffer.from(responseData.adaface_pkl_data, 'base64'));
+    return true;
+}
+
+/**
  * Build a .pkl for every student subfolder under batchDir and write it to
  * outputPath. Matches the prior /build-embeddings-sync behavior, which
  * always processed every folder in photos_dir (roll_nos was accepted but
  * never actually used as a filter).
+ *
+ * Also writes a parallel AdaFace .pkl (see toAdafaceOutputPath) whenever
+ * the ML service returns adaface_pkl_data — entirely independent of, and
+ * never affecting, the InsightFace .pkl above.
  */
 async function buildBatchEmbeddingsPkl(batchDir, outputPath) {
     const students = [];
@@ -230,8 +310,9 @@ async function buildBatchEmbeddingsPkl(batchDir, outputPath) {
 
     fs.mkdirSync(path.dirname(outputPath), { recursive: true });
     fs.writeFileSync(outputPath, Buffer.from(pkl_data, 'base64'));
+    const adafaceWritten = writeAdafacePklIfPresent(response.data, outputPath);
 
-    return { status: 'done', students_enrolled, output_path: outputPath };
+    return { status: 'done', students_enrolled, output_path: outputPath, adaface_written: adafaceWritten };
 }
 
 /**
@@ -253,8 +334,9 @@ async function buildEmbeddingsPklForStudents(students, outputPath) {
 
     fs.mkdirSync(path.dirname(outputPath), { recursive: true });
     fs.writeFileSync(outputPath, Buffer.from(pkl_data, 'base64'));
+    const adafaceWritten = writeAdafacePklIfPresent(response.data, outputPath);
 
-    return { status: 'done', students_enrolled, output_path: outputPath };
+    return { status: 'done', students_enrolled, output_path: outputPath, adaface_written: adafaceWritten };
 }
 
 module.exports = {
@@ -265,4 +347,6 @@ module.exports = {
     buildExistingFoldersPayload,
     buildEnrolledEmbeddings,
     buildEnrolledEmbeddingsTopK,
+    buildEnrolledEmbeddingsAdaface,
+    buildEnrolledEmbeddingsAdafaceTopK,
 };

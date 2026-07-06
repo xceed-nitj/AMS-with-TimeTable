@@ -12,6 +12,11 @@ const studentEmbeddingSchema = new mongoose.Schema({
     subject:         { type: String, default: '' },
     subjectCode:     { type: String, default: '' },
     embeddingFile:   { type: String, default: null },
+    // AdaFace's independent embedding .pkl for this subject (separate folder,
+    // server/ml-data/embeddings_adaface/...) — null until an AdaFace ONNX
+    // model is loaded and generation produces AdaFace data for at least one
+    // student. Never affects embeddingFile (InsightFace) above.
+    adafaceEmbeddingFile: { type: String, default: null },
     rollNos:         { type: [String], default: [] },
     missedRollNos: [{
         rollNo:  { type: String },

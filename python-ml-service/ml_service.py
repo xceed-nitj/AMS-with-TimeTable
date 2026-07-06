@@ -241,6 +241,10 @@ async def lifespan(app: FastAPI):
     load_faiss_config()
     from max_k_config_store import load_max_k_config
     load_max_k_config()
+    from adaface_utils import load_adaface_model
+    load_adaface_model()
+    from adaface_config_store import load_adaface_config
+    load_adaface_config()
     load_embeddings()
     yield
 
@@ -292,6 +296,28 @@ def health():
         "students_enrolled": len(state.embeddings_db),
         "det_size":          state.current_det_size,
     }
+
+
+@app.post("/restart-service")
+def restart_service():
+    """
+    Restart this ML service process in place — used from the ML Fine Tuning
+    page when the service runs on a remote GPU machine (e.g. the H100) where
+    nobody can conveniently SSH in to bounce it. Responds first, then a
+    background thread re-execs the same interpreter/argv (`python
+    ml_service.py`), so the new process reloads models/configs from scratch
+    on the same host/port. In-flight requests on other threads are dropped —
+    callers should treat this like a brief outage (~model-load time).
+    """
+    import time
+
+    def _reexec():
+        time.sleep(0.75)  # let the HTTP response flush first
+        logger.warning("[Restart] Re-executing ML service via /restart-service request")
+        os.execv(sys.executable, [sys.executable] + sys.argv)
+
+    threading.Thread(target=_reexec, daemon=True).start()
+    return {"status": "restarting", "detail": "Service will re-exec in <1s; poll /health until it responds again."}
 
 
 @app.get("/logs")
