@@ -72,7 +72,11 @@ for (const [pklPath, { record }] of pklGroups) {
     try {
         console.log(`[rebuildSubjectPkls] Rebuilding ${record.embeddingFile} …`);
         await buildBatchEmbeddingsPkl(batchDir, pklPath);
-        await axios.post(`${ML_SERVICE_URL}/reload-embeddings`, {}, { timeout: 30000 });
+        // Bytes, not a path — the ML service may run on a separate machine.
+        const pklBytes = fs.readFileSync(pklPath);
+        await axios.post(`${ML_SERVICE_URL}/reload-embeddings`, {
+            pkl_data: pklBytes.toString('base64'),
+        }, { timeout: 30000 });
         console.log(`[rebuildSubjectPkls] ✓ Done ${record.embeddingFile}`);
     } catch (err) {
         console.warn(`[rebuildSubjectPkls] Failed ${record.embeddingFile}:`, err.message);
@@ -489,11 +493,16 @@ res.json({ ...response, embedding_files_used: embeddingFiles.length });
         try {
             const { batch } = req.body;
             if (!batch) return res.status(400).json({ error: 'batch is required' });
+            const pklPath = path.join(EMBEDDINGS_DIR, `${batch}.pkl`);
             const buildResp = await buildBatchEmbeddingsPkl(
                 path.join(GROUND_TRUTH_DIR, batch),
-                path.join(EMBEDDINGS_DIR, `${batch}.pkl`)
+                pklPath
             );
-            await axios.post(`${ML_SERVICE_URL}/reload-embeddings`, {}, { timeout: 30000 });
+            // Bytes, not a path — the ML service may run on a separate machine.
+            const pklBytes = fs.readFileSync(pklPath);
+            await axios.post(`${ML_SERVICE_URL}/reload-embeddings`, {
+                pkl_data: pklBytes.toString('base64'),
+            }, { timeout: 30000 });
             res.json({ ...buildResp, reloaded: true });
         } catch (err) { res.status(500).json({ error: mlError(err) }); }
     }
@@ -684,13 +693,20 @@ try {
         }
         if (enrolledCount === 0) {
             const batchDir = path.join(GROUND_TRUTH_DIR, batch);
+            const batchPklPath = path.join(EMBEDDINGS_DIR, `${batch}.pkl`);
             if (fs.existsSync(batchDir)) {
                 console.log(`[runAttendance] Building batch embeddings for "${batch}"...`);
-                await buildBatchEmbeddingsPkl(batchDir, path.join(EMBEDDINGS_DIR, `${batch}.pkl`));
+                await buildBatchEmbeddingsPkl(batchDir, batchPklPath);
             } else {
                 console.warn(`[runAttendance] Folder does not exist: ${batchDir}`);
             }
-            await axios.post(`${ML_SERVICE_URL}/reload-embeddings`, {}, { timeout: 30000 });
+            // Bytes, not a path — the ML service may run on a separate machine.
+            if (fs.existsSync(batchPklPath)) {
+                const pklBytes = fs.readFileSync(batchPklPath);
+                await axios.post(`${ML_SERVICE_URL}/reload-embeddings`, {
+                    pkl_data: pklBytes.toString('base64'),
+                }, { timeout: 30000 });
+            }
         }
         // If enrolledCount > 0 and no subject pkl, trust whatever is already loaded.
     }

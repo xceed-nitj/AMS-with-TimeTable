@@ -427,7 +427,13 @@ uploadPkl() {
                     generatedAt: new Date(),
                 });
 
-                try { await axios.post(`${ML_SERVICE_URL}/reload-embeddings`, {}, { timeout: 30000 }); } catch (_) {}
+                try {
+                    // Bytes, not a path — the ML service may run on a separate machine.
+                    const pklBytes = fs.readFileSync(path.join(EMBEDDINGS_DIR, finalFile));
+                    await axios.post(`${ML_SERVICE_URL}/reload-embeddings`, {
+                        pkl_data: pklBytes.toString('base64'),
+                    }, { timeout: 30000 });
+                } catch (_) {}
 
                 res.json({ ok: true, embeddingFile: finalFile, rollNosCount: rollNos.length, recordId: record._id });
             } catch (err) {
@@ -622,7 +628,14 @@ try {
 
             await buildBatchEmbeddingsPkl(batchDir, outputPath);
 
-            await axios.post(`${ML_SERVICE_URL}/reload-embeddings`, {}, { timeout: 30000 });
+            // Send the .pkl we just built as bytes — never a path, since the
+            // ML service may run on a separate machine with no access to this
+            // disk. An empty-body reload would otherwise fall back to Python's
+            // own stale local embeddings_db.pkl instead of what we just built.
+            const pklBytes = fs.readFileSync(outputPath);
+            await axios.post(`${ML_SERVICE_URL}/reload-embeddings`, {
+                pkl_data: pklBytes.toString('base64'),
+            }, { timeout: 30000 });
             sse({ type: 'stage', message: 'Subject embeddings reloaded into ML service.' });
         } catch (err) {
             sse({ type: 'warning', message: `Embedding build step failed: ${err.message}` });

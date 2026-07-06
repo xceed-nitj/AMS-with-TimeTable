@@ -3,13 +3,13 @@
 // Frontend starts a session → this runs check every N minutes →
 // frontend polls GET /reports/:id to see new runs appear.
 
-const { spawn } = require('child_process');
 const axios = require('axios');
 const path  = require('path');
+const fs    = require('fs');
 const AttendanceReport = require('../../../models/attendanceReport');
 const { saveAttendanceDailyData } = require('./attendanceDailyDataSaver');
 const { saveUnknownFaces } = require('./unknownFaceWriter');
-const { saveFrameSnapshots } = require('./frameSnapshotWriter');
+const { saveFrameSnapshots, RAW_DIR: FRAME_SNAPSHOTS_DIR } = require('./frameSnapshotWriter');
 const { buildEnrolledEmbeddings } = require('./embeddingSyncHelper');
 const { pklPath } = require('./erpEmbeddingSyncHelper');
 
@@ -21,6 +21,74 @@ const GROUND_TRUTH_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data',
 // Lost on server restart — acceptable for now.
 // Key: reportId string, Value: { timer, checkIndex, config, status }
 const activeSessions = new Map();
+
+// ── Session-frame clustering (replaces the old face_cluster.py child-process
+// spawn, which required Node and python-ml-service + its venv to be
+// co-located on one machine) ─────────────────────────────────────────────────
+// Reads this session's saved frame snapshots + the batch's enrolled .pkl off
+// Node's own local disk, ships them as bytes to the ML service's
+// /cluster-session-frames endpoint, and writes the returned per-student crop
+// folders + metadata.json back to outputDir — same on-disk shape
+// backupImageUpdater.js already expects from the old script.
+// Returns true if clustering ran and outputDir was (re)populated, false if
+// there was nothing to cluster (no frames / no db).
+async function runSessionClustering(sessionId, outputDir, dbPathStr) {
+    const sessionFramesDir = path.join(FRAME_SNAPSHOTS_DIR, sessionId);
+    if (!fs.existsSync(sessionFramesDir) || !fs.existsSync(dbPathStr)) {
+        console.log(`[SessionClustering] Nothing to cluster for ${sessionId} — missing frames or embeddings db`);
+        return false;
+    }
+
+    const frameFiles = fs.readdirSync(sessionFramesDir)
+        .filter((f) => f.startsWith('frame_') && f.toLowerCase().endsWith('.jpg'));
+    if (frameFiles.length === 0) {
+        console.log(`[SessionClustering] No frames found in ${sessionFramesDir}`);
+        return false;
+    }
+
+    const frames = frameFiles.map((f) => fs.readFileSync(path.join(sessionFramesDir, f)).toString('base64'));
+    const dbData = fs.readFileSync(dbPathStr).toString('base64');
+
+    const response = await axios.post(`${ML_URL}/cluster-session-frames`, {
+        frames,
+        db_data: dbData,
+        cluster_threshold: 0.45,
+        min_samples: 3,
+    }, { timeout: 180000 });
+
+    const clusters = response.data?.clusters || [];
+
+    // Clear + recreate outputDir, matching the old script's behavior (each
+    // session's clustering run replaces the previous one, not merges with it).
+    if (fs.existsSync(outputDir)) fs.rmSync(outputDir, { recursive: true, force: true });
+    fs.mkdirSync(outputDir, { recursive: true });
+
+    for (const cluster of clusters) {
+        const clusterDir = path.join(outputDir, cluster.clusterId);
+        fs.mkdirSync(clusterDir, { recursive: true });
+        cluster.crops.forEach((crop, i) => {
+            fs.writeFileSync(
+                path.join(clusterDir, `image_${String(i + 1).padStart(3, '0')}.jpg`),
+                Buffer.from(crop, 'base64'),
+            );
+        });
+        fs.writeFileSync(
+            path.join(clusterDir, 'metadata.json'),
+            JSON.stringify({
+                rollNo: cluster.rollNo,
+                confidence: cluster.confidence,
+                confidenceScores: cluster.confidenceScores,
+                imageCount: cluster.imageCount,
+                sourceSession: sessionId,
+                type: cluster.type,
+                clusterId: cluster.clusterId,
+            }, null, 2),
+        );
+    }
+
+    console.log(`[SessionClustering] ${sessionId}: wrote ${clusters.length} cluster folder(s) to ${outputDir}`);
+    return clusters.length > 0;
+}
 
 // ── Merge helpers (same logic as attendanceReportController) ─────────────────
 
@@ -202,33 +270,20 @@ async function runOneCheck(reportId, checkIndex, config) {
         const outputDir = path.resolve(__dirname, '..', '..', '..', '..', 'ml-data', 'faces', extractedDepartment, config.date || 'UNKNOWN', config.semester || 'UNKNOWN', config.slot || 'UNKNOWN');
         const dbPathStr = pklPath(config.batch, extractedDepartment);
 
-        // Path to python executable inside python-ml-service/venv
-        const pyPath = path.resolve(__dirname, '..', '..', '..', '..', '..', 'python-ml-service', 'venv', 'Scripts', 'python.exe');
-        const scriptPath = path.resolve(__dirname, '..', '..', '..', '..', '..', 'python-ml-service', 'face_cluster.py');
-
-        console.log(`${tag} Spawning face_cluster.py with session_id=${sessionId}`);
-        const pyProc = spawn(pyPath, [
-            scriptPath,
-            '--session_id', sessionId,
-            '--output_dir', outputDir,
-            '--db_path', dbPathStr
-        ], { cwd: path.dirname(scriptPath) });
-
-        pyProc.stdout.on('data', d => console.log(`[face_cluster] ${d.toString().trim()}`));
-        pyProc.stderr.on('data', d => console.error(`[face_cluster] ${d.toString().trim()}`));
-        pyProc.on('close', code => {
-            console.log(`[face_cluster] exited with code ${code}`);
-            if (code === 0) {
+        console.log(`${tag} Requesting session clustering for session_id=${sessionId}`);
+        runSessionClustering(sessionId, outputDir, dbPathStr)
+            .then((didCluster) => {
+                if (!didCluster) return;
                 // ── Issue #1512 — active learning: update backup images ──────
-                // face_cluster.py just wrote per-student crops + confidence
-                // scores to outputDir. Reuse that directly — only backup_files
-                // gets touched, never embedding_files, and at most one new
-                // backup per student per day (see backupImageUpdater.js).
+                // Cluster crops + confidence scores were just written to
+                // outputDir. Reuse that directly — only backup_files gets
+                // touched, never embedding_files, and at most one new backup
+                // per student per day (see backupImageUpdater.js).
                 const { updateBackupsFromSession } = require('./backupImageUpdater');
-                updateBackupsFromSession(outputDir, config.date, extractedDepartment)
+                return updateBackupsFromSession(outputDir, config.date, extractedDepartment)
                     .catch(err => console.error(`[BackupUpdate] Failed: ${err.message}`));
-            }
-        });
+            })
+            .catch(err => console.error(`${tag} Session clustering failed: ${err.message}`));
 
     } catch (err) {
         console.error(`${tag} ❌ Failed: ${err.message}`);
