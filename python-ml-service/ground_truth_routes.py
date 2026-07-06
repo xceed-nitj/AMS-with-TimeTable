@@ -434,6 +434,13 @@ def _update_student_embedding_sync(req: UpdateEmbeddingRequest):
     norm     = np.linalg.norm(mean_emb)
     mean_emb = mean_emb / norm
 
+    # Retain the top-3 individual embeddings (by the same quality weight used
+    # for the mean) for the "max-of-K" matching mode — an alternative to
+    # scoring against a single mean vector during Hungarian batch matching.
+    TOP_K = 3
+    ranked_idx = np.argsort(new_weights)[::-1][:TOP_K]
+    top_k_embeddings = [new_embeddings[i].tolist() for i in ranked_idx]
+
     if req.roll_no in state.embeddings_db:
         state.embeddings_db[req.roll_no]["embedding"]  = mean_emb
         state.embeddings_db[req.roll_no]["num_photos"] = len(new_embeddings)
@@ -455,6 +462,7 @@ def _update_student_embedding_sync(req: UpdateEmbeddingRequest):
         "total_selected":       len(req.photos),
         "missing_files":        missing,
         "mean_embedding":       mean_emb.tolist(),
+        "top_k_embeddings":     top_k_embeddings,
     }
 
 

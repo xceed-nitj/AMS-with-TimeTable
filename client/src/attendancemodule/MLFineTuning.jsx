@@ -11,6 +11,8 @@ const apiUrl = getEnvironment();
 const CONFIG_API      = `${apiUrl}/api/v1/ml/liveness-config`;
 const GT_CONFIG_API   = `${apiUrl}/api/v1/ml/gt-config`;
 const ATTEND_API      = `${apiUrl}/attendancemodule/acquisitioncontrol/attendance-thresholds`;
+const FAISS_CONFIG_API = `${apiUrl}/api/v1/ml/faiss-config`;
+const MAX_K_CONFIG_API = `${apiUrl}/api/v1/ml/max-k-config`;
 
 const HEURISTIC_OPTIONS = [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.40];
 const ONNX_OPTIONS      = [0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90];
@@ -67,6 +69,44 @@ const ATTEND_DEFAULTS = {
     min_detections: 3, auto_enroll_threshold: 0.75, alert_confidence: 0.60,
 };
 
+// FAISS Recognition — live tracked-attendance matching pipeline
+const FAISS_OPTIONS = {
+    top_k:               [3, 5, 7, 10, 15, 20],
+    recog_threshold:     [0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60],
+    reverify_high_score: [0.70, 0.75, 0.80, 0.85, 0.90, 0.95],
+    reverify_high_ttl:   [15, 20, 30, 45, 60, 90, 120],
+    reverify_med_score:  [0.50, 0.55, 0.60, 0.65, 0.70, 0.75],
+    reverify_med_ttl:    [5, 10, 15, 20, 30, 45, 60],
+    reverify_low_score:  [0.30, 0.35, 0.40, 0.45, 0.50, 0.55],
+    reverify_low_ttl:    [0, 5, 8, 10, 12, 15, 20, 30],
+};
+
+const FAISS_LABELS = {
+    top_k:               { label: 'Top-K candidates',        unit: '',    hint: 'Nearest-neighbor candidates considered per detection before vote-matching.' },
+    recog_threshold:     { label: 'Recognition threshold',   unit: '',    hint: 'Minimum similarity to accept a FAISS match.' },
+    reverify_high_score: { label: 'High-confidence score',   unit: '',    hint: 'Scores at or above this use the longest re-verify cache TTL.' },
+    reverify_high_ttl:   { label: 'High-confidence TTL',     unit: 'sec', hint: 'How long a high-confidence track skips re-recognition.' },
+    reverify_med_score:  { label: 'Medium-confidence score', unit: '',    hint: 'Scores at or above this (below high) use the medium TTL.' },
+    reverify_med_ttl:    { label: 'Medium-confidence TTL',   unit: 'sec', hint: 'Cache duration for medium-confidence tracks.' },
+    reverify_low_score:  { label: 'Low-confidence score',    unit: '',    hint: 'Scores at or above this (below medium) use the low TTL. Below this, always re-verify.' },
+    reverify_low_ttl:    { label: 'Low-confidence TTL',      unit: 'sec', hint: 'Cache duration for low-confidence tracks.' },
+};
+
+const FAISS_DEFAULTS = {
+    top_k: 5, recog_threshold: 0.35,
+    reverify_high_score: 0.80, reverify_high_ttl: 60,
+    reverify_med_score: 0.65, reverify_med_ttl: 30,
+    reverify_low_score: 0.45, reverify_low_ttl: 12,
+};
+
+// Max-of-K shadow comparison — Hungarian batch-matching pipeline (RTSP
+// attendance runs, both "Run Once" and scheduled sessions)
+const MAX_K_OPTIONS = { top_k: [1, 2, 3] };
+const MAX_K_LABELS = {
+    top_k: { label: 'Top-K embeddings per student', unit: '', hint: 'How many of each student’s stored embeddings to score against (max-similarity across the K). Capped by how many were retained the last time that student’s embedding was regenerated (up to 3).' },
+};
+const MAX_K_DEFAULTS = { enabled: false, top_k: 3 };
+
 function Toggle({ checked, onChange, disabled, label }) {
     return (
         <label style={{
@@ -105,6 +145,14 @@ export default function MLFineTuning() {
     const [attendThresh, setAttendThresh] = useState(null);
     const [attendLoading, setAttendLoading] = useState(true);
     const [attendSaving,  setAttendSaving]  = useState(false);
+
+    const [faissConfig,  setFaissConfig]  = useState(null);
+    const [faissLoading, setFaissLoading] = useState(true);
+    const [faissSaving,  setFaissSaving]  = useState(false);
+
+    const [maxKConfig,  setMaxKConfig]  = useState(null);
+    const [maxKLoading, setMaxKLoading] = useState(true);
+    const [maxKSaving,  setMaxKSaving]  = useState(false);
 
     const showToast = (msg, type = 'success') => {
         setToast({ msg, type });
@@ -155,6 +203,78 @@ export default function MLFineTuning() {
     }, []);
 
     useEffect(() => { loadAttendThresh(); }, [loadAttendThresh]);
+
+    const loadFaissConfig = useCallback(async () => {
+        setFaissLoading(true);
+        try {
+            const res = await fetch(FAISS_CONFIG_API);
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+            setFaissConfig(data);
+        } catch (err) {
+            showToast(`Failed to load FAISS config: ${err.message}`, 'error');
+        }
+        setFaissLoading(false);
+    }, []);
+
+    useEffect(() => { loadFaissConfig(); }, [loadFaissConfig]);
+
+    const loadMaxKConfig = useCallback(async () => {
+        setMaxKLoading(true);
+        try {
+            const res = await fetch(MAX_K_CONFIG_API);
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+            setMaxKConfig(data);
+        } catch (err) {
+            showToast(`Failed to load Max-of-K config: ${err.message}`, 'error');
+        }
+        setMaxKLoading(false);
+    }, []);
+
+    useEffect(() => { loadMaxKConfig(); }, [loadMaxKConfig]);
+
+    const updateMaxKConfig = async (patch) => {
+        setMaxKSaving(true);
+        const prev = maxKConfig;
+        setMaxKConfig({ ...maxKConfig, ...patch });
+        try {
+            const res = await fetch(MAX_K_CONFIG_API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(patch),
+            });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+            setMaxKConfig(data);
+            showToast('Max-of-K setting updated');
+        } catch (err) {
+            setMaxKConfig(prev);
+            showToast(`Update failed: ${err.message}`, 'error');
+        }
+        setMaxKSaving(false);
+    };
+
+    const updateFaissConfig = async (patch) => {
+        setFaissSaving(true);
+        const prev = faissConfig;
+        setFaissConfig({ ...faissConfig, ...patch });
+        try {
+            const res = await fetch(FAISS_CONFIG_API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(patch),
+            });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+            setFaissConfig(data);
+            showToast('FAISS setting updated');
+        } catch (err) {
+            setFaissConfig(prev);
+            showToast(`Update failed: ${err.message}`, 'error');
+        }
+        setFaissSaving(false);
+    };
 
     const updateAttendThresh = async (patch) => {
         setAttendSaving(true);
@@ -458,6 +578,156 @@ export default function MLFineTuning() {
                             </div>
                         )}
                     </>
+                )}
+            </div>
+
+            {/* ── FAISS Recognition Thresholds ───────────────────────────── */}
+            <div style={{ ...styles.card, marginBottom: 20 }}>
+                <div style={{ marginBottom: 16 }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: theme.text }}>FAISS Recognition Thresholds</div>
+                    <div style={{ fontSize: 12, color: theme.textMuted, marginTop: 2 }}>
+                        Controls the live tracked-attendance FAISS matching pipeline (top-k voting,
+                        recognition threshold, re-verify cache). Changes apply to the next recognition
+                        call — no restart needed.
+                    </div>
+                </div>
+
+                {faissLoading ? (
+                    <div style={{ fontSize: 13, color: theme.textMuted }}>Loading…</div>
+                ) : !faissConfig ? (
+                    <div style={{ fontSize: 13, color: theme.danger }}>Could not load FAISS config.</div>
+                ) : (
+                    <>
+                        {/* Group 1 — Matching */}
+                        <div style={{ fontSize: 11, fontWeight: 700, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
+                            Matching
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 20 }}>
+                            {['top_k', 'recog_threshold'].map(key => {
+                                const meta = FAISS_LABELS[key];
+                                const opts = FAISS_OPTIONS[key];
+                                const isFloat = key !== 'top_k';
+                                return (
+                                    <div key={key}>
+                                        <label style={styles.label}>{meta.label}{meta.unit ? ` (${meta.unit})` : ''}</label>
+                                        <select
+                                            value={faissConfig[key] ?? FAISS_DEFAULTS[key]}
+                                            disabled={faissSaving}
+                                            onChange={e => updateFaissConfig({ [key]: isFloat ? parseFloat(e.target.value) : parseInt(e.target.value, 10) })}
+                                            style={styles.select}
+                                        >
+                                            {opts.map(v => (
+                                                <option key={v} value={v}>
+                                                    {isFloat ? v.toFixed(2) : v}{v === FAISS_DEFAULTS[key] ? ' (default)' : ''}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <div style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>{meta.hint}</div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Group 2 — Re-verify cache */}
+                        <div style={{ fontSize: 11, fontWeight: 700, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
+                            Re-verify Cache
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+                            {['reverify_high_score', 'reverify_high_ttl', 'reverify_med_score', 'reverify_med_ttl', 'reverify_low_score', 'reverify_low_ttl'].map(key => {
+                                const meta = FAISS_LABELS[key];
+                                const opts = FAISS_OPTIONS[key];
+                                const isScore = key.endsWith('_score');
+                                return (
+                                    <div key={key}>
+                                        <label style={styles.label}>{meta.label}{meta.unit ? ` (${meta.unit})` : ''}</label>
+                                        <select
+                                            value={faissConfig[key] ?? FAISS_DEFAULTS[key]}
+                                            disabled={faissSaving}
+                                            onChange={e => updateFaissConfig({ [key]: isScore ? parseFloat(e.target.value) : parseInt(e.target.value, 10) })}
+                                            style={styles.select}
+                                        >
+                                            {opts.map(v => (
+                                                <option key={v} value={v}>
+                                                    {isScore ? v.toFixed(2) : v}{v === FAISS_DEFAULTS[key] ? ' (default)' : ''}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <div style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>{meta.hint}</div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {(() => {
+                            const high = faissConfig.reverify_high_score ?? FAISS_DEFAULTS.reverify_high_score;
+                            const med  = faissConfig.reverify_med_score  ?? FAISS_DEFAULTS.reverify_med_score;
+                            const low  = faissConfig.reverify_low_score  ?? FAISS_DEFAULTS.reverify_low_score;
+                            if (high > med && med > low) return null;
+                            return (
+                                <div style={{ marginTop: 12, fontSize: 12, color: theme.danger }}>
+                                    ⚠ Score tiers must satisfy High &gt; Medium &gt; Low ({high.toFixed(2)} / {med.toFixed(2)} / {low.toFixed(2)}).
+                                </div>
+                            );
+                        })()}
+                    </>
+                )}
+            </div>
+
+            {/* ── Max-of-K Shadow Comparison (Hungarian batch matching) ────── */}
+            <div style={{ ...styles.card, marginBottom: 20 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                    <div>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: theme.text }}>Max-of-K Matching (Comparison)</div>
+                        <div style={{ fontSize: 12, color: theme.textMuted, marginTop: 2 }}>
+                            When enabled, every RTSP attendance run (&quot;Run Once&quot; and each period of a
+                            scheduled session) additionally scores clusters against each student&rsquo;s
+                            top-K individually stored embeddings instead of one mean vector, and
+                            reports how often that agrees with the real assignment. Diagnostic only —
+                            never changes the actual attendance decision.
+                        </div>
+                    </div>
+                    {maxKConfig && (
+                        <Toggle
+                            checked={!!maxKConfig.enabled}
+                            disabled={maxKSaving}
+                            onChange={(val) => updateMaxKConfig({ enabled: val })}
+                            label={maxKConfig.enabled ? 'Enabled' : 'Disabled'}
+                        />
+                    )}
+                </div>
+
+                {maxKLoading ? (
+                    <div style={{ fontSize: 13, color: theme.textMuted }}>Loading…</div>
+                ) : !maxKConfig ? (
+                    <div style={{ fontSize: 13, color: theme.danger }}>Could not load Max-of-K config.</div>
+                ) : (
+                    <div style={{
+                        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 18,
+                        opacity: maxKConfig.enabled ? 1 : 0.45, pointerEvents: maxKConfig.enabled ? 'auto' : 'none',
+                    }}>
+                        {['top_k'].map(key => {
+                            const meta = MAX_K_LABELS[key];
+                            const opts = MAX_K_OPTIONS[key];
+                            return (
+                                <div key={key}>
+                                    <label style={styles.label}>{meta.label}{meta.unit ? ` (${meta.unit})` : ''}</label>
+                                    <select
+                                        value={maxKConfig[key] ?? MAX_K_DEFAULTS[key]}
+                                        disabled={maxKSaving || !maxKConfig.enabled}
+                                        onChange={e => updateMaxKConfig({ [key]: parseInt(e.target.value, 10) })}
+                                        style={styles.select}
+                                    >
+                                        {opts.map(v => (
+                                            <option key={v} value={v}>
+                                                {v}{v === MAX_K_DEFAULTS[key] ? ' (default)' : ''}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <div style={{ fontSize: 11, color: theme.textMuted, marginTop: 4 }}>{meta.hint}</div>
+                                </div>
+                            );
+                        })}
+                    </div>
                 )}
             </div>
 

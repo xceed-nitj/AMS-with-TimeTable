@@ -340,7 +340,10 @@ class GroundTruthController {
                 info.backup_files    = (info.backup_files    || []).filter(f => f !== filename);
                 info.approved_files  = (info.approved_files  || []).filter(f => f !== filename);
                 remainingEmbeddingFiles = info.embedding_files;
-                if (needsRecompute && remainingEmbeddingFiles.length === 0) delete info.mean_embedding;
+                if (needsRecompute && remainingEmbeddingFiles.length === 0) {
+                    delete info.mean_embedding;
+                    delete info.top_k_embeddings;
+                }
                 await fsPromises.writeFile(infoPath, JSON.stringify(info, null, 2));
             } catch (_) {}
         }

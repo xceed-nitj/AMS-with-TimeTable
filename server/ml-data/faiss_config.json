@@ -1,0 +1,10 @@
+{
+  "top_k": 5,
+  "recog_threshold": 0.35,
+  "reverify_high_score": 0.8,
+  "reverify_high_ttl": 60.0,
+  "reverify_med_score": 0.65,
+  "reverify_med_ttl": 30.0,
+  "reverify_low_score": 0.45,
+  "reverify_low_ttl": 12.0
+}

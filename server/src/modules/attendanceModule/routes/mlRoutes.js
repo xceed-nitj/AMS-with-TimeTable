@@ -14,7 +14,7 @@ const LockSem = require('../../../models/locksem');
 const TimeTable = require('../../../models/timetable');
 const { saveAttendanceDailyData, listDailyDataFiles, readDailyDataFile } = require('../controllers/attendanceDailyDataSaver');
 const { saveFrameSnapshot } = require('../controllers/frameSnapshotWriter');
-const { buildEnrolledEmbeddings } = require('../controllers/embeddingSyncHelper');
+const { buildEnrolledEmbeddings, buildEnrolledEmbeddingsTopK } = require('../controllers/embeddingSyncHelper');
 
 const ML_URL = process.env.ML_SERVICE_URL || 'http://localhost:8500';
 const GROUND_TRUTH_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'ground_truth');
@@ -323,6 +323,54 @@ router.post('/liveness-config', async (req, res) => {
         const status = e.response?.status || 503;
         res.status(status).json({
             error: e.response?.data?.error || e.message || 'Failed to update liveness config',
+        });
+    }
+});
+
+// ─── FAISS Recognition Config (ML Fine Tuning page) ───
+router.get('/faiss-config', async (req, res) => {
+    try {
+        const result = await axios.get(`${ML_URL}/faiss-config`, { timeout: 5000 });
+        res.json(result.data);
+    } catch (e) {
+        res.status(503).json({
+            error: e.response?.data?.error || e.message || 'FAISS config unavailable',
+        });
+    }
+});
+
+router.post('/faiss-config', async (req, res) => {
+    try {
+        const result = await axios.post(`${ML_URL}/faiss-config`, req.body, { timeout: 5000 });
+        res.json(result.data);
+    } catch (e) {
+        const status = e.response?.status || 503;
+        res.status(status).json({
+            error: e.response?.data?.error || e.message || 'Failed to update FAISS config',
+        });
+    }
+});
+
+// ─── Max-of-K Shadow Comparison Config (ML Fine Tuning page) ───
+router.get('/max-k-config', async (req, res) => {
+    try {
+        const result = await axios.get(`${ML_URL}/max-k-config`, { timeout: 5000 });
+        res.json(result.data);
+    } catch (e) {
+        res.status(503).json({
+            error: e.response?.data?.error || e.message || 'Max-of-K config unavailable',
+        });
+    }
+});
+
+router.post('/max-k-config', async (req, res) => {
+    try {
+        const result = await axios.post(`${ML_URL}/max-k-config`, req.body, { timeout: 5000 });
+        res.json(result.data);
+    } catch (e) {
+        const status = e.response?.status || 503;
+        res.status(status).json({
+            error: e.response?.data?.error || e.message || 'Failed to update Max-of-K config',
         });
     }
 });
@@ -703,6 +751,10 @@ router.post('/run-attendance-rtsp', async (req, res) => {
         locksemId: resolvedLocksem,
         _resolvedCtx: ctx || null,
         enrolledEmbeddings: buildEnrolledEmbeddings(GROUND_TRUTH_DIR, resolvedBatch),
+        // Only used by Python for the optional max-of-K shadow comparison
+        // (state.max_k_config, ML Fine Tuning page) — the primary attendance
+        // decision above always uses enrolledEmbeddings (mean), unchanged.
+        enrolledEmbeddingsTopK: buildEnrolledEmbeddingsTopK(GROUND_TRUTH_DIR, resolvedBatch),
     };
 
     // Step 3: Stream from Python, intercept the 'done' event to save daily data

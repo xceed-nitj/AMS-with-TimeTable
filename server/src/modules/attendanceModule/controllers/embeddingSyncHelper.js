@@ -65,6 +65,11 @@ async function updateStudentEmbedding(studentDir, rollNo, embeddingFiles) {
     info.embedding_files = embeddingFiles.filter(f => allImgs.includes(f));
     info.backup_files    = allImgs.filter(f => !embeddingFiles.includes(f)).slice(0, 5);
     if (Array.isArray(result.mean_embedding)) info.mean_embedding = result.mean_embedding;
+    if (Array.isArray(result.top_k_embeddings) && result.top_k_embeddings.length > 0) {
+        info.top_k_embeddings = result.top_k_embeddings;
+    } else {
+        delete info.top_k_embeddings;
+    }
     writeInfoJson(studentDir, info);
 
     return result;
@@ -163,6 +168,33 @@ function buildEnrolledEmbeddings(groundTruthDir, batch) {
     return enrolled;
 }
 
+/**
+ * Same as buildEnrolledEmbeddings, but for the "max-of-K" shadow comparison
+ * mode: collects each enrolled student's cached top_k_embeddings (multiple
+ * vectors per student, ranked by photo quality) instead of one mean vector.
+ * Students not yet regenerated under the new logic (no top_k_embeddings
+ * cached yet) fall back to a K=1 list built from their existing
+ * mean_embedding, so the shadow comparison still covers every enrolled
+ * student, just without the full benefit until their embedding is next
+ * regenerated.
+ */
+function buildEnrolledEmbeddingsTopK(groundTruthDir, batch) {
+    const batchDir = path.join(groundTruthDir, batch);
+    const enrolled = {};
+    if (!fs.existsSync(batchDir)) return enrolled;
+    for (const entry of fs.readdirSync(batchDir, { withFileTypes: true })) {
+        if (!entry.isDirectory() || entry.name.startsWith('_')) continue;
+        if (/^person_\d+$/i.test(entry.name)) continue;
+        const info = readInfoJson(path.join(batchDir, entry.name));
+        if (Array.isArray(info.top_k_embeddings) && info.top_k_embeddings.length > 0) {
+            enrolled[entry.name] = info.top_k_embeddings;
+        } else if (Array.isArray(info.mean_embedding) && info.mean_embedding.length > 0) {
+            enrolled[entry.name] = [info.mean_embedding];
+        }
+    }
+    return enrolled;
+}
+
 // Mirrors Python's old folder-name parsing: "21CS001_John_Doe" → id="21CS001", name="John Doe"
 function parseStudentFolder(folder) {
     const idx = folder.indexOf('_');
@@ -232,4 +264,5 @@ module.exports = {
     parseStudentFolder,
     buildExistingFoldersPayload,
     buildEnrolledEmbeddings,
+    buildEnrolledEmbeddingsTopK,
 };

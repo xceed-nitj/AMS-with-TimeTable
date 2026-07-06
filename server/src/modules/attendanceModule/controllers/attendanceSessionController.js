@@ -10,7 +10,7 @@ const AttendanceReport = require('../../../models/attendanceReport');
 const { saveAttendanceDailyData } = require('./attendanceDailyDataSaver');
 const { saveUnknownFaces } = require('./unknownFaceWriter');
 const { saveFrameSnapshots, RAW_DIR: FRAME_SNAPSHOTS_DIR } = require('./frameSnapshotWriter');
-const { buildEnrolledEmbeddings } = require('./embeddingSyncHelper');
+const { buildEnrolledEmbeddings, buildEnrolledEmbeddingsTopK } = require('./embeddingSyncHelper');
 const { pklPath } = require('./erpEmbeddingSyncHelper');
 
 
@@ -165,6 +165,11 @@ async function runOneCheck(reportId, checkIndex, config) {
                 locksemId:        config.locksemId        || '',
                 enrolledRollNos:  config.enrolledRollNos  || [],
                 enrolledEmbeddings: buildEnrolledEmbeddings(GROUND_TRUTH_DIR, config.batch),
+                // Only used by Python for the optional max-of-K shadow
+                // comparison (state.max_k_config, ML Fine Tuning page) — the
+                // actual per-period attendance decision above always comes
+                // from enrolledEmbeddings (mean), unchanged.
+                enrolledEmbeddingsTopK: buildEnrolledEmbeddingsTopK(GROUND_TRUTH_DIR, config.batch),
             },
             { timeout: 300000 }   // 5 min timeout
         );
@@ -214,6 +219,7 @@ async function runOneCheck(reportId, checkIndex, config) {
                 total:             students.length,
                 processingTimeSec: mlResult.summary?.processing_time  || 0,
             },
+            matchingComparison: mlResult.matching_comparison || null,
         };
 
         // Atomically push into DB and recompute

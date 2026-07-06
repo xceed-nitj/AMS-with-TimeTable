@@ -43,7 +43,14 @@ const slotResultSchema = new Schema({
         review:   { type: Number, default: 0 },
         total:    { type: Number, default: 0 },
         processingTimeSec: { type: Number, default: 0 },
-    }
+    },
+    // Diagnostic-only shadow comparison against max-of-K embedding scoring
+    // (state.max_k_config, ML Fine Tuning page) for this one period check —
+    // never factored into `students`/`summary` above, which always come from
+    // the primary mean-embedding assignment. Shape varies ({enabled:false} |
+    // {enabled:true, skipped:true, ...} | full agree/disagree breakdown), so
+    // left schemaless.
+    matchingComparison: { type: Schema.Types.Mixed, default: null },
 }, { _id: false });
 
 // Save data for proxy roll numbers: students appearing in different rooms at same time period

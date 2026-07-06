@@ -1478,6 +1478,33 @@ export default function AttendanceReport() {
                     styles={styles}
                   />
 
+                  {/* Max-of-K shadow comparison — diagnostic only, never affects the stats above */}
+                  {mlResult.matching_comparison?.enabled && (
+                    <div style={{ ...styles.card, marginBottom: 16, fontSize: '12px' }}>
+                      <div style={{ fontWeight: 700, marginBottom: 4 }}>
+                        Max-of-K Comparison (experimental)
+                      </div>
+                      {mlResult.matching_comparison.skipped ? (
+                        <div style={{ color: theme.textMuted }}>
+                          {mlResult.matching_comparison.reason || 'Skipped — no cached top-K embeddings yet.'}
+                        </div>
+                      ) : (
+                        <div style={{ color: theme.textMuted }}>
+                          Scoring against each student&rsquo;s top-{mlResult.matching_comparison.top_k}{' '}
+                          stored embeddings agreed with the mean-embedding assignment on{' '}
+                          <strong style={{ color: theme.text }}>
+                            {mlResult.matching_comparison.agree}/{mlResult.matching_comparison.clusters_compared}
+                          </strong>{' '}
+                          compared clusters
+                          {mlResult.matching_comparison.disagree > 0
+                            ? ` (${mlResult.matching_comparison.disagree} disagreed — ${mlResult.matching_comparison.mean_only_matches} mean-only, ${mlResult.matching_comparison.max_k_only_matches} max-of-K-only).`
+                            : '.'}
+                          {' '}This does not affect the attendance decision above.
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Saved frame snapshots */}
                   {snapshots.length > 0 && (
                     <div style={{ ...styles.card, marginBottom: 16 }}>
@@ -2147,6 +2174,15 @@ function MultiRunTable({ report, readOnly, onOverride, theme, styles }) {
     }
   }
 
+  // Max-of-K shadow comparison (diagnostic only) — fires on at most one run
+  // per period (the middle one for scheduled sessions). Find the last run
+  // that actually carries a completed comparison, and use its per-student
+  // breakdown for the trailing "Max-of-K" column below.
+  const comparisonRun = [...runs].reverse().find(
+    (r) => r.matchingComparison?.enabled && !r.matchingComparison?.skipped,
+  );
+  const comparisonByRoll = comparisonRun?.matchingComparison?.per_student || {};
+
   const cellStyle = (status) => ({
     padding: '2px 6px',
     borderRadius: 4,
@@ -2214,6 +2250,18 @@ function MultiRunTable({ report, readOnly, onOverride, theme, styles }) {
                 </div>
               </th>
             ))}
+            {comparisonRun && (
+              <th
+                title="Max-of-K shadow comparison — diagnostic only, does not affect Final"
+                style={{ textAlign: 'center', borderLeft: '2px solid #e4e8f5', color: theme.accent }}
+              >
+                Max-of-K
+                <div style={{ fontSize: '9px', color: theme.textMuted, fontWeight: 400, marginTop: 2 }}>
+                  {comparisonRun.matchingComparison.agree}/
+                  {comparisonRun.matchingComparison.clusters_compared} agree
+                </div>
+              </th>
+            )}
             <th
               style={{ textAlign: 'center', borderLeft: '2px solid #e4e8f5' }}
             >
@@ -2284,6 +2332,34 @@ function MultiRunTable({ report, readOnly, onOverride, theme, styles }) {
                     </td>
                   );
                 })}
+                {comparisonRun && (() => {
+                  const cmp = comparisonByRoll[rollNo];
+                  return (
+                    <td style={{ textAlign: 'center', borderLeft: '2px solid #e4e8f5' }}>
+                      {!cmp ? (
+                        <span style={{ color: theme.textMuted, fontSize: '11px' }}>—</span>
+                      ) : cmp.agree ? (
+                        <span
+                          title={`Agrees (max-of-K score ${cmp.max_k_score ?? '—'})`}
+                          style={{ ...cellStyle('present'), background: theme.successDim, color: theme.success }}
+                        >
+                          ✓
+                        </span>
+                      ) : (
+                        <span
+                          title={
+                            cmp.max_k_roll
+                              ? `Max-of-K would instead match ${cmp.max_k_roll} (score ${cmp.max_k_score ?? '—'})`
+                              : `Max-of-K found no match here (mean score ${cmp.mean_score ?? '—'})`
+                          }
+                          style={{ ...cellStyle('review'), background: theme.warningDim, color: theme.warning }}
+                        >
+                          ⚠
+                        </span>
+                      )}
+                    </td>
+                  );
+                })()}
                 <td
                   style={{
                     textAlign: 'center',

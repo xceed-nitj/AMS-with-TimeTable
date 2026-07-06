@@ -146,12 +146,17 @@ def process_video_stream(video_path: str, is_live_url: bool = False):
                     time.sleep(5)
                 
                 for face in faces:
+                    # top_k/threshold are runtime-tunable via GET/POST
+                    # /faiss-config (ML Fine Tuning page) — see state.faiss_config.
+                    with state.faiss_config_lock:
+                        recog_top_k = state.faiss_config["top_k"]
+                        recog_threshold = state.faiss_config["recog_threshold"]
                     roll, score = _recognize_face(
-                        face.embedding, 
-                        state.faiss_index, 
-                        state.vid_to_roll, 
-                        top_k=5,
-                        threshold=0.35
+                        face.embedding,
+                        state.faiss_index,
+                        state.vid_to_roll,
+                        top_k=recog_top_k,
+                        threshold=recog_threshold,
                     )
                     
                     label = roll if roll else "Unknown"

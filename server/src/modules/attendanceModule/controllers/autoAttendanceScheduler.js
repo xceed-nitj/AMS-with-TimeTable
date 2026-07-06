@@ -18,10 +18,12 @@ const AttendanceReport = require("../../../models/attendanceReport");
 const { saveAttendanceDailyData } = require("./attendanceDailyDataSaver");
 const { saveUnknownFaces } = require("./unknownFaceWriter");
 const { saveFrameSnapshots } = require("./frameSnapshotWriter");
+const { buildEnrolledEmbeddingsTopK } = require("./embeddingSyncHelper");
 const alertNotifier = require("./alertNotifier");
 
 const ML_URL = process.env.ML_SERVICE_URL || "http://localhost:8500";
 const EMBEDDINGS_DIR = path.join(__dirname, "..", "..", "..", "..", "ml-data", "embeddings");
+const GROUND_TRUTH_DIR = path.join(__dirname, "..", "..", "..", "..", "ml-data", "ground_truth");
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function todayStr() {
@@ -228,6 +230,7 @@ async function saveCheckResult({ ctx, subjectMeta, date, slot, checkIndex, mlRes
       total: students.length,
       processingTimeSec: mlResult.summary?.processing_time || 0,
     },
+    matchingComparison: mlResult.matching_comparison || null,
   };
 
   let report = await AttendanceReport.findOne({ batch: ctx.batch, date, timeSlot: slot });
@@ -304,23 +307,26 @@ async function saveCheckResult({ ctx, subjectMeta, date, slot, checkIndex, mlRes
 // ── Step 5: one acquisition call to Python (stateless PKL bytes) ────────────
 async function runOneCheck({ room, slot, date, ctx, subjectMeta, cameras, pkl, runConfig, checkIndex }) {
   try {
-    const res = await axios.post(
-      `${ML_URL}/run-attendance-rtsp-sync`,
-      {
-        rtspUrl: cameras.cam1,
-        rtspUrl2: cameras.cam2 || "",
-        batch: ctx.batch, room, slot, date,
-        durationSec: runConfig.runDurationSec,
-        subject: ctx.subject, faculty: ctx.faculty, semester: ctx.sem, locksemId: ctx.locksemId,
-        embeddingsPklData: pkl.pklData, // stateless — see resolveSubjectAndPkl
-        threshold:              runConfig.threshold,
-        auto_present_threshold: runConfig.auto_present_threshold,
-        review_threshold:       runConfig.review_threshold,
-        min_detections:         runConfig.min_detections,
-        auto_enroll_threshold:  runConfig.auto_enroll_threshold,
-      },
-      { timeout: 300000 },
-    );
+    const payload = {
+      rtspUrl: cameras.cam1,
+      rtspUrl2: cameras.cam2 || "",
+      batch: ctx.batch, room, slot, date,
+      durationSec: runConfig.runDurationSec,
+      subject: ctx.subject, faculty: ctx.faculty, semester: ctx.sem, locksemId: ctx.locksemId,
+      embeddingsPklData: pkl.pklData, // stateless — see resolveSubjectAndPkl; decoded
+                                      // Python-side as a fallback enrollment source
+                                      // when enrolledEmbeddings is empty (see rtsp_routes.py)
+      autoThreshold:   runConfig.auto_present_threshold,
+      reviewThreshold: runConfig.review_threshold,
+    };
+    // Max-of-K shadow comparison — only requested on the one check nearest
+    // the middle of this period, never on every check (diagnostic only, see
+    // state.max_k_config on the ML Fine Tuning page).
+    if (checkIndex === runConfig.middleRunIndex) {
+      payload.enrolledEmbeddingsTopK = buildEnrolledEmbeddingsTopK(GROUND_TRUTH_DIR, ctx.batch);
+    }
+
+    const res = await axios.post(`${ML_URL}/run-attendance-rtsp-sync`, payload, { timeout: 300000 });
 
     await saveCheckResult({
       ctx, subjectMeta, date, slot, checkIndex, mlResult: res.data, room,
@@ -366,12 +372,12 @@ async function runSlotAttendance({ room, roomOverride, slot, date, periodInfo, c
   const runConfig = {
     runDurationSec,
     presentLogic,
-    threshold:              t.threshold              ?? 0.45,
     auto_present_threshold: t.auto_present_threshold ?? 0.60,
     review_threshold:       t.review_threshold       ?? 0.40,
-    min_detections:         t.min_detections         ?? 3,
-    auto_enroll_threshold:  t.auto_enroll_threshold  ?? 0.75,
     alertConfidence:        t.alert_confidence       ?? 0.60,
+    // Max-of-K shadow comparison (diagnostic only) fires once per period —
+    // on the check nearest the middle of the numRuns checks — not every run.
+    middleRunIndex:         Math.ceil(numRuns / 2),
   };
 
   for (let i = 1; i <= numRuns; i++) {

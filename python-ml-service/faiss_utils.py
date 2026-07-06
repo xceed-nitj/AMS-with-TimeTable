@@ -5,18 +5,30 @@
 import math
 import numpy as np
 
+import state
+
 
 # =============================
 # ADAPTIVE RE-VERIFY INTERVALS
 # =============================
 def _get_reverify_interval(score: float) -> float:
-    """Maps recognition confidence to cache TTL (seconds)."""
-    if score >= 0.80:
-        return 60.0
-    if score >= 0.65:
-        return 30.0
-    if score >= 0.45:
-        return 12.0
+    """
+    Maps recognition confidence to cache TTL (seconds). Score cutoffs and
+    TTLs are runtime-tunable via GET/POST /faiss-config (ML Fine Tuning
+    page) — see state.faiss_config / faiss_config_store.py.
+    """
+    with state.faiss_config_lock:
+        cfg = state.faiss_config
+        high_score, high_ttl = cfg["reverify_high_score"], cfg["reverify_high_ttl"]
+        med_score,  med_ttl  = cfg["reverify_med_score"],  cfg["reverify_med_ttl"]
+        low_score,  low_ttl  = cfg["reverify_low_score"],  cfg["reverify_low_ttl"]
+
+    if score >= high_score:
+        return high_ttl
+    if score >= med_score:
+        return med_ttl
+    if score >= low_score:
+        return low_ttl
     return 0.0
 
 

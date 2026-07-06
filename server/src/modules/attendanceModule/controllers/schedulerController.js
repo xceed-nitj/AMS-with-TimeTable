@@ -14,7 +14,7 @@ const TimeTable = require('../../../models/timetable');
 const Camera = require('../../../models/attendanceModule/camera');
 const Subject = require('../../../models/subject');
 const AttendanceReport = require('../../../models/attendanceReport');
-const { buildEnrolledEmbeddings } = require('./embeddingSyncHelper');
+const { buildEnrolledEmbeddings, buildEnrolledEmbeddingsTopK } = require('./embeddingSyncHelper');
 
 const ML_URL = process.env.ML_SERVICE_URL || 'http://localhost:8500';
 const EMBEDDINGS_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'embeddings');
@@ -277,7 +277,12 @@ async function runRoom({ room, roomOverride, slot, date, config }) {
 
   // 6. Call Python ML service — numRuns times, checkIntervalMin apart
   push(`Plan: ${numRuns} run(s), ${runDurationSec}s each, ${checkIntervalMin}min apart, logic=${presentLogic}`);
+  // Max-of-K shadow comparison (diagnostic only) fires once per period — on
+  // the run nearest the middle of the numRuns runs — not every run. See
+  // state.max_k_config on the ML Fine Tuning page.
+  const middleRunIndex = Math.ceil(numRuns / 2);
   const runResults = [];
+  let middleRunComparison = null;
   for (let i = 1; i <= numRuns; i++) {
     if (i > 1) {
       push(`Waiting ${checkIntervalMin} min before run ${i}/${numRuns}`);
@@ -285,23 +290,24 @@ async function runRoom({ room, roomOverride, slot, date, config }) {
     }
     push(`Starting run ${i}/${numRuns}`);
     try {
-      const res = await axios.post(
-        `${ML_URL}/run-attendance-rtsp-sync`,
-        {
-          rtspUrl: cameras.cam1,
-          rtspUrl2: cameras.cam2 || '',
-          batch: ctx.batch,
-          room, slot, date,
-          durationSec: runDurationSec,
-          subject: ctx.subject,
-          faculty: ctx.faculty,
-          semester: ctx.sem,
-          locksemId: ctx.locksemId,
-          embeddingsPklData: pkl.pklData,
-        },
-        { timeout: 300000 },
-      );
+      const payload = {
+        rtspUrl: cameras.cam1,
+        rtspUrl2: cameras.cam2 || '',
+        batch: ctx.batch,
+        room, slot, date,
+        durationSec: runDurationSec,
+        subject: ctx.subject,
+        faculty: ctx.faculty,
+        semester: ctx.sem,
+        locksemId: ctx.locksemId,
+        embeddingsPklData: pkl.pklData,
+      };
+      if (i === middleRunIndex) {
+        payload.enrolledEmbeddingsTopK = buildEnrolledEmbeddingsTopK(GROUND_TRUTH_DIR, ctx.batch);
+      }
+      const res = await axios.post(`${ML_URL}/run-attendance-rtsp-sync`, payload, { timeout: 300000 });
       runResults.push(res.data);
+      if (i === middleRunIndex) middleRunComparison = res.data.matching_comparison || null;
       push(`Run ${i} done: P:${res.data.summary?.present} A:${res.data.summary?.absent} R:${res.data.summary?.review}`);
     } catch (err) {
       push(`Run ${i} failed: ${err.response?.data?.detail || err.message}`);
@@ -365,6 +371,7 @@ async function runRoom({ room, roomOverride, slot, date, config }) {
       total: students.length,
       processingTimeSec: mlResult.summary?.processing_time || 0,
     },
+    matchingComparison: middleRunComparison,
   };
 
   let report = await AttendanceReport.findOne({ batch: ctx.batch, date, timeSlot: slot });
