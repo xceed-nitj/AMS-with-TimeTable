@@ -9,6 +9,17 @@ face_app = None
 current_det_size = 640
 embeddings_db = {}
 
+# ─── Institute-wide sibling galleries to embeddings_db ────────────────────────
+# Same accumulation pattern as embeddings_db (merged on every
+# /update-student-embedding and /build-embeddings-sync, persisted to local
+# pkls beside embeddings_db.pkl on THIS machine) — used by the Institute
+# Identification page to score every detected face with ALL models, not just
+# the FAISS index:
+#   topk_embeddings_db    — {roll: [insightface_vec, ...]} (top-K gallery)
+#   adaface_embeddings_db — {roll: adaface_mean_vec}
+topk_embeddings_db    = {}
+adaface_embeddings_db = {}
+
 # face_app is a single shared InsightFace instance. Concurrent attendance/
 # ground-truth runs (different rooms/streams) execute on separate threads,
 # but ONNXRuntime inference sessions — especially on a CUDA execution

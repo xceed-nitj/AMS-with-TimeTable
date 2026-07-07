@@ -9,6 +9,7 @@ const Student          = require('../../../models/student');
 const {
     updateStudentEmbedding: syncUpdateStudentEmbedding,
     buildBatchEmbeddingsPkl,
+    buildEmbeddingsPklForStudents,
 } = require('./embeddingSyncHelper');
 
 const ML_SERVICE_URL   = process.env.ML_SERVICE_URL || 'http://localhost:8500';
@@ -449,8 +450,9 @@ uploadPkl() {
     // collection by sem+dept. If dept is also omitted, ALL students in that sem are used.
     // File name format: {sem}_{subjectSafe}.pkl  e.g. 6_Digital_Electronics.pkl
     async generate(req, res) {
-        let { sem, subject, dept, rollNos, instituteWise } = req.body;
+        let { sem, subject, dept, rollNos, instituteWise, subjectId, rosterExact } = req.body;
         instituteWise = !!instituteWise;
+        rosterExact   = !!rosterExact;
 
         if (!subject || !subject.trim()) {
             return res.status(400).json({ error: 'subject is required' });
@@ -616,6 +618,17 @@ uploadPkl() {
 sse({ type: 'stage', message: `Building subject embedding file: ${embeddingFile}...` });
 
 try {
+            let buildResult;
+            if (rosterExact) {
+                // ERP Sync page: the .pkl must contain EXACTLY the posted
+                // roster (which may span batches/departments when
+                // instituteWise), not every folder in one batch dir.
+                const rosterStudents = processedRollNos.map(({ rollNo, batch }) => ({
+                    rollNo,
+                    studentDir: path.join(GROUND_TRUTH_DIR, batch, rollNo),
+                }));
+                buildResult = await buildEmbeddingsPklForStudents(rosterStudents, outputPath);
+            } else {
             // Collect unique batch names from processed students
             const batchCounts = {};
             for (const { batch } of processedRollNos) {
@@ -626,7 +639,8 @@ try {
                 ? path.join(GROUND_TRUTH_DIR, primaryBatch)
                 : GROUND_TRUTH_DIR;
 
-            const buildResult = await buildBatchEmbeddingsPkl(batchDir, outputPath);
+            buildResult = await buildBatchEmbeddingsPkl(batchDir, outputPath);
+            }
             // AdaFace's parallel .pkl (server/ml-data/embeddings_adaface/...) was
             // written as a side effect above, only when an AdaFace ONNX model
             // is loaded — same filename as embeddingFile, sibling root folder.
@@ -653,6 +667,22 @@ try {
         record.generatedAt     = new Date();
         record.lastUpdatedAt   = new Date();
         await record.save();
+
+        // ERP Sync page bookkeeping: when the caller names the Subject doc,
+        // keep its embedding status truthful without a second request.
+        if (subjectId) {
+            try {
+                const Subject = require('../../../models/subject');
+                await Subject.findByIdAndUpdate(subjectId, {
+                    embeddingFile,
+                    embeddingUpdatedAt: new Date(),
+                    missedGroundTruth: missedRollNos.map(m => m.rollNo),
+                });
+            } catch (subjErr) {
+                sse({ type: 'warning', message: `Subject record update failed: ${subjErr.message}` });
+            }
+        }
+
         sse({
             type:          'done',
             sem:           semSafe,

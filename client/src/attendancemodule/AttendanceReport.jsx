@@ -523,7 +523,10 @@ export default function AttendanceReport() {
       setCamCountdown(CAMERA_SWITCH_SEC);
       rtspUrl2Ref.current = rtspUrl2.trim();
       setSessionChecks(0);
-      showToast(`Session started — checks every ${checkIntervalMin} min`);
+      const stopNote = data.autoStopAt
+        ? ` — auto-stops at ${new Date(data.autoStopAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+        : '';
+      showToast(`Session started — checks every ${checkIntervalMin} min${stopNote}`);
       openDetail(data.reportId);
     } catch (e) {
       showToast('Failed to start session: ' + e.message, 'error');

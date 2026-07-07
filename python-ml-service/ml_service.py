@@ -201,6 +201,22 @@ def load_embeddings():
     else:
         logger.warning("No embeddings_db.pkl found — run /build-embeddings to enroll students.")
 
+    # Institute-wide sibling galleries (top-K + AdaFace) — accumulated by
+    # ground_truth_routes.py, consumed by the Institute Identification page's
+    # multi-model scoring. Missing files are fine (populate on next enroll).
+    from ground_truth_routes import TOPK_DB_PATH, ADAFACE_DB_PATH
+    for gallery_path, attr, label in (
+        (TOPK_DB_PATH, "topk_embeddings_db", "top-K"),
+        (ADAFACE_DB_PATH, "adaface_embeddings_db", "AdaFace"),
+    ):
+        if os.path.exists(gallery_path):
+            try:
+                with open(gallery_path, "rb") as f:
+                    setattr(state, attr, pickle.load(f))
+                logger.info(f"Loaded {label} gallery for {len(getattr(state, attr))} students.")
+            except Exception as e:
+                logger.warning(f"Failed to load {label} gallery from {gallery_path}: {e}")
+
 # ADDED — FAISS index loader for tracked_routes.py.
 FAISS_INDEX_PATH = os.path.join(ROOT_DIR, "server", "ml-data", "embeddings", "faiss.index")
 FAISS_DB_PATH    = os.path.join(ROOT_DIR, "server", "ml-data", "embeddings", "metadata.db")

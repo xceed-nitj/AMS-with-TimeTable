@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { theme, cssReset } from './config';
 import getEnvironment from '../getenvironment';
+import DEV_CYCLE from './devCycleData';
 
 const T = theme;
 
@@ -927,12 +928,56 @@ function TabDevelopers() {
     );
 }
 
+// ── Development Cycle — weekly feature log from main-branch commits ───────────
+// Data lives in devCycleData.js (auto-generated from git log; see its header
+// for the regeneration command). Weeks are Monday–Sunday, newest first.
+
+function TabDevCycle() {
+    const totalItems = DEV_CYCLE.reduce((s, w) => s + w.items.length, 0);
+    return (
+        <div>
+            <SectionTitle>Development Cycle</SectionTitle>
+            <Note type="info">
+                What changed, week by week (newest first) — features merged to the main branch from
+                March {DEV_CYCLE.length ? DEV_CYCLE[DEV_CYCLE.length - 1].week.slice(-4) : ''} to date, written in
+                plain language ({totalItems} features across {DEV_CYCLE.length} weeks; internal
+                technical changes are not listed).
+            </Note>
+
+            {DEV_CYCLE.map(({ week, items }) => (
+                <div key={week} style={{ marginBottom: 26 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                        <div style={{
+                            fontSize: 12, fontWeight: 800, color: '#6366f1',
+                            background: '#eef2ff', padding: '3px 12px',
+                            borderRadius: 20, border: '1px solid #c7d2fe', whiteSpace: 'nowrap',
+                        }}>{week}</div>
+                        <div style={{ flex: 1, height: 1, background: '#e4e8f5' }} />
+                        <div style={{ fontSize: 11, color: '#9ca3af', whiteSpace: 'nowrap' }}>
+                            {items.length} change{items.length !== 1 ? 's' : ''}
+                        </div>
+                    </div>
+                    <ul style={{ margin: 0, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 5 }}>
+                        {items.map((it, i) => (
+                            <li key={i} style={{ fontSize: 12.5, color: T.text, lineHeight: 1.45 }}>
+                                {it.subject}
+                                <span style={{ color: '#9ca3af', fontSize: 11 }}> — {it.author}</span>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            ))}
+        </div>
+    );
+}
+
 // ── main component ────────────────────────────────────────────────────────────
 
 export default function Manual({ standalone = false }) {
     const [tab, setTab] = useState('overview');
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [showDevs, setShowDevs] = useState(false);
+    const [showDevCycle, setShowDevCycle] = useState(false);
 
     useEffect(() => {
         if (!standalone) return;
@@ -1006,7 +1051,7 @@ export default function Manual({ standalone = false }) {
                         </div>
                     </div>
                     <button
-                        onClick={() => setShowDevs(v => !v)}
+                        onClick={() => { setShowDevs(v => !v); setShowDevCycle(false); }}
                         style={{
                             flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6,
                             padding: '7px 14px', borderRadius: 8, cursor: 'pointer',
@@ -1019,16 +1064,30 @@ export default function Manual({ standalone = false }) {
                     >
                         👥 Developers
                     </button>
+                    <button
+                        onClick={() => { setShowDevCycle(v => !v); setShowDevs(false); }}
+                        style={{
+                            flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6,
+                            padding: '7px 14px', borderRadius: 8, cursor: 'pointer',
+                            fontSize: 12, fontWeight: 700,
+                            background: showDevCycle ? '#6366f1' : '#f5f3ff',
+                            color: showDevCycle ? '#fff' : '#6366f1',
+                            border: `1.5px solid ${showDevCycle ? '#6366f1' : '#c4b5fd'}`,
+                            transition: 'all .15s',
+                        }}
+                    >
+                        🔄 Development Cycle
+                    </button>
                 </div>
 
-                {showDevs ? (
+                {showDevs || showDevCycle ? (
                     <div style={{
                         background: '#fff', borderRadius: 12,
                         border: '1px solid #e4e8f5',
                         padding: '28px 32px',
                         boxShadow: '0 1px 6px rgba(26,31,60,0.05)',
                     }}>
-                        <TabDevelopers />
+                        {showDevs ? <TabDevelopers /> : <TabDevCycle />}
                     </div>
                 ) : (<>
 

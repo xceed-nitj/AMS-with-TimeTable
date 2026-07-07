@@ -593,6 +593,13 @@ export default function AMSDashboard() {
                     <polyline points="17 6 23 6 23 12" />
                   </svg>
                 </IconNavButton>
+                <IconNavButton title="ERP Sync" onClick={() => navigate('/attendance/erp-sync')}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={T.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="23 4 23 10 17 10" />
+                    <polyline points="1 20 1 14 7 14" />
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                  </svg>
+                </IconNavButton>
                 <IconNavButton title="Map First Year Subjects" onClick={() => navigate('/attendance/firstyearsubjectmapping')}>
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={T.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />

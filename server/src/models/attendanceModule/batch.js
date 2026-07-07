@@ -32,7 +32,8 @@ const batchSchema = new mongoose.Schema({
     livePreview:       { type: Boolean, default: true },
     gpuMetrics:        { type: Boolean, default: true },
     confidenceMonitor: { type: Boolean, default: true },
-    recordStream:      { type: Boolean, default: true },  
+    recordStream:      { type: Boolean, default: true },
+    instituteIdentification: { type: Boolean, default: false },
     helpManual:        { type: Boolean, default: true },
 },
 }, { timestamps: true });

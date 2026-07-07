@@ -37,8 +37,8 @@ const NAV = [
     route: '/attendance/confidence',
     label: 'Confidence Monitor',
   },
-  { id: 'manual', route: '/ams-manual', label: 'Help & Manual', newTab: true },
   { id: 'institute', route: '/attendance/institute-identification', label: 'Institute Identification' },
+  { id: 'manual', route: '/ams-manual', label: 'Help & Manual', newTab: true },
 ];
 
 const COLORS = {
