@@ -27,6 +27,9 @@ import liveness_config_store
 import faiss_config_store
 import max_k_config_store
 import adaface_config_store
+import pipeline_config_store
+import detector_config_store
+import detector_utils
 import adaface_utils
 from clustering_service import (
     _detect_faces_tiled, _build_ui_mask,
@@ -259,6 +262,12 @@ class RTSPAttendanceRequest(BaseModel):
     # but for AdaFace's independent embedding space.
     enrolledEmbeddingsAdaface: dict = {}
     enrolledEmbeddingsAdafaceTopK: dict = {}
+    # Umbrella middle-of-period flag: when True, every model whose shadow
+    # toggle is on in state.pipeline_config (Model Pipeline card, ML Fine
+    # Tuning page) runs its diagnostic comparison against the primary this
+    # run. Supersedes the per-model runFaissShadow/runAdafaceShadow flags
+    # above, which are kept for back-compat and OR'd in.
+    runShadows: bool = False
 
 
 # ── Preview endpoint ──────────────────────────────────────────────────────────
@@ -584,6 +593,44 @@ def extract_rtsp_stream(req: RTSPRequest):
                  "Content-Type": "text/event-stream; charset=utf-8"})
 
 
+def _build_top_k_score_matrix(cluster_matrix, topk_dict, top_k):
+    """
+    Shared score-matrix builder for top-K (max-similarity) scoring — used by
+    both the max-of-K PRIMARY path and _max_k_shadow_comparison, and by the
+    AdaFace primary path (in AdaFace's own vector space).
+
+    Expands every (student, k) embedding into one big matrix, does a single
+    matmul against cluster_matrix (n_clusters, 512), then max-reduces each
+    student's K columns back down to one — same (n_clusters, n_students)
+    shape a plain mean-embedding matmul produces, so the exact same Hungarian
+    assignment logic applies unchanged downstream.
+
+    Returns (ids, score_matrix) or (None, None) when there's nothing to score.
+    """
+    row_owner, vectors = [], []
+    for roll_no, vecs in (topk_dict or {}).items():
+        for vec in (vecs or [])[:top_k]:
+            arr = np.array(vec, dtype=np.float32)
+            norm = np.linalg.norm(arr)
+            if norm == 0:
+                continue
+            vectors.append(arr / norm)
+            row_owner.append(roll_no)
+    if not vectors or cluster_matrix is None or len(cluster_matrix) == 0:
+        return None, None
+    ids = sorted(set(row_owner))
+    id_index = {roll_no: i for i, roll_no in enumerate(ids)}
+
+    big_matrix = np.array(vectors, dtype=np.float32)
+    raw_scores = np.array(cluster_matrix, dtype=np.float32) @ big_matrix.T
+
+    score_matrix = np.full((len(cluster_matrix), len(ids)), -1.0, dtype=np.float32)
+    for col, roll_no in enumerate(row_owner):
+        sid = id_index[roll_no]
+        score_matrix[:, sid] = np.maximum(score_matrix[:, sid], raw_scores[:, col])
+    return ids, score_matrix
+
+
 def _max_k_shadow_comparison(cluster_means, cluster_meta,
                               primary_matches, enrolled_topk_raw, top_k, review_threshold):
     """
@@ -604,30 +651,9 @@ def _max_k_shadow_comparison(cluster_means, cluster_meta,
     Returns a JSON-safe summary dict, or None if there was nothing to compare
     (e.g. no cached top-K embeddings yet for anyone in this roster).
     """
-    ids, row_owner, vectors = [], [], []
-    for roll_no, vecs in enrolled_topk_raw.items():
-        for vec in (vecs or [])[:top_k]:
-            arr = np.array(vec, dtype=np.float32)
-            norm = np.linalg.norm(arr)
-            if norm == 0:
-                continue
-            vectors.append(arr / norm)
-            row_owner.append(roll_no)
-    if not vectors or not cluster_means:
+    ids, score_matrix = _build_top_k_score_matrix(cluster_means, enrolled_topk_raw, top_k)
+    if ids is None:
         return None
-    ids = sorted(set(row_owner))
-    id_index = {roll_no: i for i, roll_no in enumerate(ids)}
-
-    big_matrix  = np.array(vectors, dtype=np.float32)                       # (n_vecs, 512)
-    raw_scores  = np.array(cluster_means, dtype=np.float32) @ big_matrix.T  # (n_clusters, n_vecs)
-
-    # Collapse each student's K columns down to one via max — same
-    # (n_clusters, n_students) shape the mean-mode score matrix has, so the
-    # exact same Hungarian assignment logic applies unchanged.
-    score_matrix = np.full((len(cluster_means), len(ids)), -1.0, dtype=np.float32)
-    for col, roll_no in enumerate(row_owner):
-        sid = id_index[roll_no]
-        score_matrix[:, sid] = np.maximum(score_matrix[:, sid], raw_scores[:, col])
 
     row_ind, col_ind = linear_sum_assignment(-score_matrix)
     shadow_matches = {}
@@ -859,6 +885,73 @@ def _adaface_shadow_comparison(adaface_cluster_rows, primary_matches, enrolled_a
     }
 
 
+def _mean_shadow_comparison(cluster_means, enrolled_ids, enroll_matrix,
+                             primary_matches, review_threshold):
+    """
+    Diagnostic pass for when Mean (InsightFace) is NOT the primary model
+    (state.pipeline_config) — runs the classic mean-embedding Hungarian
+    assignment and compares it to whichever model actually decided
+    attendance this run. Read-only: never mutates `attendance`.
+
+    In per_student entries, "primary_*" is the deciding model's match and
+    "mean_*" is this shadow's — the reverse orientation of the other three
+    helpers (where mean IS the primary).
+    """
+    if not cluster_means or enroll_matrix is None or len(enroll_matrix) == 0:
+        return None
+
+    score_matrix = np.array(cluster_means, dtype=np.float32) @ enroll_matrix.T
+    row_ind, col_ind = linear_sum_assignment(-score_matrix)
+    shadow_matches = {}
+    for r, c in zip(row_ind, col_ind):
+        score = float(score_matrix[r, c])
+        if score >= review_threshold:
+            shadow_matches[r] = (enrolled_ids[c], score)
+
+    agree, disagree, primary_only, mean_only = 0, 0, 0, 0
+    per_student = {}
+    compared_rows = set(primary_matches) | set(shadow_matches)
+    if not compared_rows:
+        return None
+
+    for r in compared_rows:
+        primary_roll, primary_score = primary_matches.get(r, (None, 0.0))
+        mean_roll, mean_score       = shadow_matches.get(r, (None, 0.0))
+        row_agree = (primary_roll == mean_roll)
+        if row_agree:
+            agree += 1
+        else:
+            disagree += 1
+            if primary_roll and not mean_roll:
+                primary_only += 1
+            elif mean_roll and not primary_roll:
+                mean_only += 1
+        if primary_roll:
+            per_student[primary_roll] = {
+                "primary_score": round(primary_score, 4),
+                "mean_score":    round(mean_score, 4) if row_agree else None,
+                "mean_roll":     mean_roll if not row_agree else None,
+                "agree":         row_agree,
+            }
+        if mean_roll and not row_agree:
+            per_student[mean_roll] = {
+                "primary_score": None,
+                "mean_score":    round(mean_score, 4),
+                "mean_roll":     None,
+                "agree":         False,
+            }
+
+    return {
+        "enabled":              True,
+        "clusters_compared":    len(compared_rows),
+        "agree":                agree,
+        "disagree":             disagree,
+        "primary_only_matches": primary_only,
+        "mean_only_matches":    mean_only,
+        "per_student":          per_student,
+    }
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # ATTENDANCE PIPELINE — shared generator (yields plain dicts, not SSE strings)
 # Both the SSE route and the sync route consume this.
@@ -935,7 +1028,36 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
         enrolled_in_list     = enrolled
         enrolled_not_in_list = {}
         yield {"type": "stage", "message": f"{len(enrolled)} students loaded — connecting…"}
- 
+
+    # ── Model Pipeline roles (Model Pipeline card, ML Fine Tuning page) ─────
+    # Which model's Hungarian assignment decides attendance this run, and
+    # which run as diagnostic middle-of-period shadows. If the requested
+    # primary's prerequisites are missing, fall back to "mean" with a logged
+    # warning — attendance is never lost to a misconfiguration.
+    with state.pipeline_config_lock:
+        pipeline = dict(state.pipeline_config)
+    requested_primary = pipeline.get("primary", "mean")
+    effective_primary = requested_primary
+    fallback_reason   = None
+    if requested_primary == "max_k" and not req.enrolledEmbeddingsTopK:
+        effective_primary, fallback_reason = "mean", "no cached top-K embeddings sent"
+    elif requested_primary == "adaface":
+        if state.adaface_session is None:
+            effective_primary, fallback_reason = "mean", "AdaFace ONNX model not loaded"
+        elif not (req.enrolledEmbeddingsAdaface or req.enrolledEmbeddingsAdafaceTopK):
+            effective_primary, fallback_reason = "mean", "no cached AdaFace enrolled embeddings sent"
+    elif requested_primary == "faiss" and state.faiss_index is None:
+        effective_primary, fallback_reason = "mean", "no FAISS index loaded"
+    if fallback_reason:
+        yield {"type": "stage",
+               "message": f"⚠️ Primary model '{requested_primary}' unavailable ({fallback_reason}) — falling back to mean"}
+    elif effective_primary != "mean":
+        yield {"type": "stage", "message": f"Primary model for this run: {effective_primary}"}
+
+    # Umbrella middle-of-period flag (legacy per-model flags OR'd in for
+    # back-compat with older Node deployments).
+    run_shadows = req.runShadows or req.runFaissShadow or req.runAdafaceShadow
+
     # Open RTSP
     cap = _open_capture(req.rtspUrl)
     if not cap.isOpened():
@@ -953,17 +1075,19 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
     all_embeddings, all_face_images, all_timestamps, all_quality = [], [], [], []
     all_demographics = []  # [{"age": int|None, "gender": "M"|"F"|None}, ...] — parallel to all_embeddings
     # AdaFace — entirely separate embedding space (see adaface_utils.py),
-    # populated only when this is the one run requesting the shadow
-    # comparison (req.runAdafaceShadow) and a model is actually loaded.
-    # Parallel to all_embeddings (same index per detection, None on failure)
-    # so cluster means can be built later from the same DBSCAN cluster
-    # indices InsightFace's own clustering already produced — no re-clustering.
+    # populated when AdaFace is this run's primary model (every run) or its
+    # shadow comparison is due (middle-of-period runs), and a model is
+    # actually loaded. Parallel to all_embeddings (same index per detection,
+    # None on failure) so cluster means can be built later from the same
+    # DBSCAN cluster indices InsightFace's own clustering already produced —
+    # no re-clustering.
     all_adaface_embeddings = []
-    with state.adaface_config_lock:
-        _adaface_enabled_at_start = state.adaface_config["enabled"]
-    run_adaface_shadow = (
-        req.runAdafaceShadow and _adaface_enabled_at_start and state.adaface_session is not None
+    need_adaface = state.adaface_session is not None and (
+        effective_primary == "adaface"
+        or (run_shadows and pipeline.get("shadow_adaface", False))
     )
+    # Back-compat alias — the capture loop below reads this name.
+    run_adaface_shadow = need_adaface
     CAMERA_SWITCH_SEC = 30
     cameras = [req.rtspUrl]
     if req.rtspUrl2:
@@ -1199,23 +1323,97 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
                 continue
             adaface_cluster_rows.append((row_idx, ada_mean / ada_norm))
 
+    # ── Primary score matrix (Model Pipeline: mean | max_k | adaface | faiss) ──
+    # Each branch produces the same (n_clusters, n_ids) shape so the Hungarian
+    # assignment and every downstream consumer stay identical — only how the
+    # scores are computed differs. A branch that can't produce a matrix at
+    # run time cascades to the classic mean path with a logged warning.
+    assign_ids, assign_matrix = None, None
+
+    if effective_primary == "max_k":
+        with state.max_k_config_lock:
+            _primary_top_k = state.max_k_config["top_k"]
+        topk_roster = {r: v for r, v in (req.enrolledEmbeddingsTopK or {}).items()
+                       if r in match_enrolled}
+        assign_ids, assign_matrix = _build_top_k_score_matrix(
+            cluster_means, topk_roster, _primary_top_k)
+
+    elif effective_primary == "adaface":
+        with state.adaface_config_lock:
+            _primary_top_k = state.adaface_config["top_k"]
+        ada_topk = {r: v for r, v in (req.enrolledEmbeddingsAdafaceTopK or {}).items()
+                    if r in match_enrolled}
+        if not ada_topk:  # K=1 fallback from the mean AdaFace dict
+            ada_topk = {r: [v] for r, v in (req.enrolledEmbeddingsAdaface or {}).items()
+                        if r in match_enrolled}
+        if adaface_cluster_rows:
+            local_means = [m for _, m in adaface_cluster_rows]
+            local_ids, local_matrix = _build_top_k_score_matrix(
+                local_means, ada_topk, _primary_top_k)
+            if local_ids is not None:
+                # Expand back to full cluster height — clusters with no valid
+                # AdaFace vectors score -1 everywhere (never assigned).
+                assign_ids    = local_ids
+                assign_matrix = np.full((len(cluster_means), len(local_ids)), -1.0,
+                                        dtype=np.float32)
+                for local_r, (orig_r, _) in enumerate(adaface_cluster_rows):
+                    assign_matrix[orig_r, :] = local_matrix[local_r, :]
+
+    elif effective_primary == "faiss":
+        # Full-index top-k voting per cluster, folded into the same matrix
+        # shape: matrix[r, roster_col] = vote score for roster hits only.
+        # Hungarian then resolves duplicates (no optimality claim here —
+        # scores exist only where the index voted, everything else is -1).
+        with state.faiss_config_lock:
+            _f_top_k     = state.faiss_config["top_k"]
+            _f_threshold = state.faiss_config["recog_threshold"]
+        if cluster_means and enrolled_ids:
+            roster_index = {roll: i for i, roll in enumerate(enrolled_ids)}
+            assign_ids    = enrolled_ids
+            assign_matrix = np.full((len(cluster_means), len(enrolled_ids)), -1.0,
+                                    dtype=np.float32)
+            any_hit = False
+            for r, cm in enumerate(cluster_means):
+                roll, score = _recognize_face(
+                    np.array(cm, dtype=np.float32),
+                    state.faiss_index, state.vid_to_roll,
+                    top_k=_f_top_k, threshold=_f_threshold,
+                )
+                if roll and roll in roster_index:
+                    assign_matrix[r, roster_index[roll]] = score
+                    any_hit = True
+            if not any_hit:
+                assign_ids, assign_matrix = None, None
+
+    if effective_primary != "mean" and assign_ids is None:
+        yield {"type": "stage",
+               "message": f"⚠️ Primary model '{effective_primary}' produced no usable scores — falling back to mean"}
+        fallback_reason   = fallback_reason or f"'{effective_primary}' produced no usable scores"
+        effective_primary = "mean"
+
+    if effective_primary == "mean" and cluster_means and len(enroll_matrix) > 0:
+        assign_ids    = enrolled_ids
+        assign_matrix = np.array(cluster_means, dtype=np.float32) @ enroll_matrix.T
+
     # ── One-to-one Hungarian assignment ───────────────────────────────────
     assigned_cluster_rows = set()  # row indices (into cluster_meta) with a valid assignment
-    primary_matches = {}  # row index -> (roll_no, score), for the max-of-K shadow comparison below
+    primary_matches = {}  # row index -> (roll_no, score), for the shadow comparisons below
 
-    if cluster_means and len(enroll_matrix) > 0:
-        score_matrix = np.array(cluster_means, dtype=np.float32) @ enroll_matrix.T
-        # shape: (n_clusters, n_enrolled)
+    if cluster_means and assign_ids is not None and assign_matrix is not None and assign_matrix.size > 0:
+        score_matrix = assign_matrix
+        # shape: (n_clusters, n_ids)
 
         row_ind, col_ind = linear_sum_assignment(-score_matrix)  # negate → maximise similarity
 
         for r, c in zip(row_ind, col_ind):
             score   = float(score_matrix[r, c])
-            roll_no = enrolled_ids[c]
+            roll_no = assign_ids[c]
             _, indices = cluster_meta[r]
 
             if score < req.reviewThreshold:
                 continue  # below threshold → treat as unmatched
+            if roll_no not in attendance:
+                continue  # non-roster id (defensive — branches restrict to roster already)
 
             assigned_cluster_rows.add(r)
             primary_matches[r] = (roll_no, score)
@@ -1249,15 +1447,15 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
                 rec["gender_samples"] = rec.get("gender_samples", []) + genders
                 rec["gender"] = max(set(rec["gender_samples"]), key=rec["gender_samples"].count)
 
-    # ── Max-of-K shadow comparison (diagnostic only, ML Fine Tuning toggle) ──
+    # ── Max-of-K shadow comparison (diagnostic only, Model Pipeline card) ──
     # Never touches `attendance` — purely reports how often scoring against
     # each student's top-K individual embeddings would have agreed with the
-    # primary mean-embedding assignment above.
+    # primary assignment above. Runs only on middle-of-period runs
+    # (req.runShadows) and never when max-of-K is itself the primary.
     matching_comparison = None
     with state.max_k_config_lock:
-        max_k_enabled = state.max_k_config["enabled"]
-        max_k_top_k   = state.max_k_config["top_k"]
-    if max_k_enabled:
+        max_k_top_k = state.max_k_config["top_k"]
+    if run_shadows and pipeline.get("shadow_max_k", False) and effective_primary != "max_k":
         enrolled_topk_raw = {
             roll_no: vecs for roll_no, vecs in (req.enrolledEmbeddingsTopK or {}).items()
             if roll_no in match_enrolled
@@ -1275,17 +1473,16 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
     else:
         matching_comparison = {"enabled": False}
 
-    # ── FAISS shadow comparison (diagnostic only, ML Fine Tuning toggle) ────
+    # ── FAISS shadow comparison (diagnostic only, Model Pipeline card) ──────
     # Never touches `attendance` — purely reports how often the FULL FAISS
-    # index's top-k voting would have agreed with the primary mean-embedding
-    # assignment above. Requested by Node only on the run nearest the middle
-    # of a scheduled period (req.runFaissShadow).
+    # index's top-k voting would have agreed with the primary assignment
+    # above. Runs only on middle-of-period runs (req.runShadows) and never
+    # when FAISS is itself the primary.
     faiss_comparison = None
     with state.faiss_config_lock:
-        faiss_shadow_enabled = state.faiss_config.get("shadow_enabled", False)
         faiss_top_k          = state.faiss_config["top_k"]
         faiss_recog_threshold = state.faiss_config["recog_threshold"]
-    if faiss_shadow_enabled and req.runFaissShadow:
+    if run_shadows and pipeline.get("shadow_faiss", False) and effective_primary != "faiss":
         try:
             faiss_comparison = _faiss_shadow_comparison(
                 cluster_means, primary_matches, faiss_top_k, faiss_recog_threshold,
@@ -1298,18 +1495,17 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
     else:
         faiss_comparison = {"enabled": False}
 
-    # ── AdaFace shadow comparison (diagnostic only, ML Fine Tuning toggle) ──
+    # ── AdaFace shadow comparison (diagnostic only, Model Pipeline card) ────
     # Never touches `attendance` — purely reports how often AdaFace's
     # independent embedding space would have agreed with the primary
-    # mean-embedding (InsightFace) assignment above. Requested by Node only
-    # on the run nearest the middle of a scheduled period (req.runAdafaceShadow);
-    # a no-op if no AdaFace ONNX model is loaded (see run_adaface_shadow above).
+    # assignment above. Runs only on middle-of-period runs (req.runShadows),
+    # never when AdaFace is itself the primary, and is a no-op if no AdaFace
+    # ONNX model is loaded (adaface_cluster_rows stays empty — see need_adaface).
     adaface_comparison = None
     with state.adaface_config_lock:
-        adaface_shadow_enabled = state.adaface_config["enabled"]
         adaface_top_k          = state.adaface_config["top_k"]
         adaface_recog_threshold = state.adaface_config["recog_threshold"]
-    if adaface_shadow_enabled and run_adaface_shadow:
+    if run_shadows and pipeline.get("shadow_adaface", False) and effective_primary != "adaface":
         enrolled_adaface_topk = {
             roll_no: vecs for roll_no, vecs in (req.enrolledEmbeddingsAdafaceTopK or {}).items()
             if roll_no in match_enrolled
@@ -1327,6 +1523,25 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
                                              "or no AdaFace ONNX model loaded."}
     else:
         adaface_comparison = {"enabled": False}
+
+    # ── Mean shadow comparison (diagnostic only, Model Pipeline card) ───────
+    # Only meaningful when Mean is NOT the primary — runs the classic
+    # mean-embedding Hungarian assignment and reports agreement with whatever
+    # model actually decided attendance this run. Never touches `attendance`.
+    mean_comparison = None
+    if run_shadows and pipeline.get("shadow_mean", False) and effective_primary != "mean":
+        try:
+            mean_comparison = _mean_shadow_comparison(
+                cluster_means, enrolled_ids, enroll_matrix,
+                primary_matches, req.reviewThreshold,
+            )
+        except Exception:
+            logger.exception("Mean shadow comparison failed — skipping")
+        if mean_comparison is None:
+            mean_comparison = {"enabled": True, "skipped": True,
+                                "reason": "No mean enrolled embeddings or no clusters to compare."}
+    else:
+        mean_comparison = {"enabled": False}
 
     # ── Unmatched clusters ─────────────────────────────────────────────────
     unmatched_clusters = []
@@ -1433,6 +1648,12 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
                 "sem":       req.semester,
                 "locksemId": req.locksemId,
                 "dept":      req.batch.split("_")[1] if "_" in req.batch else "",
+                # Which model actually decided attendance this run (Model
+                # Pipeline card) — differs from the configured primary only
+                # when prerequisites were missing and the run fell back.
+                "primary_model":           effective_primary,
+                "primary_fallback":        bool(fallback_reason),
+                "primary_fallback_reason": fallback_reason,
             },
             "summary": {
                 "total_faces_extracted": int(len(all_embeddings)),
@@ -1465,6 +1686,9 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
             # Same, but against AdaFace's independent embedding space
             # (state.adaface_config["enabled"], ML Fine Tuning page).
             "adaface_comparison": adaface_comparison,
+            # Classic mean-embedding assignment as a shadow — only populated
+            # when a different model is the primary (Model Pipeline card).
+            "mean_comparison": mean_comparison,
         },
     }
 
@@ -2227,6 +2451,97 @@ def update_adaface_config_ep(req: AdafaceConfigUpdate):
     new_config = adaface_config_store.update_adaface_config(updates)
     logger.info(f"[AdafaceConfig] Updated: {updates} → {new_config}")
     return new_config
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Model Pipeline config  (Model Pipeline card, ML Fine Tuning page)
+# ═══════════════════════════════════════════════════════════════════════════
+# Which model's assignment DECIDES attendance (primary) and which run as
+# diagnostic middle-of-period shadow comparisons — see state.pipeline_config.
+
+class PipelineConfigUpdate(BaseModel):
+    primary:        Optional[str]  = None
+    shadow_mean:    Optional[bool] = None
+    shadow_max_k:   Optional[bool] = None
+    shadow_faiss:   Optional[bool] = None
+    shadow_adaface: Optional[bool] = None
+
+
+@router.get("/pipeline-config")
+def get_pipeline_config_ep():
+    with state.pipeline_config_lock:
+        config = dict(state.pipeline_config)
+    # Readiness hints so the UI can warn before a primary choice that would
+    # just fall back to mean at run time.
+    return {
+        **config,
+        "adaface_model_loaded": state.adaface_session is not None,
+        "faiss_index_loaded":   state.faiss_index is not None,
+    }
+
+
+@router.post("/pipeline-config")
+def update_pipeline_config_ep(req: PipelineConfigUpdate):
+    updates = req.dict(exclude_none=True)
+
+    if "primary" in updates and updates["primary"] not in pipeline_config_store.PRIMARY_CHOICES:
+        return JSONResponse(status_code=400,
+            content={"error": f"primary must be one of {list(pipeline_config_store.PRIMARY_CHOICES)}, "
+                              f"got {updates['primary']!r}"})
+
+    new_config = pipeline_config_store.update_pipeline_config(updates)
+    logger.info(f"[PipelineConfig] Updated: {updates} → {new_config}")
+    return {
+        **new_config,
+        "adaface_model_loaded": state.adaface_session is not None,
+        "faiss_index_loaded":   state.faiss_index is not None,
+    }
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Face Detector config  (Face Detector card, ML Fine Tuning page)
+# ═══════════════════════════════════════════════════════════════════════════
+# Which detection model the shared FaceAnalysis instance runs: SCRFD-10G
+# (buffalo_l's built-in det_10g.onnx, the default) or an optional RetinaFace
+# ONNX. Detection-only swap — embeddings/recognition are untouched, since
+# both detectors hand over the same bboxes + 5-point landmarks contract.
+
+class DetectorConfigUpdate(BaseModel):
+    active: Optional[str] = None   # scrfd | retinaface
+
+
+@router.get("/detector-config")
+def get_detector_config_ep():
+    with state.detector_config_lock:
+        config = dict(state.detector_config)
+    return {
+        **config,
+        "retinaface_model_loaded": state.retinaface_det_model is not None,
+    }
+
+
+@router.post("/detector-config")
+def update_detector_config_ep(req: DetectorConfigUpdate):
+    updates = req.dict(exclude_none=True)
+
+    if "active" in updates:
+        if updates["active"] not in detector_config_store.DETECTOR_CHOICES:
+            return JSONResponse(status_code=400,
+                content={"error": f"active must be one of {list(detector_config_store.DETECTOR_CHOICES)}, "
+                                  f"got {updates['active']!r}"})
+        if updates["active"] == "retinaface" and state.retinaface_det_model is None:
+            return JSONResponse(status_code=400,
+                content={"error": "RetinaFace ONNX is not loaded on the ML machine — "
+                                  "drop it at models/retinaface.onnx (see README_RETINAFACE.md) "
+                                  "and restart the service first."})
+
+    new_config = detector_config_store.update_detector_config(updates)
+    detector_utils.apply_active_detector()
+    logger.info(f"[DetectorConfig] Updated: {updates} → {new_config}")
+    return {
+        **new_config,
+        "retinaface_model_loaded": state.retinaface_det_model is not None,
+    }
 
 
 def _parse_dept_from_filename(fname: str) -> str:

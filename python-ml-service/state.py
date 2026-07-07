@@ -140,3 +140,51 @@ adaface_config = {
     "top_k":           3,     # how many of each student's stored AdaFace embeddings to score against
 }
 adaface_config_lock = threading.Lock()
+
+# ─── Model Pipeline — which model decides attendance, which run as shadows ────
+# Single source of truth for model ROLES in _attendance_pipeline, editable at
+# runtime via GET/POST /pipeline-config (Model Pipeline card, ML Fine Tuning
+# page), persisted to ml-data/pipeline_config.json via pipeline_config_store.py.
+#
+#   primary     — the model whose Hungarian assignment actually decides
+#                 attendance (mean | max_k | faiss | adaface). If its
+#                 prerequisites are missing at run time (no AdaFace ONNX, no
+#                 FAISS index, no cached top-K/AdaFace enrolled data), the run
+#                 auto-falls back to "mean" with a logged warning and the
+#                 report records the fallback.
+#   shadow_*    — which models additionally run as diagnostic middle-of-period
+#                 shadow comparisons against the primary. The primary model's
+#                 own shadow flag is ignored (comparing it to itself is
+#                 meaningless).
+#
+# These flags supersede the legacy per-model gates (max_k_config["enabled"],
+# faiss_config["shadow_enabled"], adaface_config["enabled"]'s shadow role) —
+# pipeline_config_store.py seeds from them once, on first creation. The
+# per-model config dicts above remain the home of each model's
+# hyperparameters (top_k, recog_threshold, ...); adaface_config["enabled"]
+# still gates enrollment-time AdaFace embedding generation.
+pipeline_config = {
+    "primary":        "mean",   # mean | max_k | faiss | adaface
+    "shadow_mean":    False,
+    "shadow_max_k":   False,
+    "shadow_faiss":   False,
+    "shadow_adaface": False,
+}
+pipeline_config_lock = threading.Lock()
+
+# ─── Face detector selection (SCRFD-10G vs RetinaFace) ────────────────────────
+# buffalo_l's built-in detector IS SCRFD-10G (det_10g.onnx) — the default.
+# An optional RetinaFace ONNX (models/retinaface.onnx or RETINAFACE_MODEL_PATH,
+# insightface model_zoo-compatible export) can be loaded for comparison and
+# selected at runtime from the Face Detector card (ML Fine Tuning page).
+# Swapping happens by replacing face_app's detection module only — the
+# recognition/embedding side is untouched, since both detectors hand over the
+# same (bboxes + 5-point landmarks) contract that alignment consumes.
+# See detector_utils.py.
+scrfd_det_model      = None   # captured from face_app after load_model()
+retinaface_det_model = None   # None until a RetinaFace ONNX is found+loaded
+
+detector_config = {
+    "active": "scrfd",   # scrfd | retinaface
+}
+detector_config_lock = threading.Lock()

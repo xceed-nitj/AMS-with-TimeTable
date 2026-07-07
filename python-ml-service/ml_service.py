@@ -245,6 +245,17 @@ async def lifespan(app: FastAPI):
     load_adaface_model()
     from adaface_config_store import load_adaface_config
     load_adaface_config()
+    # Must load AFTER the legacy config stores above — first-run seeding
+    # reads their gates (see pipeline_config_store.py).
+    from pipeline_config_store import load_pipeline_config
+    load_pipeline_config()
+    # Face detector selection (SCRFD-10G vs optional RetinaFace ONNX) —
+    # load config + the optional model, then point face_app at the choice.
+    from detector_config_store import load_detector_config
+    load_detector_config()
+    from detector_utils import load_retinaface_model, apply_active_detector
+    load_retinaface_model()
+    apply_active_detector()
     load_embeddings()
     yield
 
@@ -290,11 +301,24 @@ if os.path.exists(CLIENT_GROUND_TRUTH):
 
 @app.get("/health")
 def health():
+    with state.detector_config_lock:
+        active_detector = state.detector_config.get("active", "scrfd")
     return {
         "status":            "ok",
         "model_loaded":      state.face_app is not None,
         "students_enrolled": len(state.embeddings_db),
         "det_size":          state.current_det_size,
+        # Per-model availability on THIS machine (the GPU box) — surfaced in
+        # the frontend's health indicator and model dropdowns so admins can
+        # see at a glance which optional ONNX files are actually present.
+        "models": {
+            "insightface":  state.face_app is not None,           # buffalo_l (SCRFD-10G + ArcFace)
+            "adaface":      state.adaface_session is not None,    # models/adaface.onnx
+            "liveness":     state.liveness_session is not None,   # models/liveness.onnx
+            "retinaface":   state.retinaface_det_model is not None,  # models/retinaface.onnx
+            "faiss_index":  state.faiss_index is not None,        # Generate_embeddings.py output
+        },
+        "active_detector":   active_detector,
     }
 
 
@@ -415,6 +439,11 @@ def set_det_size(req: SetDetSizeRequest):
         raise HTTPException(status_code=400, detail="det_size must be 320 or 640")
     if req.det_size != state.current_det_size:
         load_model(det_size=req.det_size)
+        # load_model() rebuilds face_app with buffalo_l's SCRFD — re-point it
+        # at RetinaFace if that's the configured detector.
+        from detector_utils import apply_active_detector
+        state.scrfd_det_model = None  # stale — capture fresh from the new face_app
+        apply_active_detector()
     return {"status": "ok", "det_size": state.current_det_size}
 
 

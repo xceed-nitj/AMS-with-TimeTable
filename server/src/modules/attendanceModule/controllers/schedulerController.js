@@ -14,7 +14,12 @@ const TimeTable = require('../../../models/timetable');
 const Camera = require('../../../models/attendanceModule/camera');
 const Subject = require('../../../models/subject');
 const AttendanceReport = require('../../../models/attendanceReport');
-const { buildEnrolledEmbeddings, buildEnrolledEmbeddingsTopK, buildEnrolledEmbeddingsAdafaceTopK } = require('./embeddingSyncHelper');
+const {
+  buildEnrolledEmbeddings,
+  buildEnrolledEmbeddingsTopK,
+  buildEnrolledEmbeddingsAdaface,
+  buildEnrolledEmbeddingsAdafaceTopK,
+} = require('./embeddingSyncHelper');
 
 const ML_URL = process.env.ML_SERVICE_URL || 'http://localhost:8500';
 const EMBEDDINGS_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'embeddings');
@@ -277,14 +282,26 @@ async function runRoom({ room, roomOverride, slot, date, config }) {
 
   // 6. Call Python ML service — numRuns times, checkIntervalMin apart
   push(`Plan: ${numRuns} run(s), ${runDurationSec}s each, ${checkIntervalMin}min apart, logic=${presentLogic}`);
-  // Max-of-K shadow comparison (diagnostic only) fires once per period — on
-  // the run nearest the middle of the numRuns runs — not every run. See
-  // state.max_k_config on the ML Fine Tuning page.
+  // Shadow comparisons (diagnostic only) fire once per period — on the run
+  // nearest the middle of the numRuns runs. Which models run (and which is
+  // the PRIMARY decision-maker) is decided Python-side by
+  // state.pipeline_config (Model Pipeline card, ML Fine Tuning page).
   const middleRunIndex = Math.ceil(numRuns / 2);
+  // All enrolled dicts ship on every run — Node can't know which primary
+  // Python's pipeline_config selects. Built once per room, reused per run.
+  const enrolledDicts = {
+    enrolledEmbeddings:            buildEnrolledEmbeddings(GROUND_TRUTH_DIR, ctx.batch),
+    enrolledEmbeddingsTopK:        buildEnrolledEmbeddingsTopK(GROUND_TRUTH_DIR, ctx.batch),
+    enrolledEmbeddingsAdaface:     buildEnrolledEmbeddingsAdaface(GROUND_TRUTH_DIR, ctx.batch),
+    enrolledEmbeddingsAdafaceTopK: buildEnrolledEmbeddingsAdafaceTopK(GROUND_TRUTH_DIR, ctx.batch),
+  };
   const runResults = [];
   let middleRunComparison = null;
   let middleRunFaissComparison = null;
   let middleRunAdafaceComparison = null;
+  let middleRunMeanComparison = null;
+  let runPrimaryModel = null;
+  let runPrimaryFallback = false;
   for (let i = 1; i <= numRuns; i++) {
     if (i > 1) {
       push(`Waiting ${checkIntervalMin} min before run ${i}/${numRuns}`);
@@ -303,19 +320,20 @@ async function runRoom({ room, roomOverride, slot, date, config }) {
         semester: ctx.sem,
         locksemId: ctx.locksemId,
         embeddingsPklData: pkl.pklData,
+        ...enrolledDicts,
       };
       if (i === middleRunIndex) {
-        payload.enrolledEmbeddingsTopK = buildEnrolledEmbeddingsTopK(GROUND_TRUTH_DIR, ctx.batch);
-        payload.runFaissShadow = true;
-        payload.enrolledEmbeddingsAdafaceTopK = buildEnrolledEmbeddingsAdafaceTopK(GROUND_TRUTH_DIR, ctx.batch);
-        payload.runAdafaceShadow = true;
+        payload.runShadows = true;
       }
       const res = await axios.post(`${ML_URL}/run-attendance-rtsp-sync`, payload, { timeout: 300000 });
       runResults.push(res.data);
+      runPrimaryModel = res.data.metadata?.primary_model || runPrimaryModel;
+      runPrimaryFallback = runPrimaryFallback || !!res.data.metadata?.primary_fallback;
       if (i === middleRunIndex) {
         middleRunComparison = res.data.matching_comparison || null;
         middleRunFaissComparison = res.data.faiss_comparison || null;
         middleRunAdafaceComparison = res.data.adaface_comparison || null;
+        middleRunMeanComparison = res.data.mean_comparison || null;
       }
       push(`Run ${i} done: P:${res.data.summary?.present} A:${res.data.summary?.absent} R:${res.data.summary?.review}`);
     } catch (err) {
@@ -383,6 +401,9 @@ async function runRoom({ room, roomOverride, slot, date, config }) {
     matchingComparison: middleRunComparison,
     faissComparison: middleRunFaissComparison,
     adafaceComparison: middleRunAdafaceComparison,
+    meanComparison: middleRunMeanComparison,
+    primaryModel: runPrimaryModel || 'mean',
+    primaryFallback: runPrimaryFallback,
   };
 
   let report = await AttendanceReport.findOne({ batch: ctx.batch, date, timeSlot: slot });

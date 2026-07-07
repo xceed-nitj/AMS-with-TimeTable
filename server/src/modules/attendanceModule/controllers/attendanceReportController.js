@@ -686,6 +686,9 @@ class AttendanceReportController {
         { key: "max_k",   label: "Max-of-K", field: "matchingComparison" },
         { key: "faiss",   label: "FAISS",    field: "faissComparison" },
         { key: "adaface", label: "AdaFace",  field: "adafaceComparison" },
+        // Mean runs as a shadow only when another model is the primary
+        // decision-maker (Model Pipeline card, ML Fine Tuning page).
+        { key: "mean",    label: "Mean (as shadow)", field: "meanComparison" },
       ];
       const modelAgg = {};
       for (const m of MODEL_DEFS) {
