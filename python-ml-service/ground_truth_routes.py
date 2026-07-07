@@ -126,14 +126,29 @@ def _compute_mean_embedding_from_bytes(photos):
     (base64) instead of files on disk — used so the ML service never needs
     filesystem access to server/ml-data/ground_truth/.
 
-    Also computes an AdaFace mean embedding from the same detected faces,
-    entirely separate from and never affecting the InsightFace computation
-    above — a no-op (adaface_mean_emb stays None) when no AdaFace ONNX
-    model is loaded (state.adaface_session is None). See adaface_utils.py.
+    Quality weighting and top-K retention deliberately MIRROR
+    _update_student_embedding_sync (quality = det_score × clipped Laplacian
+    sharpness; keep the top-3 individual embeddings by that weight) so a
+    student gets identical ground-truth quality whether they were enrolled
+    via bulk /build-embeddings-sync or individually re-enrolled via
+    /update-student-embedding — previously the bulk path was blur-unaware
+    and kept no top-K gallery at all.
+
+    Also computes AdaFace mean + top-K from the same detected faces, ranked
+    by the same quality weight — entirely separate from and never affecting
+    the InsightFace computation; a no-op (both stay None) when no AdaFace
+    ONNX model is loaded (state.adaface_session is None). See adaface_utils.py.
+
+    Returns a dict:
+      { mean_emb, num_photos, top_k_embeddings,          # InsightFace
+        adaface_mean_emb, adaface_top_k_embeddings }     # AdaFace (or None)
+    mean_emb is None when no usable face was found.
     """
+    TOP_K = 3
     embeddings  = []
     emb_weights = []
     adaface_embeddings = []
+    adaface_weights    = []
     for photo in photos:
         img = _decode_photo(photo)
         if img is None:
@@ -150,16 +165,27 @@ def _compute_mean_embedding_from_bytes(photos):
         norm = np.linalg.norm(emb)
         if norm == 0:
             continue
+        # Same blur-aware quality as _update_student_embedding_sync.
+        x1, y1, x2, y2 = map(int, face.bbox)
+        crop = img[max(0, y1):y2, max(0, x1):x2]
+        if crop.size > 0:
+            gray    = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+            lap     = float(cv2.Laplacian(gray, cv2.CV_64F).var())
+            quality = det_score * min(lap, 500) / 500
+        else:
+            quality = det_score
         embeddings.append(emb / norm)
-        emb_weights.append(max(det_score, 0.01))
+        emb_weights.append(max(quality, 0.01))
 
         if state.adaface_session is not None:
             ada_emb = adaface_utils.get_adaface_embedding_for_face(img, getattr(face, 'kps', None))
             if ada_emb is not None:
                 adaface_embeddings.append(ada_emb)
+                adaface_weights.append(max(quality, 0.01))
 
     if not embeddings:
-        return None, 0, None
+        return {"mean_emb": None, "num_photos": 0, "top_k_embeddings": None,
+                "adaface_mean_emb": None, "adaface_top_k_embeddings": None}
 
     weights  = np.array(emb_weights, dtype=np.float32)
     weights /= weights.sum()
@@ -167,16 +193,28 @@ def _compute_mean_embedding_from_bytes(photos):
     norm     = np.linalg.norm(mean_emb)
     mean_emb = mean_emb / norm
 
-    adaface_mean_emb = None
-    if adaface_embeddings:
-        adaface_mean_emb = np.mean(np.array(adaface_embeddings, dtype=np.float32), axis=0)
-        ada_norm = np.linalg.norm(adaface_mean_emb)
-        if ada_norm > 0:
-            adaface_mean_emb = adaface_mean_emb / ada_norm
-        else:
-            adaface_mean_emb = None
+    ranked_idx = np.argsort(emb_weights)[::-1][:TOP_K]
+    top_k_embeddings = [embeddings[i].tolist() for i in ranked_idx]
 
-    return mean_emb, len(embeddings), adaface_mean_emb
+    adaface_mean_emb = None
+    adaface_top_k_embeddings = None
+    if adaface_embeddings:
+        ada_weights  = np.array(adaface_weights, dtype=np.float32)
+        ada_weights /= ada_weights.sum()
+        ada_mean = np.average(np.array(adaface_embeddings, dtype=np.float32), axis=0, weights=ada_weights)
+        ada_norm = np.linalg.norm(ada_mean)
+        if ada_norm > 0:
+            adaface_mean_emb = ada_mean / ada_norm
+            ada_ranked_idx = np.argsort(adaface_weights)[::-1][:TOP_K]
+            adaface_top_k_embeddings = [adaface_embeddings[i].tolist() for i in ada_ranked_idx]
+
+    return {
+        "mean_emb":                 mean_emb,
+        "num_photos":               len(embeddings),
+        "top_k_embeddings":         top_k_embeddings,
+        "adaface_mean_emb":         adaface_mean_emb,
+        "adaface_top_k_embeddings": adaface_top_k_embeddings,
+    }
 
 
 def _build_embeddings_sync(req: BuildEmbeddingsRequest):
@@ -195,6 +233,7 @@ def _build_embeddings_sync(req: BuildEmbeddingsRequest):
     """
     db = {}
     adaface_db = {}
+    students_detail = {}
 
     for student in req.students:
         roll_no = student.roll_no
@@ -220,11 +259,23 @@ def _build_embeddings_sync(req: BuildEmbeddingsRequest):
                 logger.info(f"✓ {roll_no}: used cached embedding")
                 continue
 
-        mean_emb, num_photos_used, adaface_mean_emb = _compute_mean_embedding_from_bytes(student.photos)
+        computed = _compute_mean_embedding_from_bytes(student.photos)
+        mean_emb, num_photos_used = computed["mean_emb"], computed["num_photos"]
+        adaface_mean_emb = computed["adaface_mean_emb"]
         if mean_emb is not None:
             db[roll_no] = {"name": name, "embedding": mean_emb, "num_photos": num_photos_used}
             if adaface_mean_emb is not None:
                 adaface_db[roll_no] = {"name": name, "embedding": adaface_mean_emb, "num_photos": num_photos_used}
+            # Freshly-computed per-student galleries — returned so Node can
+            # persist mean/top-K into each student's _info.json, closing the
+            # quality gap between bulk enrollment and individual re-enroll
+            # (previously only /update-student-embedding produced these).
+            students_detail[roll_no] = {
+                "mean_embedding":           mean_emb.tolist(),
+                "top_k_embeddings":         computed["top_k_embeddings"],
+                "adaface_mean_embedding":   adaface_mean_emb.tolist() if adaface_mean_emb is not None else None,
+                "adaface_top_k_embeddings": computed["adaface_top_k_embeddings"],
+            }
         else:
             logger.warning(f"✗ {roll_no}: no faces detected")
 
@@ -235,6 +286,9 @@ def _build_embeddings_sync(req: BuildEmbeddingsRequest):
         "status":            "done",
         "students_enrolled": len(db),
         "pkl_data":          base64.b64encode(pkl_bytes).decode('ascii'),
+        # Only rolls whose photos were freshly processed this call — students
+        # served from cached_mean_embedding are absent (no new data for them).
+        "students_detail":   students_detail,
     }
     if adaface_db:
         result["adaface_pkl_data"] = base64.b64encode(pickle.dumps(adaface_db)).decode('ascii')
@@ -260,8 +314,10 @@ def _erp_sync_sync(req: ERPSyncRequest) -> dict:
     for student in req.students:
         roll_no = student.roll_no
         # ERP cross-department matching is a separate, out-of-scope store
-        # (see class comment above) — AdaFace mean is computed but not used here.
-        mean_emb, num_photos_used, _adaface_mean_emb = _compute_mean_embedding_from_bytes(student.photos)
+        # (see class comment above) — AdaFace/top-K are computed but not used
+        # here; the blur-aware quality weighting still improves the ERP mean.
+        computed = _compute_mean_embedding_from_bytes(student.photos)
+        mean_emb, num_photos_used = computed["mean_emb"], computed["num_photos"]
         if mean_emb is not None:
             db[roll_no] = {
                 "name":       roll_no,

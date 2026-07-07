@@ -14,7 +14,12 @@ const LockSem = require('../../../models/locksem');
 const TimeTable = require('../../../models/timetable');
 const { saveAttendanceDailyData, listDailyDataFiles, readDailyDataFile } = require('../controllers/attendanceDailyDataSaver');
 const { saveFrameSnapshot } = require('../controllers/frameSnapshotWriter');
-const { buildEnrolledEmbeddings, buildEnrolledEmbeddingsTopK } = require('../controllers/embeddingSyncHelper');
+const {
+    buildEnrolledEmbeddings,
+    buildEnrolledEmbeddingsTopK,
+    buildEnrolledEmbeddingsAdaface,
+    buildEnrolledEmbeddingsAdafaceTopK,
+} = require('../controllers/embeddingSyncHelper');
 
 const ML_URL = process.env.ML_SERVICE_URL || 'http://localhost:8500';
 const GROUND_TRUTH_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'ground_truth');
@@ -421,6 +426,58 @@ router.post('/adaface-config', async (req, res) => {
     }
 });
 
+// ─── Model Pipeline Config (Model Pipeline card, ML Fine Tuning page) ───
+// Which model DECIDES attendance (primary) and which run as middle-of-period
+// shadow comparisons — see state.pipeline_config in the ML service.
+router.get('/pipeline-config', async (req, res) => {
+    try {
+        const result = await axios.get(`${ML_URL}/pipeline-config`, { timeout: 5000 });
+        res.json(result.data);
+    } catch (e) {
+        res.status(503).json({
+            error: e.response?.data?.error || e.message || 'Pipeline config unavailable',
+        });
+    }
+});
+
+router.post('/pipeline-config', async (req, res) => {
+    try {
+        const result = await axios.post(`${ML_URL}/pipeline-config`, req.body, { timeout: 5000 });
+        res.json(result.data);
+    } catch (e) {
+        const status = e.response?.status || 503;
+        res.status(status).json({
+            error: e.response?.data?.error || e.message || 'Failed to update pipeline config',
+        });
+    }
+});
+
+// ─── Face Detector Config (Face Detector card, ML Fine Tuning page) ───
+// SCRFD-10G (buffalo_l built-in, default) vs optional RetinaFace ONNX —
+// detection-only swap, embedding side untouched.
+router.get('/detector-config', async (req, res) => {
+    try {
+        const result = await axios.get(`${ML_URL}/detector-config`, { timeout: 5000 });
+        res.json(result.data);
+    } catch (e) {
+        res.status(503).json({
+            error: e.response?.data?.error || e.message || 'Detector config unavailable',
+        });
+    }
+});
+
+router.post('/detector-config', async (req, res) => {
+    try {
+        const result = await axios.post(`${ML_URL}/detector-config`, req.body, { timeout: 15000 });
+        res.json(result.data);
+    } catch (e) {
+        const status = e.response?.status || 503;
+        res.status(status).json({
+            error: e.response?.data?.error || e.message || 'Failed to update detector config',
+        });
+    }
+});
+
 router.get('/liveness-rejected-samples', async (req, res) => {
     try {
         const limit = Number.parseInt(req.query.limit, 10) || 50;
@@ -796,11 +853,15 @@ router.post('/run-attendance-rtsp', async (req, res) => {
         semester:  resolvedSem,
         locksemId: resolvedLocksem,
         _resolvedCtx: ctx || null,
-        enrolledEmbeddings: buildEnrolledEmbeddings(GROUND_TRUTH_DIR, resolvedBatch),
-        // Only used by Python for the optional max-of-K shadow comparison
-        // (state.max_k_config, ML Fine Tuning page) — the primary attendance
-        // decision above always uses enrolledEmbeddings (mean), unchanged.
-        enrolledEmbeddingsTopK: buildEnrolledEmbeddingsTopK(GROUND_TRUTH_DIR, resolvedBatch),
+        // All enrolled dicts ship on every run — which model uses them
+        // (primary vs shadow) is decided Python-side by state.pipeline_config
+        // (Model Pipeline card, ML Fine Tuning page).
+        enrolledEmbeddings:            buildEnrolledEmbeddings(GROUND_TRUTH_DIR, resolvedBatch),
+        enrolledEmbeddingsTopK:        buildEnrolledEmbeddingsTopK(GROUND_TRUTH_DIR, resolvedBatch),
+        enrolledEmbeddingsAdaface:     buildEnrolledEmbeddingsAdaface(GROUND_TRUTH_DIR, resolvedBatch),
+        enrolledEmbeddingsAdafaceTopK: buildEnrolledEmbeddingsAdafaceTopK(GROUND_TRUTH_DIR, resolvedBatch),
+        // A one-shot run is its own "middle" — shadow comparisons eligible.
+        runShadows: true,
     };
 
     // Step 3: Stream from Python, intercept the 'done' event to save daily data
