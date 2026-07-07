@@ -14,6 +14,22 @@ const ATTEND_API      = `${apiUrl}/attendancemodule/acquisitioncontrol/attendanc
 const FAISS_CONFIG_API = `${apiUrl}/api/v1/ml/faiss-config`;
 const MAX_K_CONFIG_API = `${apiUrl}/api/v1/ml/max-k-config`;
 const ADAFACE_CONFIG_API = `${apiUrl}/api/v1/ml/adaface-config`;
+const PIPELINE_CONFIG_API = `${apiUrl}/api/v1/ml/pipeline-config`;
+const DETECTOR_CONFIG_API = `${apiUrl}/api/v1/ml/detector-config`;
+
+// Face Detector — detection-only swap; embedding side untouched
+const DETECTOR_MODELS = [
+    { key: 'scrfd',      label: 'SCRFD-10G (buffalo_l built-in)', hint: 'InsightFace buffalo_l’s own detector — strong small-face recall, the long-standing default.' },
+    { key: 'retinaface', label: 'RetinaFace (external ONNX)',     hint: 'Optional comparison detector — needs models/retinaface.onnx on the ML machine (README_RETINAFACE.md).' },
+];
+
+// Model Pipeline — the four models selectable as primary / middle-run shadow
+const PIPELINE_MODELS = [
+    { key: 'mean',    label: 'Mean (InsightFace)',     hint: 'Classic weighted-mean embedding per student — the long-standing default.' },
+    { key: 'max_k',   label: 'Max-of-K (InsightFace)', hint: 'Max-similarity across each student’s top-K stored embeddings.' },
+    { key: 'faiss',   label: 'FAISS Index',            hint: 'Full-index top-k voting (all departments). No Hungarian optimality as primary.' },
+    { key: 'adaface', label: 'AdaFace',                hint: 'Independent second model — needs its ONNX file and AdaFace embeddings.' },
+];
 
 const HEURISTIC_OPTIONS = [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.40];
 const ONNX_OPTIONS      = [0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90];
@@ -171,6 +187,14 @@ export default function MLFineTuning() {
     const [adafaceLoading, setAdafaceLoading] = useState(true);
     const [adafaceSaving,  setAdafaceSaving]  = useState(false);
 
+    const [pipelineConfig,  setPipelineConfig]  = useState(null);
+    const [pipelineLoading, setPipelineLoading] = useState(true);
+    const [pipelineSaving,  setPipelineSaving]  = useState(false);
+
+    const [detectorConfig,  setDetectorConfig]  = useState(null);
+    const [detectorLoading, setDetectorLoading] = useState(true);
+    const [detectorSaving,  setDetectorSaving]  = useState(false);
+
     const [restarting, setRestarting] = useState(false);
 
     const showToast = (msg, type = 'success') => {
@@ -203,7 +227,7 @@ export default function MLFineTuning() {
                     const hd = await h.json();
                     if (h.ok && hd.status === 'ok') {
                         showToast(`ML service is back online${hd.model_loaded ? ' (model loaded)' : ''}.`);
-                        loadConfig(); loadGtConfig(); loadFaissConfig(); loadMaxKConfig(); loadAdafaceConfig();
+                        loadConfig(); loadGtConfig(); loadFaissConfig(); loadMaxKConfig(); loadAdafaceConfig(); loadPipelineConfig(); loadDetectorConfig();
                         setRestarting(false);
                         return;
                     }
@@ -349,6 +373,78 @@ export default function MLFineTuning() {
         setAdafaceSaving(false);
     };
 
+    const loadPipelineConfig = useCallback(async () => {
+        setPipelineLoading(true);
+        try {
+            const res = await fetch(PIPELINE_CONFIG_API);
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+            setPipelineConfig(data);
+        } catch (err) {
+            showToast(`Failed to load Model Pipeline config: ${err.message}`, 'error');
+        }
+        setPipelineLoading(false);
+    }, []);
+
+    useEffect(() => { loadPipelineConfig(); }, [loadPipelineConfig]);
+
+    const updatePipelineConfig = async (patch) => {
+        setPipelineSaving(true);
+        const prev = pipelineConfig;
+        setPipelineConfig({ ...pipelineConfig, ...patch });
+        try {
+            const res = await fetch(PIPELINE_CONFIG_API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(patch),
+            });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+            setPipelineConfig(data);
+            showToast('Model Pipeline updated');
+        } catch (err) {
+            setPipelineConfig(prev);
+            showToast(`Update failed: ${err.message}`, 'error');
+        }
+        setPipelineSaving(false);
+    };
+
+    const loadDetectorConfig = useCallback(async () => {
+        setDetectorLoading(true);
+        try {
+            const res = await fetch(DETECTOR_CONFIG_API);
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+            setDetectorConfig(data);
+        } catch (err) {
+            showToast(`Failed to load detector config: ${err.message}`, 'error');
+        }
+        setDetectorLoading(false);
+    }, []);
+
+    useEffect(() => { loadDetectorConfig(); }, [loadDetectorConfig]);
+
+    const updateDetectorConfig = async (patch) => {
+        setDetectorSaving(true);
+        const prev = detectorConfig;
+        setDetectorConfig({ ...detectorConfig, ...patch });
+        try {
+            const res = await fetch(DETECTOR_CONFIG_API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(patch),
+            });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+            setDetectorConfig(data);
+            showToast('Face detector updated — applies to the next detection');
+        } catch (err) {
+            setDetectorConfig(prev);
+            showToast(`Update failed: ${err.message}`, 'error');
+        }
+        setDetectorSaving(false);
+    };
+
     const updateFaissConfig = async (patch) => {
         setFaissSaving(true);
         const prev = faissConfig;
@@ -484,6 +580,158 @@ export default function MLFineTuning() {
                 >
                     {restarting ? 'Restarting… waiting for service' : 'Restart ML Service'}
                 </button>
+            </div>
+
+            {/* ── Model Pipeline — primary decision-maker + middle-run shadows ── */}
+            <div style={{ ...styles.card, marginBottom: 20 }}>
+                <div style={{ marginBottom: 16 }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: theme.text }}>Model Pipeline</div>
+                    <div style={{ fontSize: 12, color: theme.textMuted, marginTop: 2 }}>
+                        Choose which model <strong>decides attendance</strong> (Primary) and which run as
+                        diagnostic comparisons on the <strong>middle run</strong> of each scheduled period.
+                        Applies to all attendance runs. If the primary can&rsquo;t run at attendance time
+                        (missing model/index/embeddings) it falls back to Mean and the report is tagged.
+                    </div>
+                </div>
+
+                {pipelineLoading ? (
+                    <div style={{ fontSize: 13, color: theme.textMuted }}>Loading…</div>
+                ) : !pipelineConfig ? (
+                    <div style={{ fontSize: 13, color: theme.danger }}>Could not load Model Pipeline config.</div>
+                ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                        {PIPELINE_MODELS.map((m, idx) => {
+                            const isPrimary = pipelineConfig.primary === m.key;
+                            const notReady =
+                                (m.key === 'adaface' && !pipelineConfig.adaface_model_loaded) ||
+                                (m.key === 'faiss'   && !pipelineConfig.faiss_index_loaded);
+                            return (
+                                <div key={m.key} style={{
+                                    display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap',
+                                    padding: '12px 4px',
+                                    borderTop: idx > 0 ? `1px solid ${theme.border}` : 'none',
+                                }}>
+                                    <label style={{
+                                        display: 'inline-flex', alignItems: 'center', gap: 8,
+                                        cursor: pipelineSaving ? 'not-allowed' : 'pointer',
+                                        minWidth: 230, fontWeight: isPrimary ? 700 : 500,
+                                        fontSize: 13, color: theme.text,
+                                    }}>
+                                        <input
+                                            type="radio"
+                                            name="pipeline-primary"
+                                            checked={isPrimary}
+                                            disabled={pipelineSaving}
+                                            onChange={() => updatePipelineConfig({ primary: m.key })}
+                                        />
+                                        {m.label}
+                                        {isPrimary && (
+                                            <span style={{
+                                                fontSize: 10, fontWeight: 700, padding: '2px 8px',
+                                                borderRadius: 999, background: theme.accent, color: '#fff',
+                                                textTransform: 'uppercase', letterSpacing: '0.05em',
+                                            }}>
+                                                Primary
+                                            </span>
+                                        )}
+                                    </label>
+
+                                    <div style={{ minWidth: 220 }}>
+                                        {isPrimary ? (
+                                            <span style={{ fontSize: 12, color: theme.textMuted }}>
+                                                Decides attendance — shadow not applicable
+                                            </span>
+                                        ) : (
+                                            <Toggle
+                                                checked={!!pipelineConfig[`shadow_${m.key}`]}
+                                                disabled={pipelineSaving}
+                                                onChange={(val) => updatePipelineConfig({ [`shadow_${m.key}`]: val })}
+                                                label="Run at middle of session"
+                                            />
+                                        )}
+                                    </div>
+
+                                    <div style={{ flex: 1, fontSize: 11, color: theme.textMuted }}>
+                                        {m.hint}
+                                        {notReady && (
+                                            <span style={{ color: theme.warning, fontWeight: 700 }}>
+                                                {' '}⚠ {m.key === 'adaface' ? 'AdaFace ONNX model not loaded' : 'No FAISS index loaded'}
+                                                {isPrimary ? ' — runs will fall back to Mean.' : '.'}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+
+            {/* ── Face Detector — SCRFD-10G vs optional RetinaFace ─────────── */}
+            <div style={{ ...styles.card, marginBottom: 20 }}>
+                <div style={{ marginBottom: 16 }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: theme.text }}>Face Detector</div>
+                    <div style={{ fontSize: 12, color: theme.textMuted, marginTop: 2 }}>
+                        Which detection model finds faces in frames, everywhere detection runs
+                        (attendance, ground-truth acquisition, live tracking). Detection-only swap —
+                        embeddings and recognition are untouched, since both detectors hand over the
+                        same aligned face crops.
+                    </div>
+                </div>
+
+                {detectorLoading ? (
+                    <div style={{ fontSize: 13, color: theme.textMuted }}>Loading…</div>
+                ) : !detectorConfig ? (
+                    <div style={{ fontSize: 13, color: theme.danger }}>Could not load detector config.</div>
+                ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                        {DETECTOR_MODELS.map((m, idx) => {
+                            const isActive = detectorConfig.active === m.key;
+                            const unavailable = m.key === 'retinaface' && !detectorConfig.retinaface_model_loaded;
+                            return (
+                                <div key={m.key} style={{
+                                    display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap',
+                                    padding: '12px 4px',
+                                    borderTop: idx > 0 ? `1px solid ${theme.border}` : 'none',
+                                    opacity: unavailable ? 0.6 : 1,
+                                }}>
+                                    <label style={{
+                                        display: 'inline-flex', alignItems: 'center', gap: 8,
+                                        cursor: detectorSaving || unavailable ? 'not-allowed' : 'pointer',
+                                        minWidth: 280, fontWeight: isActive ? 700 : 500,
+                                        fontSize: 13, color: theme.text,
+                                    }}>
+                                        <input
+                                            type="radio"
+                                            name="detector-active"
+                                            checked={isActive}
+                                            disabled={detectorSaving || unavailable}
+                                            onChange={() => updateDetectorConfig({ active: m.key })}
+                                        />
+                                        {m.label}
+                                        {isActive && (
+                                            <span style={{
+                                                fontSize: 10, fontWeight: 700, padding: '2px 8px',
+                                                borderRadius: 999, background: theme.accent, color: '#fff',
+                                                textTransform: 'uppercase', letterSpacing: '0.05em',
+                                            }}>
+                                                Active
+                                            </span>
+                                        )}
+                                    </label>
+                                    <div style={{ flex: 1, fontSize: 11, color: theme.textMuted }}>
+                                        {m.hint}
+                                        {unavailable && (
+                                            <span style={{ color: theme.warning, fontWeight: 700 }}>
+                                                {' '}⚠ ONNX not found on the ML machine.
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
 
             {/* ── GT Acquisition config ──────────────────────────────────── */}
@@ -699,14 +947,9 @@ export default function MLFineTuning() {
                             call — no restart needed.
                         </div>
                     </div>
-                    {faissConfig && (
-                        <Toggle
-                            checked={!!faissConfig.shadow_enabled}
-                            disabled={faissSaving}
-                            onChange={(val) => updateFaissConfig({ shadow_enabled: val })}
-                            label={faissConfig.shadow_enabled ? 'Shadow comparison on' : 'Shadow comparison off'}
-                        />
-                    )}
+                    <span style={{ fontSize: 11, color: theme.textMuted, whiteSpace: 'nowrap' }}>
+                        Run role: Model Pipeline card above
+                    </span>
                 </div>
 
                 {faissLoading ? (
@@ -716,11 +959,9 @@ export default function MLFineTuning() {
                 ) : (
                     <>
                         <div style={{ fontSize: 12, color: theme.textMuted, marginBottom: 16, padding: '8px 10px', background: theme.bg, borderRadius: 6 }}>
-                            When the toggle above is on, every scheduled RTSP attendance period additionally
-                            scores the run nearest its middle against the full FAISS index (using the Top-K
-                            candidates / Recognition threshold below) and reports agreement with the primary
-                            mean-embedding assignment — diagnostic only, never affects the actual attendance
-                            decision.
+                            The Top-K candidates / Recognition threshold below are used wherever FAISS
+                            runs — the live tracked pipeline, and its primary/shadow roles selected on
+                            the Model Pipeline card above.
                         </div>
                         {/* Group 1 — Matching */}
                         <div style={{ fontSize: 11, fontWeight: 700, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
@@ -803,21 +1044,15 @@ export default function MLFineTuning() {
                     <div>
                         <div style={{ fontSize: 15, fontWeight: 700, color: theme.text }}>Max-of-K Matching (Comparison)</div>
                         <div style={{ fontSize: 12, color: theme.textMuted, marginTop: 2 }}>
-                            When enabled, every RTSP attendance run (&quot;Run Once&quot; and each period of a
-                            scheduled session) additionally scores clusters against each student&rsquo;s
-                            top-K individually stored embeddings instead of one mean vector, and
-                            reports how often that agrees with the real assignment. Diagnostic only —
-                            never changes the actual attendance decision.
+                            Scores clusters against each student&rsquo;s top-K individually stored
+                            embeddings (max-similarity) instead of one mean vector. Whether it runs
+                            as the primary decision-maker or a middle-run comparison is selected on
+                            the Model Pipeline card above; the K used in either role is set here.
                         </div>
                     </div>
-                    {maxKConfig && (
-                        <Toggle
-                            checked={!!maxKConfig.enabled}
-                            disabled={maxKSaving}
-                            onChange={(val) => updateMaxKConfig({ enabled: val })}
-                            label={maxKConfig.enabled ? 'Enabled' : 'Disabled'}
-                        />
-                    )}
+                    <span style={{ fontSize: 11, color: theme.textMuted, whiteSpace: 'nowrap' }}>
+                        Run role: Model Pipeline card above
+                    </span>
                 </div>
 
                 {maxKLoading ? (
@@ -827,7 +1062,6 @@ export default function MLFineTuning() {
                 ) : (
                     <div style={{
                         display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 18,
-                        opacity: maxKConfig.enabled ? 1 : 0.45, pointerEvents: maxKConfig.enabled ? 'auto' : 'none',
                     }}>
                         {['top_k'].map(key => {
                             const meta = MAX_K_LABELS[key];
@@ -837,7 +1071,7 @@ export default function MLFineTuning() {
                                     <label style={styles.label}>{meta.label}{meta.unit ? ` (${meta.unit})` : ''}</label>
                                     <select
                                         value={maxKConfig[key] ?? MAX_K_DEFAULTS[key]}
-                                        disabled={maxKSaving || !maxKConfig.enabled}
+                                        disabled={maxKSaving}
                                         onChange={e => updateMaxKConfig({ [key]: parseInt(e.target.value, 10) })}
                                         style={styles.select}
                                     >
@@ -859,13 +1093,13 @@ export default function MLFineTuning() {
             <div style={{ ...styles.card, marginBottom: 20 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                     <div>
-                        <div style={{ fontSize: 15, fontWeight: 700, color: theme.text }}>AdaFace Recognition (Comparison)</div>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: theme.text }}>AdaFace Model</div>
                         <div style={{ fontSize: 12, color: theme.textMuted, marginTop: 2 }}>
                             AdaFace is a second, independent face-recognition model — its own embeddings,
-                            its own storage, entirely separate from InsightFace. When enabled, the run
-                            nearest the middle of a scheduled period additionally scores clusters with
-                            AdaFace and reports how often that agrees with the real (InsightFace)
-                            assignment. Diagnostic only — never changes the actual attendance decision.
+                            its own storage, entirely separate from InsightFace. The subsystem toggle
+                            here controls AdaFace embedding <strong>generation</strong> during enrollment;
+                            whether AdaFace runs at attendance time (primary or middle-run comparison)
+                            is selected on the Model Pipeline card above.
                             {adafaceConfig && !adafaceConfig.model_loaded && (
                                 <>{' '}<span style={{ color: theme.warning }}>● No AdaFace ONNX model loaded — see README_ADAFACE.md.</span></>
                             )}
@@ -876,7 +1110,7 @@ export default function MLFineTuning() {
                             checked={!!adafaceConfig.enabled}
                             disabled={adafaceSaving}
                             onChange={(val) => updateAdafaceConfig({ enabled: val })}
-                            label={adafaceConfig.enabled ? 'Enabled' : 'Disabled'}
+                            label={adafaceConfig.enabled ? 'Subsystem on' : 'Subsystem off'}
                         />
                     )}
                 </div>

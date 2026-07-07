@@ -1,0 +1,7 @@
+{
+  "primary": "mean",
+  "shadow_mean": false,
+  "shadow_max_k": true,
+  "shadow_faiss": true,
+  "shadow_adaface": true
+}

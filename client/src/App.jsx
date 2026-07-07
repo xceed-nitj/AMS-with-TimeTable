@@ -211,6 +211,7 @@ import AttendanceReport from './attendancemodule/AttendanceReport';
 import GroundTruthRTSP from './attendancemodule/groundtruthgen_rtsp';
 import GroundTruthUpload from './attendancemodule/groundtruthupload';
 import EmbeddingGeneration from './attendancemodule/EmbeddingGeneration';
+import ERPSync from './attendancemodule/ERPSync';
 import Camera from './attendancemodule/camera';
 import CameraPreview from './attendancemodule/cameraPreview';
 import FrameVerification from './attendancemodule/FrameVerification';
@@ -218,6 +219,7 @@ import UnknownFaces from './attendancemodule/UnknownFaces';
 import SchedulerPage from './attendancemodule/SchedulerPage';
 import LiveReportPage from './attendancemodule/LiveReportPage';
 import RecordStream from './attendancemodule/RecordStream';
+import FirstYearSubjectMapping from './attendancemodule/FirstYearSubjectMapping';
 
 import AMSDashboard from './attendancemodule/AMSDashboard';
 import AMSLayout from './attendancemodule/AMSLayout';
@@ -683,10 +685,12 @@ function App() {
           <Route path="institute-identification" element={<InstituteIdentification />} />
           <Route path="record-stream" element={<RecordStream />} />
           <Route path="embeddings" element={<EmbeddingGeneration />} />
+          <Route path="erp-sync" element={<ERPSync />} />
           <Route path="report" element={<Attendancedoc />} />
           <Route path="model" element={<ModelPerformance />} />
           <Route path="model-analytics" element={<ModelAnalytics />} />
           <Route path="reports" element={<AttendanceReport />} />
+          <Route path="firstyearsubjectmapping" element={<FirstYearSubjectMapping />} />
           <Route path="frame-verification" element={<FrameVerification />} />
           <Route path="confidence" element={<ConfidenceMonitor />} />
           <Route path="ml-fine-tuning" element={<MLFineTuning />} />

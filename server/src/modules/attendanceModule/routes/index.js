@@ -63,6 +63,7 @@ router.use(
 // browser session) can stay unauthenticated while every other route in that
 // file is gated — see the comment at that route for details.
 router.use('/reports',      require("./attendanceReportRoutes"));
+router.use('/firstyearsubjectmapping', require("./firstYearSubjectMappingRoutes"));
 router.use(
     '/cameras',
     ...attendanceRoleAccess,
@@ -74,6 +75,12 @@ router.use(
     ...attendanceRoleAccess,
     enforceAttendanceDepartment,
     require("./embeddingRouter"),
+);
+router.use(
+    '/erp-sync',
+    ...attendanceRoleAccess,
+    enforceAttendanceDepartment,
+    require("./erpSyncRoutes"),
 );
 router.use(
     '/frame-verification',

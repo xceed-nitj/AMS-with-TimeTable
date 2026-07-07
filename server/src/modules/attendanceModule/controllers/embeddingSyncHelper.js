@@ -279,6 +279,42 @@ function writeAdafacePklIfPresent(responseData, outputPath) {
 }
 
 /**
+ * Persist the per-student mean/top-K galleries a bulk /build-embeddings-sync
+ * call freshly computed (response.students_detail) into each student's
+ * _info.json — the same fields updateStudentEmbedding() writes on individual
+ * re-enroll. Closes the quality gap where bulk-enrolled students had no
+ * top-K gallery (and a blur-unaware mean) until someone individually
+ * re-enrolled them. Rolls served from cached_mean_embedding are absent from
+ * students_detail and keep their existing _info.json untouched.
+ */
+function persistStudentsDetail(responseData, students) {
+    const detail = responseData.students_detail || {};
+    let persisted = 0;
+    for (const { rollNo, studentDir } of students) {
+        const d = detail[rollNo];
+        if (!d || !studentDir) continue;
+        try {
+            const info = readInfoJson(studentDir);
+            if (Array.isArray(d.mean_embedding) && d.mean_embedding.length > 0) {
+                info.mean_embedding = d.mean_embedding;
+            }
+            if (Array.isArray(d.top_k_embeddings) && d.top_k_embeddings.length > 0) {
+                info.top_k_embeddings = d.top_k_embeddings;
+            }
+            if (Array.isArray(d.adaface_mean_embedding) && d.adaface_mean_embedding.length > 0) {
+                info.adaface_mean_embedding = d.adaface_mean_embedding;
+            }
+            if (Array.isArray(d.adaface_top_k_embeddings) && d.adaface_top_k_embeddings.length > 0) {
+                info.adaface_top_k_embeddings = d.adaface_top_k_embeddings;
+            }
+            writeInfoJson(studentDir, info);
+            persisted += 1;
+        } catch (_) { /* one bad folder shouldn't fail the whole build */ }
+    }
+    return persisted;
+}
+
+/**
  * Build a .pkl for every student subfolder under batchDir and write it to
  * outputPath. Matches the prior /build-embeddings-sync behavior, which
  * always processed every folder in photos_dir (roll_nos was accepted but
@@ -311,6 +347,7 @@ async function buildBatchEmbeddingsPkl(batchDir, outputPath) {
     fs.mkdirSync(path.dirname(outputPath), { recursive: true });
     fs.writeFileSync(outputPath, Buffer.from(pkl_data, 'base64'));
     const adafaceWritten = writeAdafacePklIfPresent(response.data, outputPath);
+    persistStudentsDetail(response.data, students);
 
     return { status: 'done', students_enrolled, output_path: outputPath, adaface_written: adafaceWritten };
 }
@@ -335,6 +372,7 @@ async function buildEmbeddingsPklForStudents(students, outputPath) {
     fs.mkdirSync(path.dirname(outputPath), { recursive: true });
     fs.writeFileSync(outputPath, Buffer.from(pkl_data, 'base64'));
     const adafaceWritten = writeAdafacePklIfPresent(response.data, outputPath);
+    persistStudentsDetail(response.data, students);
 
     return { status: 'done', students_enrolled, output_path: outputPath, adaface_written: adafaceWritten };
 }

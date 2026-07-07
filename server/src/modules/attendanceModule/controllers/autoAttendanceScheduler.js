@@ -18,7 +18,12 @@ const AttendanceReport = require("../../../models/attendanceReport");
 const { saveAttendanceDailyData } = require("./attendanceDailyDataSaver");
 const { saveUnknownFaces } = require("./unknownFaceWriter");
 const { saveFrameSnapshots } = require("./frameSnapshotWriter");
-const { buildEnrolledEmbeddingsTopK, buildEnrolledEmbeddingsAdafaceTopK } = require("./embeddingSyncHelper");
+const {
+  buildEnrolledEmbeddings,
+  buildEnrolledEmbeddingsTopK,
+  buildEnrolledEmbeddingsAdaface,
+  buildEnrolledEmbeddingsAdafaceTopK,
+} = require("./embeddingSyncHelper");
 const alertNotifier = require("./alertNotifier");
 
 const ML_URL = process.env.ML_SERVICE_URL || "http://localhost:8500";
@@ -233,6 +238,9 @@ async function saveCheckResult({ ctx, subjectMeta, date, slot, checkIndex, mlRes
     matchingComparison: mlResult.matching_comparison || null,
     faissComparison: mlResult.faiss_comparison || null,
     adafaceComparison: mlResult.adaface_comparison || null,
+    meanComparison: mlResult.mean_comparison || null,
+    primaryModel: mlResult.metadata?.primary_model || 'mean',
+    primaryFallback: !!mlResult.metadata?.primary_fallback,
   };
 
   let report = await AttendanceReport.findOne({ batch: ctx.batch, date, timeSlot: slot });
@@ -320,17 +328,20 @@ async function runOneCheck({ room, slot, date, ctx, subjectMeta, cameras, pkl, r
                                       // when enrolledEmbeddings is empty (see rtsp_routes.py)
       autoThreshold:   runConfig.auto_present_threshold,
       reviewThreshold: runConfig.review_threshold,
+      // All enrolled dicts ship on EVERY run — which model uses them is
+      // decided Python-side by state.pipeline_config (Model Pipeline card),
+      // and Node can't know which primary is selected there. ~100-200KB per
+      // 60 students — trivial.
+      enrolledEmbeddings:            buildEnrolledEmbeddings(GROUND_TRUTH_DIR, ctx.batch),
+      enrolledEmbeddingsTopK:        buildEnrolledEmbeddingsTopK(GROUND_TRUTH_DIR, ctx.batch),
+      enrolledEmbeddingsAdaface:     buildEnrolledEmbeddingsAdaface(GROUND_TRUTH_DIR, ctx.batch),
+      enrolledEmbeddingsAdafaceTopK: buildEnrolledEmbeddingsAdafaceTopK(GROUND_TRUTH_DIR, ctx.batch),
     };
-    // Max-of-K / FAISS / AdaFace shadow comparisons — only requested on the
-    // one check nearest the middle of this period, never on every check
-    // (diagnostic only, see state.max_k_config / state.faiss_config
-    // ["shadow_enabled"] / state.adaface_config["enabled"] on the ML Fine
-    // Tuning page).
+    // Shadow comparisons fire only on the one check nearest the middle of
+    // this period — which models actually run is decided Python-side by the
+    // pipeline_config shadow toggles.
     if (checkIndex === runConfig.middleRunIndex) {
-      payload.enrolledEmbeddingsTopK = buildEnrolledEmbeddingsTopK(GROUND_TRUTH_DIR, ctx.batch);
-      payload.runFaissShadow = true;
-      payload.enrolledEmbeddingsAdafaceTopK = buildEnrolledEmbeddingsAdafaceTopK(GROUND_TRUTH_DIR, ctx.batch);
-      payload.runAdafaceShadow = true;
+      payload.runShadows = true;
     }
 
     const res = await axios.post(`${ML_URL}/run-attendance-rtsp-sync`, payload, { timeout: 300000 });

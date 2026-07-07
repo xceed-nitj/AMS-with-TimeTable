@@ -4,6 +4,7 @@ import { API_BASE, DEGREES, YEARS, theme, styles, cssReset } from './config';
 import { useDepartments } from './useDepartments';
 import getEnvironment from '../getenvironment';
 import * as XLSX from 'xlsx';
+import ERPSync from './ERPSync';
 
 const apiUrl   = getEnvironment();
 const EMB_BASE = `${apiUrl}/attendancemodule/embeddings`;
@@ -311,6 +312,23 @@ function GenerateTab({ departments, deptLoading, deptError, prefill, onPrefillCo
 
     const startGeneration = async () => {
         if (!batchName || rollNos.length === 0 || !subject.trim()) return;
+
+        // Existing-embedding check — indicate and confirm before replacing.
+        try {
+            const chkUrl = `${EMB_BASE}/check?dept=${encodeURIComponent(dept.trim())}`
+                + `&subject=${encodeURIComponent(subject.trim())}`
+                + (subjectCode && subjectCode.trim() ? `&subCode=${encodeURIComponent(subjectCode.trim())}` : '');
+            const chkRes  = await fetch(chkUrl);
+            const chkData = await chkRes.json().catch(() => ({}));
+            if (chkRes.ok && chkData.found) {
+                const ok = window.confirm(
+                    `"${subject.trim()}" already has an embedding file (${chkData.filename}).\n\n`
+                    + 'Generating again will REPLACE it. Continue?'
+                );
+                if (!ok) return;
+            }
+        } catch (_) { /* best-effort check — never blocks generation */ }
+
         setRunning(true);
         setSummary(null);
 
@@ -1083,7 +1101,9 @@ function ViewTab({ departments, deptLoading, deptError, onUpdate, fixedDepartmen
 // ===============================================================================
 export default function EmbeddingGeneration({ fixedDepartment = '' }) {
     const { departments, deptLoading, deptError } = useDepartments();
-    const [activeTab, setActiveTab] = useState(1);
+    // Tab 3 = ERP Embedding Generation — the default entry point; manual
+    // paste/xlsx generation (tab 1) is the fallback path.
+    const [activeTab, setActiveTab] = useState(3);
     const [prefill,   setPrefill]   = useState(null);
 
     const handleUpdate = useCallback((data) => {
@@ -1108,7 +1128,8 @@ export default function EmbeddingGeneration({ fixedDepartment = '' }) {
             </div>
 
             <div className="ams-tabs">
-                <button className={`ams-tab${activeTab === 1 ? ' active' : ''}`} onClick={() => setActiveTab(1)}>Generate</button>
+                <button className={`ams-tab${activeTab === 3 ? ' active' : ''}`} onClick={() => setActiveTab(3)}>ERP Embedding Generation</button>
+                <button className={`ams-tab${activeTab === 1 ? ' active' : ''}`} onClick={() => setActiveTab(1)}>Manual Generation</button>
                 <button className={`ams-tab${activeTab === 2 ? ' active' : ''}`} onClick={() => setActiveTab(2)}>View Embeddings</button>
             </div>
 
@@ -1119,6 +1140,9 @@ export default function EmbeddingGeneration({ fixedDepartment = '' }) {
                     onPrefillConsumed={() => setPrefill(null)}
                     fixedDepartment={fixedDepartment}
                 />
+            )}
+            {activeTab === 3 && (
+                <ERPSync embedded fixedDepartment={fixedDepartment} />
             )}
             {activeTab === 2 && (
                 <ViewTab

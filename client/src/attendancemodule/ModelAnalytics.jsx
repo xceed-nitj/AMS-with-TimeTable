@@ -62,7 +62,7 @@ function pct(rate) {
 // Fixed per-model line/bar colors for the Model Comparison section — one
 // hue per alternative model, kept distinct from the semantic
 // success/warning/danger colors used elsewhere on the page.
-const MODEL_COLORS = { max_k: '#6366f1', faiss: '#0ea5e9', adaface: '#d946ef' };
+const MODEL_COLORS = { max_k: '#6366f1', faiss: '#0ea5e9', adaface: '#d946ef', mean: '#10b981' };
 const LOW_SAMPLE_N = 5;
 
 function lowSampleSuffix(n) {

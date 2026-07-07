@@ -523,7 +523,10 @@ export default function AttendanceReport() {
       setCamCountdown(CAMERA_SWITCH_SEC);
       rtspUrl2Ref.current = rtspUrl2.trim();
       setSessionChecks(0);
-      showToast(`Session started — checks every ${checkIntervalMin} min`);
+      const stopNote = data.autoStopAt
+        ? ` — auto-stops at ${new Date(data.autoStopAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+        : '';
+      showToast(`Session started — checks every ${checkIntervalMin} min${stopNote}`);
       openDetail(data.reportId);
     } catch (e) {
       showToast('Failed to start session: ' + e.message, 'error');
@@ -2195,6 +2198,13 @@ function MultiRunTable({ report, readOnly, onOverride, theme, styles }) {
   );
   const adafaceByRoll = adafaceRun?.adafaceComparison?.per_student || {};
 
+  // Mean-as-shadow — populated only when another model was the primary
+  // decision-maker (Model Pipeline card, ML Fine Tuning page).
+  const meanRun = [...runs].reverse().find(
+    (r) => r.meanComparison?.enabled && !r.meanComparison?.skipped,
+  );
+  const meanByRoll = meanRun?.meanComparison?.per_student || {};
+
   const cellStyle = (status) => ({
     padding: '2px 6px',
     borderRadius: 4,
@@ -2260,6 +2270,15 @@ function MultiRunTable({ report, readOnly, onOverride, theme, styles }) {
                   P:{r.summary?.present ?? 0} A:{r.summary?.absent ?? 0} R:
                   {r.summary?.review ?? 0}
                 </div>
+                {r.primaryModel && r.primaryModel !== 'mean' && (
+                  <div
+                    title="Which model decided attendance for this run (Model Pipeline card)"
+                    style={{ fontSize: '9px', fontWeight: 700, color: theme.accent, marginTop: 2 }}
+                  >
+                    {r.primaryModel}
+                    {r.primaryFallback ? ' (fallback)' : ''}
+                  </div>
+                )}
               </th>
             ))}
             {comparisonRun && (
@@ -2295,6 +2314,18 @@ function MultiRunTable({ report, readOnly, onOverride, theme, styles }) {
                 <div style={{ fontSize: '9px', color: theme.textMuted, fontWeight: 400, marginTop: 2 }}>
                   {adafaceRun.adafaceComparison.agree}/
                   {adafaceRun.adafaceComparison.clusters_compared} agree
+                </div>
+              </th>
+            )}
+            {meanRun && (
+              <th
+                title="Mean (InsightFace) run as a shadow — another model was the primary decision-maker"
+                style={{ textAlign: 'center', borderLeft: '2px solid #e4e8f5', color: theme.accent }}
+              >
+                Mean
+                <div style={{ fontSize: '9px', color: theme.textMuted, fontWeight: 400, marginTop: 2 }}>
+                  {meanRun.meanComparison.agree}/
+                  {meanRun.meanComparison.clusters_compared} agree
                 </div>
               </th>
             )}
@@ -2443,6 +2474,34 @@ function MultiRunTable({ report, readOnly, onOverride, theme, styles }) {
                             cmp.adaface_roll
                               ? `AdaFace would instead match ${cmp.adaface_roll} (score ${cmp.adaface_score ?? '—'})`
                               : `AdaFace found no match here (mean score ${cmp.mean_score ?? '—'})`
+                          }
+                          style={{ ...cellStyle('review'), background: theme.warningDim, color: theme.warning }}
+                        >
+                          ⚠
+                        </span>
+                      )}
+                    </td>
+                  );
+                })()}
+                {meanRun && (() => {
+                  const cmp = meanByRoll[rollNo];
+                  return (
+                    <td style={{ textAlign: 'center', borderLeft: '2px solid #e4e8f5' }}>
+                      {!cmp ? (
+                        <span style={{ color: theme.textMuted, fontSize: '11px' }}>—</span>
+                      ) : cmp.agree ? (
+                        <span
+                          title={`Agrees (mean score ${cmp.mean_score ?? '—'})`}
+                          style={{ ...cellStyle('present'), background: theme.successDim, color: theme.success }}
+                        >
+                          ✓
+                        </span>
+                      ) : (
+                        <span
+                          title={
+                            cmp.mean_roll
+                              ? `Mean would instead match ${cmp.mean_roll} (score ${cmp.mean_score ?? '—'})`
+                              : `Mean found no match here (primary score ${cmp.primary_score ?? '—'})`
                           }
                           style={{ ...cellStyle('review'), background: theme.warningDim, color: theme.warning }}
                         >

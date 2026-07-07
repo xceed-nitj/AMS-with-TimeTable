@@ -40,10 +40,16 @@ async function getHealthStatus() {
   // ML Service check
   const mlStart = Date.now();
   try {
-    await mlClient.healthCheck();
+    const mlHealth = await mlClient.healthCheck();
     response.services.ml.status = "online";
     prevMlStatus = "online";
     response.services.ml.latency = Date.now() - mlStart;
+    // Per-model ONNX/index availability on the ML machine (H100) — surfaced
+    // in the frontend's ML and H100 health dropdowns. See ml_service.py
+    // /health's "models" block.
+    response.services.ml.models = mlHealth.models || null;
+    response.services.ml.activeDetector = mlHealth.active_detector || null;
+    response.services.ml.studentsEnrolled = mlHealth.students_enrolled ?? null;
     response.services.tunnel.status =
       mlTarget.kind === "h100" ? "online" : "not_configured";
   } catch (error) {

@@ -173,6 +173,21 @@ export default function HealthDashboard() {
   };
   const mlTarget = healthData?.services?.ml?.target || healthData?.services?.tunnel?.target;
 
+  // Per-model ONNX/index availability on the ML machine (H100) — from the
+  // ML service's /health "models" block, relayed through the health stream.
+  const mlModels = healthData?.services?.ml?.models || null;
+  const activeDetector = healthData?.services?.ml?.activeDetector || null;
+  const MODEL_LABELS = [
+    ['insightface', 'InsightFace (SCRFD+ArcFace)'],
+    ['adaface',     'AdaFace ONNX'],
+    ['liveness',    'Liveness ONNX'],
+    ['retinaface',  'RetinaFace ONNX'],
+    ['faiss_index', 'FAISS index'],
+  ];
+  const modelLines = mlModels
+    ? MODEL_LABELS.map(([key, label]) => `${mlModels[key] ? '●' : '○'} ${label}${mlModels[key] ? '' : ' — not loaded'}`)
+    : [];
+
   const formatUptime = (s) => {
     if (!s) return '0s';
     const d = Math.floor(s / (3600 * 24));
@@ -212,6 +227,8 @@ export default function HealthDashboard() {
           clientStatus === 'online'
             ? `Latency: ${healthData?.services?.ml?.latency ? healthData.services.ml.latency + 'ms' : '—'}`
             : '—',
+          activeDetector ? `Detector: ${activeDetector === 'retinaface' ? 'RetinaFace' : 'SCRFD-10G'}` : null,
+          ...modelLines,
         ]}
       />
 
@@ -233,6 +250,7 @@ export default function HealthDashboard() {
           mlTarget?.kind === 'h100'
             ? (svc.tunnel === 'online' ? 'H100 reachable' : 'H100 unreachable')
             : 'Not configured; using local ML service',
+          ...(mlTarget?.kind === 'h100' ? modelLines : []),
         ]}
         action={{ label: 'View Metrics', onClick: () => navigate('/attendance/gpu') }}
       />

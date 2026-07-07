@@ -7,10 +7,16 @@ const axios = require('axios');
 const path  = require('path');
 const fs    = require('fs');
 const AttendanceReport = require('../../../models/attendanceReport');
+const AcquisitionControl = require('../../../models/acquisitionControl');
 const { saveAttendanceDailyData } = require('./attendanceDailyDataSaver');
 const { saveUnknownFaces } = require('./unknownFaceWriter');
 const { saveFrameSnapshots, RAW_DIR: FRAME_SNAPSHOTS_DIR } = require('./frameSnapshotWriter');
-const { buildEnrolledEmbeddings, buildEnrolledEmbeddingsTopK } = require('./embeddingSyncHelper');
+const {
+    buildEnrolledEmbeddings,
+    buildEnrolledEmbeddingsTopK,
+    buildEnrolledEmbeddingsAdaface,
+    buildEnrolledEmbeddingsAdafaceTopK,
+} = require('./embeddingSyncHelper');
 const { pklPath } = require('./erpEmbeddingSyncHelper');
 
 
@@ -19,8 +25,64 @@ const GROUND_TRUTH_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data',
 
 // ── In-memory session tracking ──────────────────────────────────────────────
 // Lost on server restart — acceptable for now.
-// Key: reportId string, Value: { timer, checkIndex, config, status }
+// Key: reportId string, Value: { timer, stopTimer, stopAt, checkIndex, config, status }
 const activeSessions = new Map();
+
+// ── Auto-stop deadline ───────────────────────────────────────────────────────
+// Sessions must never run unbounded. Two cases:
+//   • Attendance run: the slot matches a configured period in
+//     AcquisitionControl → stop at that period's endTime.
+//   • Ground-truth acquisition use (slot has no configured period, or the
+//     period already ended): stop at the session boundary — 12:30 for
+//     morning starts, 16:30 for afternoon starts.
+// If even the boundary is already past (e.g. started 17:00), cap at
+// +60 minutes so a late manual session still can't run forever.
+function timeStrToMin(t) {
+    if (!t || typeof t !== 'string' || !t.includes(':')) return null;
+    const [h, m] = t.split(':').map(Number);
+    if (Number.isNaN(h) || Number.isNaN(m)) return null;
+    return h * 60 + m;
+}
+
+async function resolveSessionStopTime(slot) {
+    const now = new Date();
+    const nowMin = now.getHours() * 60 + now.getMinutes();
+    const MORNING_END = 12 * 60 + 30;  // 12:30
+    const EVENING_END = 16 * 60 + 30;  // 16:30
+
+    let endMin = null;
+    let reason = null;
+    try {
+        const cfg = await AcquisitionControl.findOne({ profileName: 'default' }).lean();
+        const period = (cfg?.periods || []).find((p) => p.periodKey === slot);
+        const m = timeStrToMin(period?.endTime);
+        if (m != null && m > nowMin) {
+            endMin = m;
+            reason = `period '${slot}' ends ${period.endTime}`;
+        }
+    } catch (err) {
+        console.warn(`[Session] Could not read period config for auto-stop: ${err.message}`);
+    }
+
+    if (endMin == null) {
+        if (nowMin < MORNING_END) {
+            endMin = MORNING_END;
+            reason = 'morning session boundary 12:30';
+        } else if (nowMin < EVENING_END) {
+            endMin = EVENING_END;
+            reason = 'evening session boundary 16:30';
+        }
+    }
+
+    const stopAt = new Date(now);
+    if (endMin != null) {
+        stopAt.setHours(Math.floor(endMin / 60), endMin % 60, 0, 0);
+    } else {
+        stopAt.setTime(now.getTime() + 60 * 60 * 1000);
+        reason = 'started after 16:30 — capped at 60 minutes';
+    }
+    return { stopAt, reason };
+}
 
 // ── Session-frame clustering (replaces the old face_cluster.py child-process
 // spawn, which required Node and python-ml-service + its venv to be
@@ -164,12 +226,16 @@ async function runOneCheck(reportId, checkIndex, config) {
                 semester:         config.semester         || '',
                 locksemId:        config.locksemId        || '',
                 enrolledRollNos:  config.enrolledRollNos  || [],
-                enrolledEmbeddings: buildEnrolledEmbeddings(GROUND_TRUTH_DIR, config.batch),
-                // Only used by Python for the optional max-of-K shadow
-                // comparison (state.max_k_config, ML Fine Tuning page) — the
-                // actual per-period attendance decision above always comes
-                // from enrolledEmbeddings (mean), unchanged.
-                enrolledEmbeddingsTopK: buildEnrolledEmbeddingsTopK(GROUND_TRUTH_DIR, config.batch),
+                // All enrolled dicts ship on every check — which model uses
+                // them (primary vs shadow) is decided Python-side by
+                // state.pipeline_config (Model Pipeline card, ML Fine Tuning).
+                enrolledEmbeddings:            buildEnrolledEmbeddings(GROUND_TRUTH_DIR, config.batch),
+                enrolledEmbeddingsTopK:        buildEnrolledEmbeddingsTopK(GROUND_TRUTH_DIR, config.batch),
+                enrolledEmbeddingsAdaface:     buildEnrolledEmbeddingsAdaface(GROUND_TRUTH_DIR, config.batch),
+                enrolledEmbeddingsAdafaceTopK: buildEnrolledEmbeddingsAdafaceTopK(GROUND_TRUTH_DIR, config.batch),
+                // Open-ended sessions have no fixed run count, so no known
+                // "middle" — every check is shadow-eligible.
+                runShadows: true,
             },
             { timeout: 300000 }   // 5 min timeout
         );
@@ -220,6 +286,11 @@ async function runOneCheck(reportId, checkIndex, config) {
                 processingTimeSec: mlResult.summary?.processing_time  || 0,
             },
             matchingComparison: mlResult.matching_comparison || null,
+            faissComparison: mlResult.faiss_comparison || null,
+            adafaceComparison: mlResult.adaface_comparison || null,
+            meanComparison: mlResult.mean_comparison || null,
+            primaryModel: mlResult.metadata?.primary_model || 'mean',
+            primaryFallback: !!mlResult.metadata?.primary_fallback,
         };
 
         // Atomically push into DB and recompute
@@ -365,8 +436,16 @@ const reportId = report._id.toString();
     //    so the HTTP response returns fast)
     let checkIndex = 1;
 
+    // Auto-stop: attendance runs end with their period; ground-truth-style
+    // sessions (no configured period for this slot) end at the 12:30/16:30
+    // session boundary. See resolveSessionStopTime().
+    const { stopAt, reason: stopReason } = await resolveSessionStopTime(slot);
+    console.log(`[Session ${reportId}] Auto-stop scheduled for ${stopAt.toLocaleTimeString()} (${stopReason})`);
+
     const session = {
         timer: null,
+        stopTimer: null,
+        stopAt,
         checkIndex,
         config: sessionConfig,
         status: 'running',
@@ -385,13 +464,36 @@ const reportId = report._id.toString();
             clearInterval(timer);
             return;
         }
+        // Belt-and-braces guard alongside the stopTimer below — never start
+        // a new check past the deadline (covers clock jumps / long checks).
+        if (sess.stopAt && Date.now() >= sess.stopAt.getTime()) {
+            console.log(`[Session ${reportId}] Deadline reached — auto-stopping`);
+            stopSession(reportId).catch(err =>
+                console.error(`[Session ${reportId}] Auto-stop failed: ${err.message}`));
+            return;
+        }
         sess.checkIndex++;
         await runOneCheck(reportId, sess.checkIndex, sessionConfig);
     }, intervalMin * 60 * 1000);
 
     session.timer = timer;
 
-    return { reportId, status: 'started', checkIntervalMin: intervalMin };
+    // Primary auto-stop trigger, fired exactly at the deadline.
+    session.stopTimer = setTimeout(() => {
+        const sess = activeSessions.get(reportId);
+        if (!sess || sess.status !== 'running') return;
+        console.log(`[Session ${reportId}] Auto-stop (${stopReason})`);
+        stopSession(reportId).catch(err =>
+            console.error(`[Session ${reportId}] Auto-stop failed: ${err.message}`));
+    }, Math.max(1000, stopAt.getTime() - Date.now()));
+
+    return {
+        reportId,
+        status: 'started',
+        checkIntervalMin: intervalMin,
+        autoStopAt: stopAt.toISOString(),
+        autoStopReason: stopReason,
+    };
 }
 
 // ── Stop a session ──────────────────────────────────────────────────────────
@@ -400,6 +502,7 @@ async function stopSession(reportId) {
     const session = activeSessions.get(reportId);
     if (session) {
         if (session.timer) clearInterval(session.timer);
+        if (session.stopTimer) clearTimeout(session.stopTimer);
         session.status = 'stopped';
         activeSessions.delete(reportId);
         console.log(`[Session] Stopped — reportId=${reportId} after ${session.checkIndex} checks`);
@@ -425,6 +528,7 @@ function getSessionStatus(reportId) {
         reportId,
         checkIndex: session.checkIndex,
         status:     session.status,
+        autoStopAt: session.stopAt ? session.stopAt.toISOString() : null,
     };
 }
 
@@ -440,6 +544,7 @@ function listActiveSessions() {
             batch:      session.config.batch,
             room:       session.config.room,
             slot:       session.config.slot,
+            autoStopAt: session.stopAt ? session.stopAt.toISOString() : null,
         });
     }
     return sessions;

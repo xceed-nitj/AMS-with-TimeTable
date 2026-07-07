@@ -57,6 +57,15 @@ const slotResultSchema = new Schema({
     // Same idea, but against AdaFace — an entirely independent
     // face-recognition model (state.adaface_config, ML Fine Tuning page).
     adafaceComparison: { type: Schema.Types.Mixed, default: null },
+    // Classic mean-embedding assignment as a shadow — only populated when a
+    // different model was the primary (Model Pipeline card).
+    meanComparison: { type: Schema.Types.Mixed, default: null },
+    // Which model actually DECIDED attendance for this check (Model Pipeline
+    // card) — 'mean' unless another primary was selected and its
+    // prerequisites were met. primaryFallback=true means a non-mean primary
+    // was configured but unavailable, so this check fell back to mean.
+    primaryModel:    { type: String, enum: ['mean', 'max_k', 'faiss', 'adaface'], default: 'mean' },
+    primaryFallback: { type: Boolean, default: false },
 }, { _id: false });
 
 // Save data for proxy roll numbers: students appearing in different rooms at same time period
