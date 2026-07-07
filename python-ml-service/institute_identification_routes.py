@@ -5,16 +5,82 @@ import base64
 import time
 import tempfile
 import requests
+import numpy as np
 from fastapi import APIRouter, UploadFile, File
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import state
+import adaface_utils
 from faiss_utils import _recognize_face
 import threading
 import logging
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+# ─── Multi-model gallery matrices ─────────────────────────────────────────────
+# The Institute Identification page scores every detected face with ALL
+# available models, not just the FAISS index:
+#   faiss   — full FAISS index, top-k voting (the original behavior)
+#   mean    — brute-force cosine vs state.embeddings_db (institute-wide means)
+#   max_k   — max-cosine vs state.topk_embeddings_db (top-K gallery per student)
+#   adaface — cosine vs state.adaface_embeddings_db, in AdaFace's own space
+# Matrices are built once per stream run — galleries only change on enrollment.
+
+def _norm_vec(v):
+    arr = np.asarray(v, dtype=np.float32).reshape(-1)
+    n = np.linalg.norm(arr)
+    return arr / n if n > 0 else None
+
+
+def _build_gallery_matrices():
+    g = {"mean": None, "max_k": None, "adaface": None}
+
+    if state.embeddings_db:
+        ids, rows = [], []
+        for roll, rec in state.embeddings_db.items():
+            v = _norm_vec(rec.get("embedding") if isinstance(rec, dict) else rec)
+            if v is not None:
+                ids.append(roll); rows.append(v)
+        if rows:
+            g["mean"] = (ids, np.stack(rows))
+
+    if state.topk_embeddings_db:
+        owners, rows = [], []
+        for roll, vecs in state.topk_embeddings_db.items():
+            for vec in (vecs or []):
+                v = _norm_vec(vec)
+                if v is not None:
+                    owners.append(roll); rows.append(v)
+        if rows:
+            g["max_k"] = (owners, np.stack(rows))
+
+    if state.adaface_embeddings_db and state.adaface_session is not None:
+        ids, rows = [], []
+        for roll, vec in state.adaface_embeddings_db.items():
+            v = _norm_vec(vec)
+            if v is not None:
+                ids.append(roll); rows.append(v)
+        if rows:
+            g["adaface"] = (ids, np.stack(rows))
+
+    return g
+
+
+def _best_match(matrix_entry, emb, threshold):
+    """argmax cosine over a (ids, matrix) gallery; None below threshold.
+    For max_k galleries ids repeat per student — argmax naturally implements
+    max-over-K."""
+    if matrix_entry is None or emb is None:
+        return None, 0.0
+    ids, matrix = matrix_entry
+    sims = matrix @ emb
+    best = int(np.argmax(sims))
+    score = float(sims[best])
+    if score >= threshold:
+        return ids[best], score
+    return None, score
 
 # Node owns server/ml-data/ground_truth — this service may run on a separate
 # machine with no access to that disk, so the reference photo is fetched over
@@ -101,7 +167,12 @@ def process_video_stream(video_path: str, is_live_url: bool = False):
             
             marked_students = {}
             start_time = time.time()
-            
+
+            # Multi-model galleries — built once per stream run.
+            galleries = _build_gallery_matrices()
+            available = ['faiss'] + [k for k in ('mean', 'max_k', 'adaface') if galleries[k] is not None]
+            yield f"data: {json.dumps({'type': 'stage', 'message': 'Models available: ' + ', '.join(available)})}\n\n"
+
             pending_result_event = None
             run_idx = 0
             run_count = 0
@@ -151,21 +222,58 @@ def process_video_stream(video_path: str, is_live_url: bool = False):
                     with state.faiss_config_lock:
                         recog_top_k = state.faiss_config["top_k"]
                         recog_threshold = state.faiss_config["recog_threshold"]
-                    roll, score = _recognize_face(
+                    with state.adaface_config_lock:
+                        adaface_threshold = state.adaface_config["recog_threshold"]
+
+                    # ── Score this face with every available model ──────────
+                    faiss_roll, faiss_score = _recognize_face(
                         face.embedding,
                         state.faiss_index,
                         state.vid_to_roll,
                         top_k=recog_top_k,
                         threshold=recog_threshold,
                     )
-                    
+                    emb_norm = _norm_vec(face.embedding)
+                    mean_roll,  mean_score  = _best_match(galleries["mean"],  emb_norm, recog_threshold)
+                    max_k_roll, max_k_score = _best_match(galleries["max_k"], emb_norm, recog_threshold)
+                    adaface_roll, adaface_score = None, 0.0
+                    if galleries["adaface"] is not None:
+                        ada_emb = adaface_utils.get_adaface_embedding_for_face(
+                            frame, getattr(face, 'kps', None))
+                        if ada_emb is not None:
+                            adaface_roll, adaface_score = _best_match(
+                                galleries["adaface"], _norm_vec(ada_emb), adaface_threshold)
+
+                    models = {
+                        "faiss":   {"roll": faiss_roll,   "score": round(faiss_score, 3)},
+                        "mean":    {"roll": mean_roll,    "score": round(mean_score, 3)},
+                        "max_k":   {"roll": max_k_roll,   "score": round(max_k_score, 3)},
+                        "adaface": {"roll": adaface_roll, "score": round(adaface_score, 3)},
+                    }
+
+                    # Anchor identity: first model that recognised someone,
+                    # FAISS first (preserves the page's original behavior).
+                    roll, score, anchor_model = None, 0.0, None
+                    for mkey in ("faiss", "mean", "max_k", "adaface"):
+                        if models[mkey]["roll"]:
+                            roll, score, anchor_model = models[mkey]["roll"], models[mkey]["score"], mkey
+                            break
+
+                    # Flag when the models that DID match disagree on who it is.
+                    matched_rolls = {m["roll"] for m in models.values() if m["roll"]}
+                    disagreement = len(matched_rolls) > 1
+
                     label = roll if roll else "Unknown"
+                    if roll and disagreement:
+                        label += " *"
                     color = (0, 255, 0) if roll else (0, 0, 255)
-                    
+                    if roll and disagreement:
+                        color = (0, 165, 255)
+
                     x1, y1, x2, y2 = [int(v) for v in face.bbox]
                     cv2.rectangle(vis_frame, (x1, y1), (x2, y2), color, 2)
                     cv2.putText(vis_frame, label, (x1, max(y1 - 10, 0)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
-                    
+
                     if roll and roll not in marked_students:
                         # Pad the bounding box by 40% to show more of the head and shoulders
                         pad_x = int((x2 - x1) * 0.40)
@@ -184,10 +292,16 @@ def process_video_stream(video_path: str, is_live_url: bool = False):
                             evidence_b64 = base64.b64encode(crop_buf).decode('utf-8')
                         
                         record = {
-                            "score": round(score, 3), 
-                            "time": time.strftime("%H:%M:%S"), 
+                            "score": round(score, 3),
+                            "time": time.strftime("%H:%M:%S"),
                             "evidence": evidence_b64,
-                            "ground_truth": get_ground_truth_b64(roll)
+                            "ground_truth": get_ground_truth_b64(roll),
+                            # Every model's verdict on this same cropped face —
+                            # rendered per-card by the Institute page's
+                            # "model comparison" view.
+                            "models": models,
+                            "anchor_model": anchor_model,
+                            "disagreement": disagreement,
                         }
                         marked_students[roll] = record
                 

@@ -41,6 +41,26 @@ ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, ".."))
 DB_PATH  = os.path.join(ROOT_DIR, "server", "ml-data", "embeddings_db.pkl")
 CLIENT_GROUND_TRUTH = os.path.join(ROOT_DIR, "server", "ml-data", "ground_truth")
 
+# Institute-wide sibling galleries to embeddings_db.pkl — local to THIS
+# machine, same accumulation pattern. Feed the multi-model scoring on the
+# Institute Identification page (see state.py / institute_identification_routes.py).
+TOPK_DB_PATH    = os.path.join(ROOT_DIR, "server", "ml-data", "embeddings_db_topk.pkl")
+ADAFACE_DB_PATH = os.path.join(ROOT_DIR, "server", "ml-data", "embeddings_db_adaface.pkl")
+
+
+def _persist_institute_galleries():
+    """Write the top-K and AdaFace institute-wide galleries beside
+    embeddings_db.pkl. Failures are non-fatal — the in-memory dicts still
+    serve the current process."""
+    try:
+        os.makedirs(os.path.dirname(TOPK_DB_PATH), exist_ok=True)
+        with open(TOPK_DB_PATH, "wb") as f:
+            pickle.dump(state.topk_embeddings_db, f)
+        with open(ADAFACE_DB_PATH, "wb") as f:
+            pickle.dump(state.adaface_embeddings_db, f)
+    except Exception as e:
+        logger.warning(f"Failed to persist institute galleries: {e}")
+
 IMG_EXTS = (".jpg", ".jpeg", ".png", ".webp")
 
 # ─── ERP Models ───────────────────────────────────────────────────────────────
@@ -276,11 +296,18 @@ def _build_embeddings_sync(req: BuildEmbeddingsRequest):
                 "adaface_mean_embedding":   adaface_mean_emb.tolist() if adaface_mean_emb is not None else None,
                 "adaface_top_k_embeddings": computed["adaface_top_k_embeddings"],
             }
+            # Institute-wide galleries (Institute Identification page).
+            if computed["top_k_embeddings"]:
+                state.topk_embeddings_db[roll_no] = computed["top_k_embeddings"]
+            if adaface_mean_emb is not None:
+                state.adaface_embeddings_db[roll_no] = adaface_mean_emb.tolist()
         else:
             logger.warning(f"✗ {roll_no}: no faces detected")
 
     pkl_bytes = pickle.dumps(db)
     state.embeddings_db.update(db)
+    if students_detail:
+        _persist_institute_galleries()
 
     result = {
         "status":            "done",
@@ -577,6 +604,13 @@ def _update_student_embedding_sync(req: UpdateEmbeddingRequest):
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     with open(DB_PATH, "wb") as f:
         pickle.dump(state.embeddings_db, f)
+
+    # Institute-wide galleries (Institute Identification page).
+    if top_k_embeddings:
+        state.topk_embeddings_db[req.roll_no] = top_k_embeddings
+    if adaface_mean_embedding is not None:
+        state.adaface_embeddings_db[req.roll_no] = adaface_mean_embedding
+    _persist_institute_galleries()
 
     return {
         "status":               "ok",

@@ -21,10 +21,11 @@ process.on('uncaughtException',  (err) => console.error('UNCAUGHT EXCEPTION:', e
 process.on('unhandledRejection', (err) => console.error('UNHANDLED REJECTION:', err));
 
 
-console.log("ENV CHECK:", {
-  MONGO_URL: process.env.MONGO_URL,
-  JWT_SECRET: process.env.JWT_SECRET,
-});
+// NOTE: never print env values here — MONGO_URL/JWT_SECRET are secrets and
+// the console output is surfaced in the Node Console page / log buffers.
+if (!process.env.MONGO_URL || !process.env.JWT_SECRET) {
+  console.warn('ENV CHECK: MONGO_URL and/or JWT_SECRET are NOT set — check the server .env');
+}
 
 // Security headers
 app.use(helmet({

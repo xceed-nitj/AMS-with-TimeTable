@@ -6,6 +6,15 @@ const T = theme;
 const apiUrl = getEnvironment();
 const GATE_API = `${apiUrl}/attendancemodule/institute`;
 
+// Per-face verdicts from every recognition model the ML service has loaded —
+// see institute_identification_routes.py's "models" record field.
+const INST_MODELS = [
+  { key: 'faiss',   label: 'FAISS' },
+  { key: 'mean',    label: 'Mean' },
+  { key: 'max_k',   label: 'Max-of-K' },
+  { key: 'adaface', label: 'AdaFace' },
+];
+
 export default function InstituteGateIdentification() {
   const [file, setFile] = useState(null);
   const [processing, setProcessing] = useState(false);
@@ -21,6 +30,7 @@ export default function InstituteGateIdentification() {
   const [zoomLevel, setZoomLevel] = useState(1);
   const [useStreamUrl, setUseStreamUrl] = useState(false);
   const [streamUrl, setStreamUrl] = useState('');
+  const [showModelResults, setShowModelResults] = useState(true);
   const fileInputRef = useRef(null);
   const abortControllerRef = useRef(null);
 
@@ -161,7 +171,10 @@ export default function InstituteGateIdentification() {
   return (
     <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
       <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: T.text, marginBottom: '8px' }}>Institute Identification</h1>
-      <p style={{ color: T.textMuted, marginBottom: '24px' }}>Identify students using the FAISS model.</p>
+      <p style={{ color: T.textMuted, marginBottom: '24px' }}>
+        Identify students using every available model — FAISS index, Mean, Max-of-K and AdaFace
+        galleries — with per-model results on each identified face.
+      </p>
 
       {error && (
         <div style={{ padding: '12px', background: '#fee2e2', color: '#b91c1c', borderRadius: '8px', marginBottom: '16px' }}>
@@ -357,13 +370,26 @@ export default function InstituteGateIdentification() {
 
           {/* Results Section */}
           <div style={{ background: '#fff', borderRadius: '12px', padding: '24px', border: `1px solid ${T.border}` }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', gap: '12px', flexWrap: 'wrap' }}>
               <h2 style={{ fontSize: '16px', fontWeight: '600' }}>Identified Students ({Object.keys(markedStudents).length})</h2>
-              {summary && (
-                <div style={{ fontSize: '12px', color: T.textMuted }}>
-                  Processed {summary.frames_processed} frames in {summary.duration_sec}s
-                </div>
-              )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <button
+                  onClick={() => setShowModelResults((v) => !v)}
+                  style={{
+                    padding: '5px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '600',
+                    border: `1px solid ${showModelResults ? T.accent : T.border}`,
+                    background: showModelResults ? T.accent : '#f1f5f9',
+                    color: showModelResults ? '#fff' : '#475569', cursor: 'pointer',
+                  }}
+                >
+                  {showModelResults ? 'Model comparison: on' : 'Model comparison: off'}
+                </button>
+                {summary && (
+                  <div style={{ fontSize: '12px', color: T.textMuted }}>
+                    Processed {summary.frames_processed} frames in {summary.duration_sec}s
+                  </div>
+                )}
+              </div>
             </div>
             
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
@@ -373,30 +399,62 @@ export default function InstituteGateIdentification() {
                 </div>
               ) : (
                 Object.entries(markedStudents).map(([roll, data]) => (
-                  <div key={roll} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', border: `1px solid ${T.border}`, borderRadius: '8px', background: '#f8fafc' }}>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                        {data.ground_truth ? (
-                           <img src={`data:image/jpeg;base64,${data.ground_truth}`} title="Ground Truth (Database)" alt={`${roll} Database`} style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '6px', border: '2px solid #10b981' }} />
-                        ) : (
-                           <div style={{ width: '64px', height: '64px', background: '#e2e8f0', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '12px', fontWeight: 'bold', textAlign: 'center' }}>No<br/>DB Pic</div>
-                        )}
-                        <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#10b981' }}>Ground Truth</span>
+                  <div key={roll} style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '12px', border: `1px solid ${data.disagreement ? '#f59e0b' : T.border}`, borderRadius: '8px', background: '#f8fafc' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                          {data.ground_truth ? (
+                             <img src={`data:image/jpeg;base64,${data.ground_truth}`} title="Ground Truth (Database)" alt={`${roll} Database`} style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '6px', border: '2px solid #10b981' }} />
+                          ) : (
+                             <div style={{ width: '64px', height: '64px', background: '#e2e8f0', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '12px', fontWeight: 'bold', textAlign: 'center' }}>No<br/>DB Pic</div>
+                          )}
+                          <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#10b981' }}>Ground Truth</span>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                          {data.evidence ? (
+                             <img src={`data:image/jpeg;base64,${data.evidence}`} title="Live Evidence (Camera)" alt={`${roll} Evidence`} style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '6px', border: '2px solid #3b82f6' }} />
+                          ) : (
+                             <div style={{ width: '64px', height: '64px', background: '#e2e8f0', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '20px', fontWeight: 'bold' }}>?</div>
+                          )}
+                          <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#3b82f6' }}>LIVE CAMERA</span>
+                        </div>
                       </div>
-                      
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                        {data.evidence ? (
-                           <img src={`data:image/jpeg;base64,${data.evidence}`} title="Live Evidence (Camera)" alt={`${roll} Evidence`} style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '6px', border: '2px solid #3b82f6' }} />
-                        ) : (
-                           <div style={{ width: '64px', height: '64px', background: '#e2e8f0', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '20px', fontWeight: 'bold' }}>?</div>
+                      <div>
+                        <div style={{ fontWeight: '600', fontSize: '14px', color: T.text }}>{roll}</div>
+                        <div style={{ fontSize: '12px', color: '#10b981', fontWeight: '500' }}>Match: {(data.score * 100).toFixed(0)}%</div>
+                        {data.anchor_model && (
+                          <div style={{ fontSize: '10px', color: T.textMuted }}>via {data.anchor_model}</div>
                         )}
-                        <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#3b82f6' }}>LIVE CAMERA</span>
                       </div>
                     </div>
-                    <div>
-                      <div style={{ fontWeight: '600', fontSize: '14px', color: T.text }}>{roll}</div>
-                      <div style={{ fontSize: '12px', color: '#10b981', fontWeight: '500' }}>Match: {(data.score * 100).toFixed(0)}%</div>
-                    </div>
+
+                    {showModelResults && data.models && (
+                      <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: '8px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                        {INST_MODELS.map(({ key, label }) => {
+                          const m = data.models[key];
+                          if (!m) return null;
+                          const matched = !!m.roll;
+                          const agrees = matched && m.roll === roll;
+                          const color = !matched ? '#94a3b8' : agrees ? '#10b981' : '#f59e0b';
+                          return (
+                            <div key={key} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontFamily: 'monospace' }}>
+                              <span style={{ color: T.textMuted, fontWeight: 600 }}>{label}</span>
+                              <span style={{ color, fontWeight: 600 }}>
+                                {matched
+                                  ? `${agrees ? '✓' : m.roll} ${(m.score * 100).toFixed(0)}%`
+                                  : `— ${m.score > 0 ? (m.score * 100).toFixed(0) + '%' : 'n/a'}`}
+                              </span>
+                            </div>
+                          );
+                        })}
+                        {data.disagreement && (
+                          <div style={{ fontSize: '10px', color: '#f59e0b', fontWeight: 600 }}>
+                            ⚠ models disagree on identity
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))
               )}

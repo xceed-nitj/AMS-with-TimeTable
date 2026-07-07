@@ -211,6 +211,7 @@ import AttendanceReport from './attendancemodule/AttendanceReport';
 import GroundTruthRTSP from './attendancemodule/groundtruthgen_rtsp';
 import GroundTruthUpload from './attendancemodule/groundtruthupload';
 import EmbeddingGeneration from './attendancemodule/EmbeddingGeneration';
+import ERPSync from './attendancemodule/ERPSync';
 import Camera from './attendancemodule/camera';
 import CameraPreview from './attendancemodule/cameraPreview';
 import FrameVerification from './attendancemodule/FrameVerification';
@@ -684,6 +685,7 @@ function App() {
           <Route path="institute-identification" element={<InstituteIdentification />} />
           <Route path="record-stream" element={<RecordStream />} />
           <Route path="embeddings" element={<EmbeddingGeneration />} />
+          <Route path="erp-sync" element={<ERPSync />} />
           <Route path="report" element={<Attendancedoc />} />
           <Route path="model" element={<ModelPerformance />} />
           <Route path="model-analytics" element={<ModelAnalytics />} />

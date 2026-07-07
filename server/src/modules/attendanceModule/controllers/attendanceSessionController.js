@@ -502,6 +502,7 @@ async function stopSession(reportId) {
     const session = activeSessions.get(reportId);
     if (session) {
         if (session.timer) clearInterval(session.timer);
+        if (session.stopTimer) clearTimeout(session.stopTimer);
         session.status = 'stopped';
         activeSessions.delete(reportId);
         console.log(`[Session] Stopped — reportId=${reportId} after ${session.checkIndex} checks`);
@@ -527,6 +528,7 @@ function getSessionStatus(reportId) {
         reportId,
         checkIndex: session.checkIndex,
         status:     session.status,
+        autoStopAt: session.stopAt ? session.stopAt.toISOString() : null,
     };
 }
 
@@ -542,6 +544,7 @@ function listActiveSessions() {
             batch:      session.config.batch,
             room:       session.config.room,
             slot:       session.config.slot,
+            autoStopAt: session.stopAt ? session.stopAt.toISOString() : null,
         });
     }
     return sessions;

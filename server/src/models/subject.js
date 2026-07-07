@@ -62,7 +62,23 @@ const subjectSchema = new mongoose.Schema({
     type: Date,
     default: null,
   },
-  
+  // ── ERP roster sync (ERP Embedding Generation tab) ─────────────────────────
+  erpSyncedAt: {              // when enrolledRollNos was last fetched from the ERP
+    type: Date,
+    default: null,
+  },
+  erpFaculty: {               // faculty name as reported by the ERP for this subject
+    type: String,
+    default: null,
+  },
+  timetableFaculty: {         // faculty found in the timetable module (LockSem) for sem+abbreviation
+    type: String,
+    default: null,
+  },
+  facultyMatch: {             // erpFaculty vs timetableFaculty (case/space-insensitive)
+    type: Boolean,
+    default: null,
+  },
 });
 
 

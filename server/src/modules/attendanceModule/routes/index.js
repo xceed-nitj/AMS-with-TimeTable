@@ -77,6 +77,12 @@ router.use(
     require("./embeddingRouter"),
 );
 router.use(
+    '/erp-sync',
+    ...attendanceRoleAccess,
+    enforceAttendanceDepartment,
+    require("./erpSyncRoutes"),
+);
+router.use(
     '/frame-verification',
     ...attendanceRoleAccess,
     enforceAttendanceDepartment,
