@@ -88,12 +88,13 @@ def compute_liveness_score(crop_bgr):
 def run_onnx_liveness(session, input_name, crop_bgr, input_size=80):
     """
     Run a MiniFASNet-style ONNX liveness classifier on a face crop.
-    Expects a 3-class softmax output: [live, print-attack, replay-attack]
+    Expects a 3-class softmax output where index 1 is the "Live" class.
     Returns the "live" class probability as a float in [0, 1], or None if inference fails.
     """
     try:
         resized = cv2.resize(crop_bgr, (input_size, input_size))
         # Structure image blobs into correct neural format: [1, 3, 80, 80]
+        # Uses raw [0, 255] float values as required by MiniFASNet Strategy A
         blob = resized.astype(np.float32).transpose(2, 0, 1)[np.newaxis, ...]
         outputs = session.run(None, {input_name: blob})
         
@@ -103,7 +104,7 @@ def run_onnx_liveness(session, input_name, crop_bgr, input_size=80):
         exp_preds = np.exp(preds - np.max(preds))
         probs = exp_preds / np.sum(exp_preds)
         
-        # Index 0 strictly maps to the authentic "live" face probability
-        return float(probs[0])
+        # Index 1 strictly maps to the authentic "live" face probability in MiniFASNet
+        return float(probs[1])
     except Exception:
         return None
