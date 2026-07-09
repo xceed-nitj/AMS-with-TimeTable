@@ -58,8 +58,90 @@ def _persist_institute_galleries():
             pickle.dump(state.topk_embeddings_db, f)
         with open(ADAFACE_DB_PATH, "wb") as f:
             pickle.dump(state.adaface_embeddings_db, f)
+        
+        # Trigger automated FAISS index rebuild
+        rebuild_faiss_index_async()
     except Exception as e:
         logger.warning(f"Failed to persist institute galleries: {e}")
+    
+
+# ─── Automated FAISS Rebuild ──────────────────────────────────────────────────
+FAISS_INDEX_PATH = os.path.join(ROOT_DIR, "server", "ml-data", "embeddings", "faiss.index")
+FAISS_DB_PATH    = os.path.join(ROOT_DIR, "server", "ml-data", "embeddings", "metadata.db")
+
+def rebuild_faiss_index_async():
+    """Rebuilds the FAISS index and metadata.db completely from state.topk_embeddings_db."""
+    import threading
+    def _rebuild():
+        import faiss
+        import sqlite3
+        try:
+            logger.info("Starting automated FAISS index rebuild from memory...")
+            all_data = []
+            for roll, embs in state.topk_embeddings_db.items():
+                for emb in embs:
+                    all_data.append((emb, roll))
+            
+            if not all_data:
+                logger.warning("No embeddings found to build FAISS index.")
+                return
+
+            embeddings_arr = np.array([x[0] for x in all_data], dtype="float32")
+            labels = [x[1] for x in all_data]
+            n, dim = embeddings_arr.shape
+
+            faiss.normalize_L2(embeddings_arr)
+
+            if n < 1000:
+                index = faiss.IndexFlatIP(dim)
+                index.add(embeddings_arr)
+            else:
+                nlist = min(100, n // 10)
+                nprobe = max(10, nlist // 5)
+                quantizer = faiss.IndexFlatIP(dim)
+                index = faiss.IndexIVFFlat(quantizer, dim, nlist, faiss.METRIC_INNER_PRODUCT)
+                index.train(embeddings_arr)
+                index.add(embeddings_arr)
+                index.set_direct_map(faiss.DirectMap.Array)
+                index.nprobe = nprobe
+
+            # Save to disk
+            os.makedirs(os.path.dirname(FAISS_INDEX_PATH), exist_ok=True)
+            tmp_index = FAISS_INDEX_PATH + ".tmp"
+            faiss.write_index(index, tmp_index)
+            os.replace(tmp_index, FAISS_INDEX_PATH)
+
+            with sqlite3.connect(FAISS_DB_PATH) as conn:
+                conn.execute("""
+                    CREATE TABLE IF NOT EXISTS embeddings (
+                        vector_id INTEGER PRIMARY KEY,
+                        roll      TEXT,
+                        quality   REAL
+                    )
+                """)
+                conn.execute("BEGIN")
+                conn.execute("DELETE FROM embeddings")
+                conn.executemany(
+                    "INSERT INTO embeddings (vector_id, roll, quality) VALUES (?, ?, ?)",
+                    [(i, labels[i], 1.0) for i in range(n)]
+                )
+                conn.commit()
+
+            # Update live state
+            state.faiss_index = index
+            state.vid_to_roll = {i: labels[i] for i in range(n)}
+            logger.info(f"FAISS index automated rebuild complete: {n} vectors.")
+        except Exception as e:
+            logger.exception(f"Automated FAISS index rebuild failed: {e}")
+
+    threading.Thread(target=_rebuild, daemon=True).start()
+
+@router.post("/rebuild-faiss-index")
+def trigger_faiss_rebuild():
+    """Manual trigger to rebuild FAISS index."""
+    rebuild_faiss_index_async()
+    return {"status": "started"}
+
 
 IMG_EXTS = (".jpg", ".jpeg", ".png", ".webp")
 
