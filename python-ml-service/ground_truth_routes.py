@@ -58,11 +58,12 @@ def _persist_institute_galleries():
             pickle.dump(state.topk_embeddings_db, f)
         with open(ADAFACE_DB_PATH, "wb") as f:
             pickle.dump(state.adaface_embeddings_db, f)
+        
+        # Trigger automated FAISS index rebuild
+        rebuild_faiss_index_async()
     except Exception as e:
         logger.warning(f"Failed to persist institute galleries: {e}")
     
-    # Trigger automated FAISS index rebuild
-    rebuild_faiss_index_async()
 
 # ─── Automated FAISS Rebuild ──────────────────────────────────────────────────
 FAISS_INDEX_PATH = os.path.join(ROOT_DIR, "server", "ml-data", "embeddings", "faiss.index")

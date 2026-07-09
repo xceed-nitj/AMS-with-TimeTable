@@ -114,6 +114,9 @@ def _nms_detections(detections: list, iou_thresh: float = 0.40):
 # =============================
 # FAISS RECOGNITION
 # =============================
+import threading
+_faiss_search_lock = threading.Lock()
+
 def _recognize_face(embedding, index, vid_to_roll, top_k=5, threshold=0.35):
     """
     Top-k voting using FAISS.
@@ -124,7 +127,8 @@ def _recognize_face(embedding, index, vid_to_roll, top_k=5, threshold=0.35):
     if emb is None:
         return None, 0.0
 
-    D, inds = index.search(emb.reshape(1, -1).astype("float32"), top_k)
+    with _faiss_search_lock:
+        D, inds = index.search(emb.reshape(1, -1).astype("float32"), top_k)
 
     votes  = {}
     scores = {}
@@ -165,7 +169,8 @@ def _topk_roll_scores(embedding, index, vid_to_roll, top_k=20):
     if emb is None:
         return {}
 
-    D, inds = index.search(emb.reshape(1, -1).astype("float32"), top_k)
+    with _faiss_search_lock:
+        D, inds = index.search(emb.reshape(1, -1).astype("float32"), top_k)
 
     scores = {}
     for i, idx in enumerate(inds[0]):
