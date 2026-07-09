@@ -9,6 +9,8 @@ const mongoose = require('mongoose');
 
 const erpSyncSettingsSchema = new mongoose.Schema({
     enabled: { type: Boolean, default: true },
+    lastRunAt: { type: Date, default: null },
+    lastRunStats: { type: mongoose.Schema.Types.Mixed, default: null },
 }, { timestamps: true });
 
 erpSyncSettingsSchema.statics.getSettings = async function () {

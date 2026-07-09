@@ -485,7 +485,11 @@ async function fetchRollsBulk(req, res) {
 async function getSettings(req, res) {
     try {
         const settings = await ErpSyncSettings.getSettings();
-        res.json({ enabled: settings.enabled });
+        res.json({
+            enabled: settings.enabled,
+            lastRunAt: settings.lastRunAt,
+            lastRunStats: settings.lastRunStats,
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

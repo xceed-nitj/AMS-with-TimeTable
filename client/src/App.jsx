@@ -219,7 +219,7 @@ import UnknownFaces from './attendancemodule/UnknownFaces';
 import SchedulerPage from './attendancemodule/SchedulerPage';
 import LiveReportPage from './attendancemodule/LiveReportPage';
 import RecordStream from './attendancemodule/RecordStream';
-import FirstYearSubjectMapping from './attendancemodule/FirstYearSubjectMapping';
+import ErpOverrides from './attendancemodule/ErpOverrides';
 
 import AMSDashboard from './attendancemodule/AMSDashboard';
 import AMSLayout from './attendancemodule/AMSLayout';
@@ -690,8 +690,8 @@ function App() {
           <Route path="model" element={<ModelPerformance />} />
           <Route path="model-analytics" element={<ModelAnalytics />} />
           <Route path="reports" element={<AttendanceReport />} />
-          <Route path="firstyearsubjectmapping" element={<FirstYearSubjectMapping />} />
           <Route path="frame-verification" element={<FrameVerification />} />
+          <Route path="erp-overrides" element={<ErpOverrides />} />
           <Route path="confidence" element={<ConfidenceMonitor />} />
           <Route path="ml-fine-tuning" element={<MLFineTuning />} />
           <Route path="acquisition-control" element={<SchedulerPage />} />

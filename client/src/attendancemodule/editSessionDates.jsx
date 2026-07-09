@@ -177,7 +177,7 @@ export default function EditSessionDates() {
   const isFetching = useRef(false);
 
   // ── Tab ───────────────────────────────────────────────────────────────────
-  const initialTab = ['session', 'batch', 'notifications', 'deptMenu', 'degree', 'erpSync'].includes(
+  const initialTab = ['session', 'batch', 'notifications', 'deptMenu', 'degree', 'erpSync', 'frameCleanup'].includes(
     searchParams.get('tab'),
   )
     ? searchParams.get('tab')
@@ -885,6 +885,12 @@ export default function EditSessionDates() {
             onClick={() => setActiveTab('erpSync')}
           >
             ERP Auto-Sync
+          </button>
+          <button
+            className={`ams-tab${activeTab === 'frameCleanup' ? ' active' : ''}`}
+            onClick={() => setActiveTab('frameCleanup')}
+          >
+            Frame Cleanup
           </button>
         </div>
 
@@ -1676,6 +1682,7 @@ export default function EditSessionDates() {
         {activeTab === 'degree' && <DegreeManagement apiUrl={apiUrl} />}
 
         {activeTab === 'erpSync' && <ErpSyncSettingsTab />}
+        {activeTab === 'frameCleanup' && <FrameCleanupSettingsTab />}
       </div>
 
       {/* ── Holiday delete confirmation modal ── */}

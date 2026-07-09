@@ -182,6 +182,15 @@ async function resolveContext(room, slot, date) {
       }
     }
 
+    // ── Free slot — no subject assigned (and no extra-class override filled
+    // one in) — nothing to take attendance for.
+    if (!subject.trim()) {
+      console.log(
+        `[AutoScheduler] Free slot for room=${room} slot=${slot} date=${date || ''} — skipping`,
+      );
+      return null;
+    }
+
     return {
       batch,
       subject,
@@ -272,8 +281,10 @@ async function resolveCameras(room, roomOverride) {
   };
 }
 
-// ── Merge per-student status across runs according to presentLogic ──────────
-function mergeStudentStatus(slotResults, presentLogic = "majority") {
+// ── Merge per-student status across runs ─────────────────────────────────────
+// No "Review" outcome — a student present in at least one run is Present;
+// otherwise (all-review, all-absent, or a review/absent mix) Absent.
+function mergeStudentStatus(slotResults) {
   const rollMap = {};
   for (const sr of slotResults) {
     for (const s of sr.students) {
@@ -286,18 +297,12 @@ function mergeStudentStatus(slotResults, presentLogic = "majority") {
       entries[0],
     );
     const presentCount = entries.filter((e) => e.status === "present").length;
-    const reviewCount = entries.filter((e) => e.status === "review").length;
 
-    let isPresent;
-    if (presentLogic === "any_run") isPresent = presentCount > 0;
-    else if (presentLogic === "all_runs")
-      isPresent = presentCount === entries.length;
-    else if (presentLogic === "first_run")
-      isPresent = entries[0].status === "present";
-    else isPresent = presentCount > entries.length / 2; // majority (default)
-
-    const finalStatus = isPresent ? "P" : reviewCount > 0 ? "R" : "A";
-    return { rollNo, ...best, finalStatus };
+    const finalStatus = presentCount > 0 ? "P" : "A";
+    // Model's original call, captured at merge time — updateStudentStatus()
+    // (manual/ERP override) only ever touches finalStatus, so this stays the
+    // pre-override value for later before/after comparisons.
+    return { rollNo, ...best, finalStatus, autoFinalStatus: finalStatus };
   });
 }
 
@@ -325,7 +330,6 @@ async function saveCheckResult({
   checkIndex,
   mlResult,
   room,
-  presentLogic,
   alertConfidence = 0.6,
 }) {
   try {
@@ -395,7 +399,7 @@ async function saveCheckResult({
   }
   if (subjectMeta) report.subjectMeta = subjectMeta;
 
-  report.finalReport = mergeStudentStatus(report.slotResults, presentLogic);
+  report.finalReport = mergeStudentStatus(report.slotResults);
 
   for (const s of report.finalReport) {
     if (
@@ -568,7 +572,6 @@ async function runOneCheck({
       checkIndex,
       mlResult: res.data,
       room,
-      presentLogic: runConfig.presentLogic,
       alertConfidence: runConfig.alertConfidence,
     });
   } catch (err) {
@@ -624,7 +627,6 @@ async function runSlotAttendance({
 
   const numRuns = config.globalNumRuns ?? 1;
   const runDurationSec = config.globalRunDurationSec ?? 120;
-  const presentLogic = config.globalPresentLogic ?? "majority";
   const periodDurationMin = periodInfo.endMin - periodInfo.startMin;
   const checkIntervalMin =
     numRuns > 1 ? Math.max(1, Math.floor(periodDurationMin / numRuns)) : 0;
@@ -632,7 +634,6 @@ async function runSlotAttendance({
   const t = config.attendanceThresholds || {};
   const runConfig = {
     runDurationSec,
-    presentLogic,
     auto_present_threshold: t.auto_present_threshold ?? 0.6,
     review_threshold: t.review_threshold ?? 0.4,
     alertConfidence: t.alert_confidence ?? 0.6,

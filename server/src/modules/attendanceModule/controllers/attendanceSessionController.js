@@ -183,6 +183,10 @@ function mergeStudentStatus(slotResults) {
             firstSeenSec:   best.firstSeenSec,
             clusterFolder:  best.clusterFolder || null,
             finalStatus,
+            // Model's original call, captured at merge time — updateStudentStatus()
+            // (manual/ERP override) only ever touches finalStatus, so this stays
+            // the pre-override value for later before/after comparisons.
+            autoFinalStatus: finalStatus,
         };
     });
 }

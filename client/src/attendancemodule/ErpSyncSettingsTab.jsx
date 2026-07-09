@@ -11,8 +11,21 @@ import getEnvironment from '../getenvironment';
 const apiUrl = getEnvironment();
 const ERP_SYNC_API = `${apiUrl}/attendancemodule/erp-sync`;
 
+function formatDate(d) {
+  if (!d) return 'never';
+  try {
+    return new Date(d).toLocaleString('en-IN', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    });
+  } catch (_) {
+    return 'never';
+  }
+}
+
 export default function ErpSyncSettingsTab() {
   const [enabled, setEnabled] = useState(true);
+  const [lastRunAt, setLastRunAt] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
@@ -20,7 +33,10 @@ export default function ErpSyncSettingsTab() {
   useEffect(() => {
     fetch(`${ERP_SYNC_API}/settings`)
       .then((r) => r.json())
-      .then((d) => setEnabled(d.enabled !== false))
+      .then((d) => {
+        setEnabled(d.enabled !== false);
+        setLastRunAt(d.lastRunAt || null);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
@@ -92,6 +108,12 @@ export default function ErpSyncSettingsTab() {
           <span style={{ fontSize: 13, fontWeight: 700, color: enabled ? theme.success : theme.danger }}>
             {enabled ? '✅ Nightly Auto-Sync ON' : '⛔ Nightly Auto-Sync OFF'}
           </span>
+        </div>
+      )}
+
+      {!loading && (
+        <div style={{ marginTop: 14, fontSize: 12, color: theme.textMuted }}>
+          Last synced: {formatDate(lastRunAt)}
         </div>
       )}
     </div>

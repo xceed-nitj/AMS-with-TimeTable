@@ -353,6 +353,16 @@ router.get("/lookup-context", ...attendanceRoleAccess, async (req, res) => {
   }
 });
 
+// List reports with at least one manually/ERP-overridden student
+// GET /attendancemodule/reports/erp-overrides?department=&batch=&from=&to=
+router.get("/erp-overrides", ...attendanceRoleAccess, enforceAttendanceDepartment, async (req, res) => {
+  try {
+    await ctrl.listOverriddenAttendance(req, res);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Get full report by ID (keep last to avoid conflicts with named routes above)
 router.get("/:id", ...attendanceRoleAccess, async (req, res) => {
   try {
