@@ -214,6 +214,14 @@ mongoose
       const { startEmbeddingProgressScheduler } = require('./modules/attendanceModule/controllers/embeddingProgressScheduler');
       startEmbeddingProgressScheduler();
 
+      // ── ERP Auto-Sync Scheduler ───────────────────────────────
+      // Nightly: re-fetches every subject's ERP roster and regenerates
+      // embeddings ONLY for subjects whose roster actually changed since
+      // last sync (no-op until ERP_API_URL is configured; toggle on/off
+      // from the ERP Sync page — see ErpSyncSettings).
+      const { startErpAutoSyncScheduler } = require('./modules/attendanceModule/controllers/erpAutoSyncScheduler');
+      startErpAutoSyncScheduler();
+
     });
     server.setTimeout(600000); // 10 min — prevents Node killing long SSE connections
     server.keepAliveTimeout = 620000;

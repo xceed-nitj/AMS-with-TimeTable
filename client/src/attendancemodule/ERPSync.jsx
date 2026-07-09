@@ -16,6 +16,14 @@ import { useDepartments } from './useDepartments';
 
 const apiUrl = getEnvironment();
 const ERP_SYNC_API = `${apiUrl}/attendancemodule/erp-sync`;
+
+// Sentinel for the Semester dropdown's explicit "First Year" entry — must
+// match FIRST_YEAR_SENTINEL in erpSyncController.js. First-year subjects
+// have no real semester number (Subject.sem holds a section string), so
+// they're unreachable through the normal numeric dropdown; this value picks
+// them out explicitly, regardless of which numeric semesters the dept's
+// timetable happens to expose.
+const FIRST_YEAR_SENTINEL = 'FIRST_YEAR';
 const EMB_API      = `${apiUrl}/attendancemodule/embeddings`;
 
 function StatusBadge({ status }) {
@@ -49,6 +57,12 @@ export default function ERPSync({ fixedDepartment, embedded = false }) {
   const [erpConfigured, setErpConfigured] = useState(true);
   const [subjectsLoading, setSubjectsLoading] = useState(false);
 
+  // Nightly auto-sync on/off — independent of erpConfigured; manual
+  // Fetch/Generate below still work when this is off, only the unattended
+  // scheduled run (erpAutoSyncScheduler.js) is paused.
+  const [autoSyncEnabled, setAutoSyncEnabled] = useState(true);
+  const [autoSyncSaving, setAutoSyncSaving] = useState(false);
+
   const [fetchingId, setFetchingId] = useState(null);
   const [bulkFetching, setBulkFetching] = useState(false);
   const [generatingId, setGeneratingId] = useState(null);
@@ -76,7 +90,7 @@ export default function ERPSync({ fixedDepartment, embedded = false }) {
       .then((d) => {
         const sems = d.sems || [];
         setAvailableSems(sems);
-        if (semester && !sems.includes(String(semester))) setSemester('');
+        if (semester && semester !== FIRST_YEAR_SENTINEL && !sems.includes(String(semester))) setSemester('');
       })
       .catch(() => showToast('Could not load semesters', 'error'))
       .finally(() => setSemsLoading(false));
@@ -101,6 +115,33 @@ export default function ERPSync({ fixedDepartment, embedded = false }) {
   }, [dept, semester, showToast]);
 
   useEffect(() => { loadSubjects(); }, [loadSubjects]);
+
+  useEffect(() => {
+    fetch(`${ERP_SYNC_API}/settings`)
+      .then((r) => r.json())
+      .then((d) => setAutoSyncEnabled(d.enabled !== false))
+      .catch(() => {});
+  }, []);
+
+  const toggleAutoSync = async () => {
+    const next = !autoSyncEnabled;
+    setAutoSyncSaving(true);
+    try {
+      const res = await fetch(`${ERP_SYNC_API}/settings`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: next }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update setting');
+      setAutoSyncEnabled(data.enabled);
+      showToast(`Nightly auto-sync ${data.enabled ? 'enabled' : 'disabled'}`);
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setAutoSyncSaving(false);
+    }
+  };
 
   const fetchRolls = async (subject) => {
     setFetchingId(subject._id);
@@ -273,11 +314,43 @@ export default function ERPSync({ fixedDepartment, embedded = false }) {
       )}
 
       <div style={{ marginBottom: embedded ? 14 : 24 }}>
-        {!embedded && <div style={styles.heading}>ERP Sync</div>}
-        <div style={{ ...styles.subheading, marginBottom: 0 }}>
-          Fetch each subject&rsquo;s enrolled roll numbers from the ERP server (key: semester +
-          subject abbreviation) and generate embeddings for every model — InsightFace, top-K
-          galleries and AdaFace — over the fetched roster.
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+          <div>
+            {!embedded && <div style={styles.heading}>ERP Sync</div>}
+            <div style={{ ...styles.subheading, marginBottom: 0 }}>
+              Fetch each subject&rsquo;s enrolled roll numbers from the ERP server (key: semester +
+              subject abbreviation) and generate embeddings for every model — InsightFace, top-K
+              galleries and AdaFace — over the fetched roster.
+            </div>
+          </div>
+
+          {/* Nightly auto-sync on/off */}
+          <div
+            onClick={autoSyncSaving ? undefined : toggleAutoSync}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 12, cursor: autoSyncSaving ? 'default' : 'pointer',
+              padding: '10px 18px', borderRadius: 10, userSelect: 'none',
+              background: autoSyncEnabled ? theme.successDim : theme.dangerDim,
+              border: `1px solid ${autoSyncEnabled ? theme.success : theme.danger}`,
+              opacity: autoSyncSaving ? 0.6 : 1,
+            }}
+            title="Manual Fetch/Generate below still work either way — this only controls the unattended nightly job."
+          >
+            <div style={{
+              width: 34, height: 18, borderRadius: 9, position: 'relative', flexShrink: 0,
+              background: autoSyncEnabled ? theme.success : theme.border,
+              transition: 'background .2s',
+            }}>
+              <div style={{
+                position: 'absolute', top: 2, left: autoSyncEnabled ? 18 : 2,
+                width: 14, height: 14, borderRadius: '50%',
+                background: '#fff', transition: 'left .2s',
+              }} />
+            </div>
+            <span style={{ fontSize: 12.5, fontWeight: 700, color: autoSyncEnabled ? theme.success : theme.danger }}>
+              {autoSyncEnabled ? '✅ Nightly Auto-Sync ON' : '⛔ Nightly Auto-Sync OFF'}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -313,17 +386,21 @@ export default function ERPSync({ fixedDepartment, embedded = false }) {
               disabled={!dept || semsLoading || busy}
             >
               <option value="">{!dept ? 'Select Dept First' : semsLoading ? 'Loading...' : 'All semesters'}</option>
+              {dept && <option value={FIRST_YEAR_SENTINEL}>First Year</option>}
               {availableSems.map((sem) => <option key={sem} value={sem}>{sem}</option>)}
             </select>
           </div>
-          <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, color: theme.text, paddingBottom: 8, cursor: 'pointer' }}>
+          <label
+            title={semester === FIRST_YEAR_SENTINEL ? 'First-year subjects always search institute-wide' : undefined}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, color: theme.text, paddingBottom: 8, cursor: semester === FIRST_YEAR_SENTINEL ? 'not-allowed' : 'pointer' }}
+          >
             <input
               type="checkbox"
-              checked={instituteWise}
+              checked={instituteWise || semester === FIRST_YEAR_SENTINEL}
               onChange={(e) => setInstituteWise(e.target.checked)}
-              disabled={busy}
+              disabled={busy || semester === FIRST_YEAR_SENTINEL}
             />
-            Search Institute Wise
+            Search Institute Wise{semester === FIRST_YEAR_SENTINEL ? ' (automatic for First Year)' : ''}
           </label>
           <div style={{ flex: 1 }} />
           <button

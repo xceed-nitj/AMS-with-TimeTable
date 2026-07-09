@@ -807,4 +807,47 @@ uploadRollNosXlsx() {
 }
 }
 
+// ── Headless invocation of generate() for schedulers ────────────────────────
+// generate() is an Express-only SSE handler (writes headers + res.write()
+// throughout its per-roll-number loop) — there's no extracted "core" function
+// safe to call outside an HTTP request, and refactoring that actively-used
+// endpoint is out of scope here. Instead, build minimal fake req/res objects
+// that satisfy exactly what generate() calls on them, so
+// erpAutoSyncScheduler.js can trigger a real generation run (identical
+// payload shape to what the ERP Sync page's "Generate" button sends)
+// without an HTTP round-trip. generate() itself is completely untouched, so
+// the live SSE endpoint used by the ERP Sync / Embedding Generation pages is
+// byte-for-byte unaffected.
+async function runGenerateHeadless(body) {
+    const chunks = [];
+    const fakeReq = { body };
+    const fakeRes = {
+        setHeader() {},
+        flushHeaders() {},
+        write(chunk) { chunks.push(chunk); return true; },
+        flush() {},
+        end() {},
+        status(code) { this._statusCode = code; return this; },
+        json(obj) { chunks.push(`data: ${JSON.stringify(obj)}\n\n`); },
+    };
+
+    const ctrl = new EmbeddingController();
+    await ctrl.generate(fakeReq, fakeRes);
+
+    // Parse the last SSE frame written to learn how the run ended — generate()
+    // ends every path (success, per-subject failure, or fatal error) with
+    // exactly one data: {...} frame carrying a "type".
+    const raw = chunks.join('');
+    const frames = raw.split('\n\n').map((f) => f.trim()).filter((f) => f.startsWith('data:'));
+    let lastEvent = null;
+    if (frames.length > 0) {
+        try {
+            lastEvent = JSON.parse(frames[frames.length - 1].slice(5).trim());
+        } catch (_) { /* leave null — treated as failure below */ }
+    }
+
+    return { ok: !!lastEvent && lastEvent.type === 'done', summary: lastEvent };
+}
+
 module.exports = EmbeddingController;
+module.exports.runGenerateHeadless = runGenerateHeadless;

@@ -961,7 +961,17 @@ function TabDevCycle() {
                         {items.map((it, i) => (
                             <li key={i} style={{ fontSize: 12.5, color: T.text, lineHeight: 1.45 }}>
                                 {it.subject}
-                                <span style={{ color: '#9ca3af', fontSize: 11 }}> — {it.author}</span>
+                                {' — '}
+                                <a
+                                    href={`https://github.com/${it.author}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{ color: '#9ca3af', fontSize: 11, textDecoration: 'none' }}
+                                    onMouseOver={(e) => { e.currentTarget.style.textDecoration = 'underline'; }}
+                                    onMouseOut={(e) => { e.currentTarget.style.textDecoration = 'none'; }}
+                                >
+                                    {it.author}
+                                </a>
                             </li>
                         ))}
                     </ul>
