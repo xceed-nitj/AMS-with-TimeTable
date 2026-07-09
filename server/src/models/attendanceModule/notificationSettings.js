@@ -5,6 +5,7 @@ const roleSettingsSchema = new mongoose.Schema({
   role: { type: String, enum: ["admin", "coordinator", "head"], required: true },
   alertTypes: {
     serverDown:          { type: Boolean, default: false },
+    erpDown:             { type: Boolean, default: false },
     lowConfidence:       { type: Boolean, default: false },
     noReportSaved:       { type: Boolean, default: false },
     classBunk:           { type: Boolean, default: false },
@@ -38,7 +39,7 @@ const notificationSettingsSchema = new mongoose.Schema({
   dailySummaryConfig: { type: dailySummaryConfigSchema, default: () => ({}) },
 }, { timestamps: true });
 
-const DEFAULT_ALERT_TYPES = { serverDown: false, lowConfidence: false, noReportSaved: false, classBunk: false, duplicateAttendance: false, dailySummary: false, embeddingProgress: false };
+const DEFAULT_ALERT_TYPES = { serverDown: false, erpDown: false, lowConfidence: false, noReportSaved: false, classBunk: false, duplicateAttendance: false, dailySummary: false, embeddingProgress: false };
 
 const DEFAULT_ROLES = [
   { role: "admin",       alertTypes: { ...DEFAULT_ALERT_TYPES } },

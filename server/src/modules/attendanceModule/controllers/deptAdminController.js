@@ -304,7 +304,7 @@ const getReports = async (req, res) => {
 
         const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
         const reports = await AttendanceReport.find(filter)
-            .select('batch semester subject faculty room date timeSlot summary status')
+            .select('batch department semester subject faculty room date timeSlot summary status')
             .sort({ date: -1, created_at: -1 })
             .limit(safeLimit)
             .lean();

@@ -8,6 +8,7 @@ import FrameCleanupSettingsTab from './FrameCleanupSettingsTab';
 import { theme as T, cssReset } from './config';
 import DeptMenuConfig from './DeptMenuConfig';
 import DegreeManagement from './DegreeManagement';
+import ErpSyncSettingsTab from './ErpSyncSettingsTab';
 
 const apiUrl = getEnvironment();
 const ALLOTMENT_API = `${apiUrl}/timetablemodule/allotment`;
@@ -176,7 +177,7 @@ export default function EditSessionDates() {
   const isFetching = useRef(false);
 
   // ── Tab ───────────────────────────────────────────────────────────────────
-  const initialTab = ['session', 'batch', 'deptMenu'].includes(
+  const initialTab = ['session', 'batch', 'notifications', 'deptMenu', 'degree', 'erpSync'].includes(
     searchParams.get('tab'),
   )
     ? searchParams.get('tab')
@@ -880,10 +881,10 @@ export default function EditSessionDates() {
             Degree Management
           </button>
           <button
-            className={`ams-tab${activeTab === 'frameCleanup' ? ' active' : ''}`}
-            onClick={() => setActiveTab('frameCleanup')}
+            className={`ams-tab${activeTab === 'erpSync' ? ' active' : ''}`}
+            onClick={() => setActiveTab('erpSync')}
           >
-            Frame Cleanup
+            ERP Auto-Sync
           </button>
         </div>
 
@@ -1673,27 +1674,8 @@ export default function EditSessionDates() {
         {activeTab === 'deptMenu' && <DeptMenuConfig />}
         {/* ══ DEGREE MANAGEMENT TAB ═══════════════════════════════════════════ */}
         {activeTab === 'degree' && <DegreeManagement apiUrl={apiUrl} />}
-        {/* ══ FRAME CLEANUP TAB ══════════════════════════════════════════════ */}
-        {activeTab === 'frameCleanup' && (
-          <div>
-            <div className="session-card">
-              <div className="session-card-header">
-                <span
-                  style={{
-                    fontSize: 11,
-                    color: T.textMuted,
-                    textTransform: 'uppercase',
-                    letterSpacing: '.08em',
-                    fontWeight: 700,
-                  }}
-                >
-                  Frame Cleanup 
-                </span>
-              </div>
-              <FrameCleanupSettingsTab />
-            </div>
-          </div>
-        )}
+
+        {activeTab === 'erpSync' && <ErpSyncSettingsTab />}
       </div>
 
       {/* ── Holiday delete confirmation modal ── */}

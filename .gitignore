@@ -1,1 +1,3 @@
 node_modules/
+coverage/
+server/tests/.tmp-daily-data/

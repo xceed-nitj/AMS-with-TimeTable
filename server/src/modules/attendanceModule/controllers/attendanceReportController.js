@@ -999,3 +999,6 @@ class AttendanceReportController {
 }
 
 module.exports = AttendanceReportController;
+// Exposed for unit tests (statics on the class; `new` callers unaffected)
+module.exports.mergeStudentStatus = mergeStudentStatus;
+module.exports.buildSummary = buildSummary;

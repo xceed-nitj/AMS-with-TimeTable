@@ -84,6 +84,17 @@ async function notifyServerDown(serviceName, details = "") {
   );
 }
 
+// Separate alertKey from notifyServerDown (ML/camera) so recipients can be
+// configured independently in the Email Notifications tab — a dept
+// coordinator may want ML-down alerts but not ERP-down, or vice versa.
+async function notifyErpDown(details = "") {
+  await sendAlert(
+    `⚠️ iAMS Alert: ERP Server is down`,
+    templates.serverDownTemplate("ERP Server", details),
+    null, "erpDown", null
+  );
+}
+
 async function notifyNoReportSaved({ batch, subject, faculty, room, date, timeSlot, dept }) {
   await sendAlert(
     `⚠️ iAMS Alert: No report saved — ${subject || "Unknown subject"}`,
@@ -138,10 +149,14 @@ async function notifyEmbeddingProgress({ dept, semesterGroups }) {
 
 module.exports = {
   notifyServerDown,
+  notifyErpDown,
   notifyNoReportSaved,
   notifyClassBunk,
   notifyLowConfidence,
   notifyDuplicateAttendance,
   notifyDailySummary,
   notifyEmbeddingProgress,
+  // Exposed for unit tests
+  shouldSend,
+  getRecipients,
 };

@@ -826,4 +826,8 @@ module.exports = {
   runSlotAttendance,
   checkMissedClasses,
   saveCheckResult,
+  // Exposed for unit tests
+  timeStrToMin,
+  safeSubject,
+  currentSession,
 };
