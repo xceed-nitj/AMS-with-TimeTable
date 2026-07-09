@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
 import NotificationSettingsTab from './NotificationSettingsTab';
+import FrameCleanupSettingsTab from './FrameCleanupSettingsTab';
 import { theme as T, cssReset } from './config';
 import DeptMenuConfig from './DeptMenuConfig';
 import DegreeManagement from './DegreeManagement';

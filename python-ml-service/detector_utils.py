@@ -47,6 +47,11 @@ def load_retinaface_model():
     try:
         from insightface import model_zoo
         model = model_zoo.get_model(RETINAFACE_MODEL_PATH)
+        if model is None:
+            # model_zoo router may not recognise retinaface.onnx outputs
+            from insightface.model_zoo.retinaface import RetinaFace
+            model = RetinaFace(model_file=RETINAFACE_MODEL_PATH)
+
         if model is None or not hasattr(model, "detect"):
             raise ValueError("model_zoo did not return a detector (wrong ONNX type?)")
         _prepare_detector(model)
