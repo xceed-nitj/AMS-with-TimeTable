@@ -27,8 +27,24 @@ const {
 const alertNotifier = require("./alertNotifier");
 
 const ML_URL = process.env.ML_SERVICE_URL || "http://localhost:8500";
-const EMBEDDINGS_DIR = path.join(__dirname, "..", "..", "..", "..", "ml-data", "embeddings");
-const GROUND_TRUTH_DIR = path.join(__dirname, "..", "..", "..", "..", "ml-data", "ground_truth");
+const EMBEDDINGS_DIR = path.join(
+  __dirname,
+  "..",
+  "..",
+  "..",
+  "..",
+  "ml-data",
+  "embeddings",
+);
+const GROUND_TRUTH_DIR = path.join(
+  __dirname,
+  "..",
+  "..",
+  "..",
+  "..",
+  "ml-data",
+  "ground_truth",
+);
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function todayStr() {
@@ -44,7 +60,10 @@ function timeStrToMin(hhmm) {
   return h * 60 + m;
 }
 function safeSubject(raw) {
-  return (raw || "").trim().replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_|_$/, "");
+  return (raw || "")
+    .trim()
+    .replace(/[^a-zA-Z0-9]+/g, "_")
+    .replace(/^_|_$/, "");
 }
 function currentSession() {
   const now = new Date();
@@ -76,8 +95,31 @@ async function getEnabledRooms(config) {
     .filter((r) => r.enabled !== false);
 }
 
+// ── Extra-class override — faculty exchange for a given date+periodKey+room ──
+async function resolveExtraClassOverride(room, periodKey, date) {
+  try {
+    const config = await AcquisitionControl.findOne({ profileName: "default" });
+    if (!config) return null;
+    return (
+      (config.extraClasses || []).find(
+        (ec) =>
+          ec.active &&
+          ec.date === date &&
+          ec.periodKey === periodKey &&
+          ec.room?.toLowerCase().trim() === room.toLowerCase().trim(),
+      ) || null
+    );
+  } catch (err) {
+    console.error(
+      "[AutoScheduler] resolveExtraClassOverride error:",
+      err.message,
+    );
+    return null;
+  }
+}
+
 // ── Step 3: slot/timetable context for a room ────────────────────────────────
-async function resolveContext(room, slot) {
+async function resolveContext(room, slot, date) {
   try {
     const records = await LockSem.aggregate([
       {
@@ -86,7 +128,14 @@ async function resolveContext(room, slot) {
           "slotData.room": { $regex: new RegExp(`^${room}$`, "i") },
         },
       },
-      { $lookup: { from: "timetables", localField: "timetable", foreignField: "_id", as: "tt" } },
+      {
+        $lookup: {
+          from: "timetables",
+          localField: "timetable",
+          foreignField: "_id",
+          as: "tt",
+        },
+      },
       { $unwind: { path: "$tt", preserveNullAndEmptyArrays: false } },
       { $match: { "tt.currentSession": true } },
       { $limit: 1 },
@@ -96,25 +145,51 @@ async function resolveContext(room, slot) {
 
     const rec = records[0];
     const tt = rec.tt;
-    const slotEntry = rec.slotData.find((s) => s.room && s.room.toLowerCase() === room.toLowerCase());
+    const slotEntry = rec.slotData.find(
+      (s) => s.room && s.room.toLowerCase() === room.toLowerCase(),
+    );
     if (!slotEntry) return null;
 
     const session = tt.session || currentSession();
-    const sessionStartYear = parseInt(session.split("-")[0]) || new Date().getFullYear();
+    const sessionStartYear =
+      parseInt(session.split("-")[0]) || new Date().getFullYear();
     const semNum = parseInt((rec.sem || "").match(/\d+/)?.[0] || "0");
     const yearOfStudy = semNum > 0 ? Math.ceil(semNum / 2) : 1;
     const batchYear = String(sessionStartYear - (yearOfStudy - 1));
     const ttName = (tt.name || "").toUpperCase();
     let degree = "BTECH";
     for (const d of ["MTECH", "PHD", "BSC", "MSC", "MBA", "MCA", "BTECH"]) {
-      if (ttName.includes(d)) { degree = d; break; }
+      if (ttName.includes(d)) {
+        degree = d;
+        break;
+      }
     }
     const dept = (tt.dept || "").trim().toUpperCase().replace(/\s+/g, "_");
     const batch = `${degree}_${dept}_${batchYear}`;
 
+    let subject = slotEntry.subject || "";
+    let faculty = slotEntry.faculty || "";
+
+    // ── Extra-class override (faculty exchange) takes priority for this exact date+slot+room ──
+    if (date) {
+      const override = await resolveExtraClassOverride(room, slot, date);
+      if (override) {
+        if (override.subject) subject = override.subject;
+        if (override.faculty) faculty = override.faculty;
+        console.log(
+          `[AutoScheduler] Extra-class override applied for room=${room} slot=${slot} date=${date} — subject=${subject} faculty=${faculty}`,
+        );
+      }
+    }
+
     return {
-      batch, subject: slotEntry.subject || "", faculty: slotEntry.faculty || "",
-      sem: rec.sem || "", dept, session, locksemId: rec._id.toString(),
+      batch,
+      subject,
+      faculty,
+      sem: rec.sem || "",
+      dept,
+      session,
+      locksemId: rec._id.toString(),
     };
   } catch (err) {
     console.error("[AutoScheduler] resolveContext error:", err.message);
@@ -129,42 +204,72 @@ async function resolveSubjectAndPkl(subjectText, sem, dept, session) {
     sem,
   }).lean();
 
-  const subjectMeta = subj ? {
-    subName: subj.subName || "",
-    subCode: subj.subCode || "",
-    subjectFullName: subj.subjectFullName || "",
-    credits: subj.credits ?? null,
-  } : null;
+  const subjectMeta = subj
+    ? {
+        subName: subj.subName || "",
+        subCode: subj.subCode || "",
+        subjectFullName: subj.subjectFullName || "",
+        credits: subj.credits ?? null,
+      }
+    : null;
 
   if (!subj || !subj.embeddingFile) {
-    return { subjectMeta, pkl: null, pklMissingReason: "No Subject.embeddingFile set for this subject" };
+    return {
+      subjectMeta,
+      pkl: null,
+      pklMissingReason: "No Subject.embeddingFile set for this subject",
+    };
   }
 
   const deptSafe = safeSubject(dept || subj.dept || "UNKNOWN");
   const sessionToUse = session || currentSession();
-  const fullPath = path.join(EMBEDDINGS_DIR, sessionToUse, deptSafe, subj.embeddingFile);
+  const fullPath = path.join(
+    EMBEDDINGS_DIR,
+    sessionToUse,
+    deptSafe,
+    subj.embeddingFile,
+  );
 
   if (!fs.existsSync(fullPath)) {
-    return { subjectMeta, pkl: null, pklMissingReason: `embeddingFile (${subj.embeddingFile}) not found on disk` };
+    return {
+      subjectMeta,
+      pkl: null,
+      pklMissingReason: `embeddingFile (${subj.embeddingFile}) not found on disk`,
+    };
   }
 
   try {
     const pklData = fs.readFileSync(fullPath).toString("base64");
     return { subjectMeta, pkl: { filename: subj.embeddingFile, pklData } };
   } catch (err) {
-    return { subjectMeta, pkl: null, pklMissingReason: `Failed to read PKL: ${err.message}` };
+    return {
+      subjectMeta,
+      pkl: null,
+      pklMissingReason: `Failed to read PKL: ${err.message}`,
+    };
   }
 }
 
 // ── Cameras for a room (Camera Registry + optional override) ────────────────
 async function resolveCameras(room, roomOverride) {
   if (roomOverride?.rtspUrl1) {
-    return { cam1: roomOverride.rtspUrl1, cam2: roomOverride.rtspUrl2 || "", source: "override" };
+    return {
+      cam1: roomOverride.rtspUrl1,
+      cam2: roomOverride.rtspUrl2 || "",
+      source: "override",
+    };
   }
-  const cams = await Camera.find({ roomId: room.toUpperCase(), isActive: true }).lean();
+  const cams = await Camera.find({
+    roomId: room.toUpperCase(),
+    isActive: true,
+  }).lean();
   const front = cams.find((c) => c.position === "front-left");
   const back = cams.find((c) => c.position === "front-right");
-  return { cam1: front?.streamUrl || "", cam2: back?.streamUrl || "", source: "cameraDb" };
+  return {
+    cam1: front?.streamUrl || "",
+    cam2: back?.streamUrl || "",
+    source: "cameraDb",
+  };
 }
 
 // ── Merge per-student status across runs according to presentLogic ──────────
@@ -176,17 +281,22 @@ function mergeStudentStatus(slotResults, presentLogic = "majority") {
     }
   }
   return Object.entries(rollMap).map(([rollNo, entries]) => {
-    const best = entries.reduce((p, c) => (c.avgConfidence > p.avgConfidence ? c : p), entries[0]);
+    const best = entries.reduce(
+      (p, c) => (c.avgConfidence > p.avgConfidence ? c : p),
+      entries[0],
+    );
     const presentCount = entries.filter((e) => e.status === "present").length;
     const reviewCount = entries.filter((e) => e.status === "review").length;
 
     let isPresent;
     if (presentLogic === "any_run") isPresent = presentCount > 0;
-    else if (presentLogic === "all_runs") isPresent = presentCount === entries.length;
-    else if (presentLogic === "first_run") isPresent = entries[0].status === "present";
+    else if (presentLogic === "all_runs")
+      isPresent = presentCount === entries.length;
+    else if (presentLogic === "first_run")
+      isPresent = entries[0].status === "present";
     else isPresent = presentCount > entries.length / 2; // majority (default)
 
-    const finalStatus = isPresent ? "P" : (reviewCount > 0 ? "R" : "A");
+    const finalStatus = isPresent ? "P" : reviewCount > 0 ? "R" : "A";
     return { rollNo, ...best, finalStatus };
   });
 }
@@ -197,18 +307,34 @@ function buildSummary(finalReport) {
   const absent = finalReport.filter((s) => s.finalStatus === "A").length;
   const review = finalReport.filter((s) => s.finalStatus === "R").length;
   return {
-    totalStudents: total, present, absent, review,
+    totalStudents: total,
+    present,
+    absent,
+    review,
     attendancePct: total > 0 ? Math.round((present / total) * 100) : 0,
     unknownFaceCount: 0,
   };
 }
 
 // ── Save one check's result into the slot's AttendanceReport ────────────────
-async function saveCheckResult({ ctx, subjectMeta, date, slot, checkIndex, mlResult, room, presentLogic, alertConfidence = 0.60 }) {
+async function saveCheckResult({
+  ctx,
+  subjectMeta,
+  date,
+  slot,
+  checkIndex,
+  mlResult,
+  room,
+  presentLogic,
+  alertConfidence = 0.6,
+}) {
   try {
     saveFrameSnapshots(mlResult.frame_files || []);
   } catch (snapErr) {
-    console.warn("[AutoScheduler] Could not save frame snapshots:", snapErr.message);
+    console.warn(
+      "[AutoScheduler] Could not save frame snapshots:",
+      snapErr.message,
+    );
   }
 
   const attendance = mlResult.attendance || {};
@@ -219,7 +345,8 @@ async function saveCheckResult({ ctx, subjectMeta, date, slot, checkIndex, mlRes
     confidenceZone: data.confidence_zone || "low",
     firstSeenSec: data.first_seen_sec || null,
     clusterFolder: null,
-    finalStatus: data.status === "present" ? "P" : data.status === "review" ? "R" : "A",
+    finalStatus:
+      data.status === "present" ? "P" : data.status === "review" ? "R" : "A",
   }));
 
   const slotResult = {
@@ -239,17 +366,27 @@ async function saveCheckResult({ ctx, subjectMeta, date, slot, checkIndex, mlRes
     faissComparison: mlResult.faiss_comparison || null,
     adafaceComparison: mlResult.adaface_comparison || null,
     meanComparison: mlResult.mean_comparison || null,
-    primaryModel: mlResult.metadata?.primary_model || 'mean',
+    primaryModel: mlResult.metadata?.primary_model || "mean",
     primaryFallback: !!mlResult.metadata?.primary_fallback,
   };
 
-  let report = await AttendanceReport.findOne({ batch: ctx.batch, date, timeSlot: slot });
+  let report = await AttendanceReport.findOne({
+    batch: ctx.batch,
+    date,
+    timeSlot: slot,
+  });
   if (report) {
     report.slotResults.push(slotResult);
   } else {
     report = new AttendanceReport({
-      batch: ctx.batch, department: ctx.dept, semester: ctx.sem,
-      subject: ctx.subject, faculty: ctx.faculty, room, date, timeSlot: slot,
+      batch: ctx.batch,
+      department: ctx.dept,
+      semester: ctx.sem,
+      subject: ctx.subject,
+      faculty: ctx.faculty,
+      room,
+      date,
+      timeSlot: slot,
       locksemId: ctx.locksemId || null,
       subjectMeta: subjectMeta || undefined,
       slotResults: [slotResult],
@@ -261,28 +398,56 @@ async function saveCheckResult({ ctx, subjectMeta, date, slot, checkIndex, mlRes
   report.finalReport = mergeStudentStatus(report.slotResults, presentLogic);
 
   for (const s of report.finalReport) {
-    if (s.confidenceZone === "low" || (s.avgConfidence || 0) < alertConfidence) {
+    if (
+      s.confidenceZone === "low" ||
+      (s.avgConfidence || 0) < alertConfidence
+    ) {
       alertNotifier
-        .notifyLowConfidence({ batch: ctx.batch, rollNo: s.rollNo, avgConfidence: s.avgConfidence || 0, dept: ctx.dept })
-        .catch((err) => console.error("[AutoScheduler] alert failed:", err.message));
+        .notifyLowConfidence({
+          batch: ctx.batch,
+          rollNo: s.rollNo,
+          avgConfidence: s.avgConfidence || 0,
+          dept: ctx.dept,
+        })
+        .catch((err) =>
+          console.error("[AutoScheduler] alert failed:", err.message),
+        );
     }
   }
 
-  const presentRolls = report.finalReport.filter((s) => s.finalStatus === "P").map((s) => s.rollNo);
+  const presentRolls = report.finalReport
+    .filter((s) => s.finalStatus === "P")
+    .map((s) => s.rollNo);
   if (presentRolls.length > 0) {
     const otherReports = await AttendanceReport.find({
-      date, timeSlot: slot, batch: { $ne: ctx.batch },
-      "finalReport.rollNo": { $in: presentRolls }, "finalReport.finalStatus": "P",
+      date,
+      timeSlot: slot,
+      batch: { $ne: ctx.batch },
+      "finalReport.rollNo": { $in: presentRolls },
+      "finalReport.finalStatus": "P",
     });
     for (const rollNo of presentRolls) {
-      const dupReports = otherReports.filter((r) => r.finalReport.some((s) => s.rollNo === rollNo && s.finalStatus === "P"));
+      const dupReports = otherReports.filter((r) =>
+        r.finalReport.some((s) => s.rollNo === rollNo && s.finalStatus === "P"),
+      );
       if (dupReports.length > 0) {
         const sessions = [
           { batch: ctx.batch, timeSlot: slot, room },
-          ...dupReports.map((r) => ({ batch: r.batch, timeSlot: r.timeSlot, room: r.room })),
+          ...dupReports.map((r) => ({
+            batch: r.batch,
+            timeSlot: r.timeSlot,
+            room: r.room,
+          })),
         ];
-        try { await alertNotifier.notifyDuplicateAttendance({ rollNo, date, sessions }); }
-        catch (err) { console.error("[AutoScheduler] dup alert failed:", err.message); }
+        try {
+          await alertNotifier.notifyDuplicateAttendance({
+            rollNo,
+            date,
+            sessions,
+          });
+        } catch (err) {
+          console.error("[AutoScheduler] dup alert failed:", err.message);
+        }
       }
     }
   }
@@ -294,16 +459,36 @@ async function saveCheckResult({ ctx, subjectMeta, date, slot, checkIndex, mlRes
   await report.save();
 
   saveAttendanceDailyData(
-    { batch: ctx.batch, date, slot, room, subject: ctx.subject, faculty: ctx.faculty, semester: ctx.sem, locksemId: ctx.locksemId },
-    mlResult, checkIndex,
+    {
+      batch: ctx.batch,
+      date,
+      slot,
+      room,
+      subject: ctx.subject,
+      faculty: ctx.faculty,
+      semester: ctx.sem,
+      locksemId: ctx.locksemId,
+    },
+    mlResult,
+    checkIndex,
   );
 
   const unmatched = mlResult.unmatched_clusters || [];
   if (unmatched.length > 0) {
-    console.warn(`[AutoScheduler] ⚠️ UNMATCHED FACES in check ${checkIndex} for ${ctx.batch} ${slot}: ${unmatched.length}`);
+    console.warn(
+      `[AutoScheduler] ⚠️ UNMATCHED FACES in check ${checkIndex} for ${ctx.batch} ${slot}: ${unmatched.length}`,
+    );
     saveUnknownFaces(
       unmatched,
-      { batch: ctx.batch, date, slot, room, subject: ctx.subject, faculty: ctx.faculty, semester: ctx.sem },
+      {
+        batch: ctx.batch,
+        date,
+        slot,
+        room,
+        subject: ctx.subject,
+        faculty: ctx.faculty,
+        semester: ctx.sem,
+      },
       report._id.toString(),
     );
   }
@@ -315,27 +500,52 @@ async function saveCheckResult({ ctx, subjectMeta, date, slot, checkIndex, mlRes
 }
 
 // ── Step 5: one acquisition call to Python (stateless PKL bytes) ────────────
-async function runOneCheck({ room, slot, date, ctx, subjectMeta, cameras, pkl, runConfig, checkIndex }) {
+async function runOneCheck({
+  room,
+  slot,
+  date,
+  ctx,
+  subjectMeta,
+  cameras,
+  pkl,
+  runConfig,
+  checkIndex,
+}) {
   try {
     const payload = {
       rtspUrl: cameras.cam1,
       rtspUrl2: cameras.cam2 || "",
-      batch: ctx.batch, room, slot, date,
+      batch: ctx.batch,
+      room,
+      slot,
+      date,
       durationSec: runConfig.runDurationSec,
-      subject: ctx.subject, faculty: ctx.faculty, semester: ctx.sem, locksemId: ctx.locksemId,
+      subject: ctx.subject,
+      faculty: ctx.faculty,
+      semester: ctx.sem,
+      locksemId: ctx.locksemId,
       embeddingsPklData: pkl.pklData, // stateless — see resolveSubjectAndPkl; decoded
-                                      // Python-side as a fallback enrollment source
-                                      // when enrolledEmbeddings is empty (see rtsp_routes.py)
-      autoThreshold:   runConfig.auto_present_threshold,
+      // Python-side as a fallback enrollment source
+      // when enrolledEmbeddings is empty (see rtsp_routes.py)
+      autoThreshold: runConfig.auto_present_threshold,
       reviewThreshold: runConfig.review_threshold,
       // All enrolled dicts ship on EVERY run — which model uses them is
       // decided Python-side by state.pipeline_config (Model Pipeline card),
       // and Node can't know which primary is selected there. ~100-200KB per
       // 60 students — trivial.
-      enrolledEmbeddings:            buildEnrolledEmbeddings(GROUND_TRUTH_DIR, ctx.batch),
-      enrolledEmbeddingsTopK:        buildEnrolledEmbeddingsTopK(GROUND_TRUTH_DIR, ctx.batch),
-      enrolledEmbeddingsAdaface:     buildEnrolledEmbeddingsAdaface(GROUND_TRUTH_DIR, ctx.batch),
-      enrolledEmbeddingsAdafaceTopK: buildEnrolledEmbeddingsAdafaceTopK(GROUND_TRUTH_DIR, ctx.batch),
+      enrolledEmbeddings: buildEnrolledEmbeddings(GROUND_TRUTH_DIR, ctx.batch),
+      enrolledEmbeddingsTopK: buildEnrolledEmbeddingsTopK(
+        GROUND_TRUTH_DIR,
+        ctx.batch,
+      ),
+      enrolledEmbeddingsAdaface: buildEnrolledEmbeddingsAdaface(
+        GROUND_TRUTH_DIR,
+        ctx.batch,
+      ),
+      enrolledEmbeddingsAdafaceTopK: buildEnrolledEmbeddingsAdafaceTopK(
+        GROUND_TRUTH_DIR,
+        ctx.batch,
+      ),
     };
     // Shadow comparisons fire only on the one check nearest the middle of
     // this period — which models actually run is decided Python-side by the
@@ -344,69 +554,116 @@ async function runOneCheck({ room, slot, date, ctx, subjectMeta, cameras, pkl, r
       payload.runShadows = true;
     }
 
-    const res = await axios.post(`${ML_URL}/run-attendance-rtsp-sync`, payload, { timeout: 300000 });
+    const res = await axios.post(
+      `${ML_URL}/run-attendance-rtsp-sync`,
+      payload,
+      { timeout: 300000 },
+    );
 
     await saveCheckResult({
-      ctx, subjectMeta, date, slot, checkIndex, mlResult: res.data, room,
+      ctx,
+      subjectMeta,
+      date,
+      slot,
+      checkIndex,
+      mlResult: res.data,
+      room,
       presentLogic: runConfig.presentLogic,
       alertConfidence: runConfig.alertConfidence,
     });
   } catch (err) {
-    console.error(`[AutoScheduler] Check ${checkIndex} failed for ${slot} room ${room}: ${err.message}`);
+    console.error(
+      `[AutoScheduler] Check ${checkIndex} failed for ${slot} room ${room}: ${err.message}`,
+    );
   }
 }
 
 // ── Run all checks for one room+slot — steps 2–5 for that room ──────────────
-async function runSlotAttendance({ room, roomOverride, slot, date, periodInfo, config }) {
-  console.log(`[AutoScheduler] Starting slot=${slot} room=${room} date=${date}`);
+async function runSlotAttendance({
+  room,
+  roomOverride,
+  slot,
+  date,
+  periodInfo,
+  config,
+}) {
+  console.log(
+    `[AutoScheduler] Starting slot=${slot} room=${room} date=${date}`,
+  );
 
   // Step 3: slot data
-  const ctx = await resolveContext(room, slot);
+  const ctx = await resolveContext(room, slot, date);
   if (!ctx) {
-    console.warn(`[AutoScheduler] No timetable context for room=${room} slot=${slot} — skipping`);
+    console.warn(
+      `[AutoScheduler] No timetable context for room=${room} slot=${slot} — skipping`,
+    );
     return;
   }
 
   // Step 4: embeddings for the subject
-  const { subjectMeta, pkl, pklMissingReason } = await resolveSubjectAndPkl(ctx.subject, ctx.sem, ctx.dept, ctx.session);
+  const { subjectMeta, pkl, pklMissingReason } = await resolveSubjectAndPkl(
+    ctx.subject,
+    ctx.sem,
+    ctx.dept,
+    ctx.session,
+  );
   if (!pkl) {
-    console.warn(`[AutoScheduler] Skipping room=${room} slot=${slot} — ${pklMissingReason}`);
+    console.warn(
+      `[AutoScheduler] Skipping room=${room} slot=${slot} — ${pklMissingReason}`,
+    );
     return;
   }
 
   const cameras = await resolveCameras(room, roomOverride);
   if (!cameras.cam1) {
-    console.warn(`[AutoScheduler] No active camera for room=${room} — skipping`);
+    console.warn(
+      `[AutoScheduler] No active camera for room=${room} — skipping`,
+    );
     return;
   }
 
   const numRuns = config.globalNumRuns ?? 1;
   const runDurationSec = config.globalRunDurationSec ?? 120;
   const presentLogic = config.globalPresentLogic ?? "majority";
-  const periodDurationMin = (periodInfo.endMin - periodInfo.startMin);
-  const checkIntervalMin = numRuns > 1 ? Math.max(1, Math.floor(periodDurationMin / numRuns)) : 0;
+  const periodDurationMin = periodInfo.endMin - periodInfo.startMin;
+  const checkIntervalMin =
+    numRuns > 1 ? Math.max(1, Math.floor(periodDurationMin / numRuns)) : 0;
 
   const t = config.attendanceThresholds || {};
   const runConfig = {
     runDurationSec,
     presentLogic,
-    auto_present_threshold: t.auto_present_threshold ?? 0.60,
-    review_threshold:       t.review_threshold       ?? 0.40,
-    alertConfidence:        t.alert_confidence       ?? 0.60,
+    auto_present_threshold: t.auto_present_threshold ?? 0.6,
+    review_threshold: t.review_threshold ?? 0.4,
+    alertConfidence: t.alert_confidence ?? 0.6,
     // Max-of-K shadow comparison (diagnostic only) fires once per period —
     // on the check nearest the middle of the numRuns checks — not every run.
-    middleRunIndex:         Math.ceil(numRuns / 2),
+    middleRunIndex: Math.ceil(numRuns / 2),
   };
 
   for (let i = 1; i <= numRuns; i++) {
     if (i > 1) {
-      console.log(`[AutoScheduler] Waiting ${checkIntervalMin} min before check ${i}/${numRuns} (room=${room})`);
+      console.log(
+        `[AutoScheduler] Waiting ${checkIntervalMin} min before check ${i}/${numRuns} (room=${room})`,
+      );
       await new Promise((r) => setTimeout(r, checkIntervalMin * 60 * 1000));
     }
-    await runOneCheck({ room, slot, date, ctx, subjectMeta, cameras, pkl, runConfig, checkIndex: i });
+    await runOneCheck({
+      room,
+      slot,
+      date,
+      ctx,
+      subjectMeta,
+      cameras,
+      pkl,
+      runConfig,
+      checkIndex: i,
+    });
   }
 
-  console.log(`[AutoScheduler] Slot ${slot} room ${room} — all ${numRuns} checks done`);
+  console.log(
+    `[AutoScheduler] Slot ${slot} room ${room} — all ${numRuns} checks done`,
+  );
 }
 
 // ── Missed/bunked class check, ~5 min after a slot ends ──────────────────────
@@ -416,28 +673,52 @@ async function checkMissedClasses(slotKey, date, config) {
     if (!enabledRooms.length) return;
 
     for (const { room } of enabledRooms) {
-      const ctx = await resolveContext(room, slotKey);
+      const ctx = await resolveContext(room, slotKey, date);
       if (!ctx) continue;
 
-      const report = await AttendanceReport.findOne({ batch: ctx.batch, date, timeSlot: slotKey });
+      const report = await AttendanceReport.findOne({
+        batch: ctx.batch,
+        date,
+        timeSlot: slotKey,
+      });
 
       if (!report) {
         try {
           await alertNotifier.notifyNoReportSaved({
-            batch: ctx.batch, subject: ctx.subject, faculty: ctx.faculty,
-            room, date, timeSlot: slotKey, dept: ctx.dept,
+            batch: ctx.batch,
+            subject: ctx.subject,
+            faculty: ctx.faculty,
+            room,
+            date,
+            timeSlot: slotKey,
+            dept: ctx.dept,
           });
-        } catch (err) { console.error("[ClassBunkCheck] no-report alert failed:", err.message); }
+        } catch (err) {
+          console.error(
+            "[ClassBunkCheck] no-report alert failed:",
+            err.message,
+          );
+        }
       } else {
-        const allAbsent = (report.summary.present || 0) === 0 && (report.summary.review || 0) === 0;
+        const allAbsent =
+          (report.summary.present || 0) === 0 &&
+          (report.summary.review || 0) === 0;
         const hasStudents = (report.finalReport || []).length > 0;
         if (allAbsent && hasStudents) {
           try {
             await alertNotifier.notifyClassBunk({
-              batch: ctx.batch, subject: ctx.subject, faculty: ctx.faculty,
-              room, date, timeSlot: slotKey, dept: ctx.dept, totalStudents: report.finalReport.length,
+              batch: ctx.batch,
+              subject: ctx.subject,
+              faculty: ctx.faculty,
+              room,
+              date,
+              timeSlot: slotKey,
+              dept: ctx.dept,
+              totalStudents: report.finalReport.length,
             });
-          } catch (err) { console.error("[ClassBunkCheck] bunk alert failed:", err.message); }
+          } catch (err) {
+            console.error("[ClassBunkCheck] bunk alert failed:", err.message);
+          }
         }
       }
     }
@@ -448,7 +729,9 @@ async function checkMissedClasses(slotKey, date, config) {
 
 // ── Main scheduler — fires every minute, fully DB-driven ────────────────────
 function startAutoScheduler() {
-  console.log("[AutoScheduler] Starting — running cron every minute (DB-driven: rooms, periods, embeddings)");
+  console.log(
+    "[AutoScheduler] Starting — running cron every minute (DB-driven: rooms, periods, embeddings)",
+  );
 
   const triggeredToday = new Set();
 
@@ -458,9 +741,14 @@ function startAutoScheduler() {
 
     let config;
     try {
-      config = await AcquisitionControl.findOne({ profileName: "default" }).lean();
+      config = await AcquisitionControl.findOne({
+        profileName: "default",
+      }).lean();
     } catch (err) {
-      console.error("[AutoScheduler] Failed to load AcquisitionControl config:", err.message);
+      console.error(
+        "[AutoScheduler] Failed to load AcquisitionControl config:",
+        err.message,
+      );
       return;
     }
     if (!config) return;
@@ -468,14 +756,20 @@ function startAutoScheduler() {
     // Step 2: working day check (global on/off + stopped days + allotment non-working days)
     if (!config.active) return;
     if ((config.stoppedDays || []).includes(date)) return;
-    const allotmentEntry = await Allotment.findOne({ 'nonWorkingDays.date': date }).lean().catch(() => null);
+    const allotmentEntry = await Allotment.findOne({
+      "nonWorkingDays.date": date,
+    })
+      .lean()
+      .catch(() => null);
     if (allotmentEntry) {
-      const nwd = allotmentEntry.nonWorkingDays.find(d => d.date === date);
-      console.log(`[AutoScheduler] Skipping ${date} — non-working day: ${nwd?.remark || 'Holiday'}`);
+      const nwd = allotmentEntry.nonWorkingDays.find((d) => d.date === date);
+      console.log(
+        `[AutoScheduler] Skipping ${date} — non-working day: ${nwd?.remark || "Holiday"}`,
+      );
       return;
     }
 
-    for (const period of (config.periods || [])) {
+    for (const period of config.periods || []) {
       if (!period.enabled) continue;
       const startMin = timeStrToMin(period.startTime);
       const endMin = timeStrToMin(period.endTime);
@@ -490,9 +784,13 @@ function startAutoScheduler() {
         // Step 1: rooms from DB
         const enabledRooms = await getEnabledRooms(config);
         const overrideMap = {};
-        (config.includedRooms || []).forEach((r) => { if (r.room) overrideMap[r.room.toUpperCase()] = r; });
+        (config.includedRooms || []).forEach((r) => {
+          if (r.room) overrideMap[r.room.toUpperCase()] = r;
+        });
 
-        console.log(`[AutoScheduler] Period ${period.periodKey} starting — firing ${enabledRooms.length} room(s) in parallel`);
+        console.log(
+          `[AutoScheduler] Period ${period.periodKey} starting — firing ${enabledRooms.length} room(s) in parallel`,
+        );
 
         // Step 5: acquire — all enabled rooms in parallel
         Promise.allSettled(
@@ -506,7 +804,9 @@ function startAutoScheduler() {
               config,
             }),
           ),
-        ).catch((err) => console.error("[AutoScheduler] Parallel run error:", err.message));
+        ).catch((err) =>
+          console.error("[AutoScheduler] Parallel run error:", err.message),
+        );
       }
 
       // Missed-class check ~5 min after period ends
