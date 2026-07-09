@@ -104,6 +104,10 @@ async function runErpAutoSync() {
 
   console.log(`[ErpAutoSync] Run complete — checked=${checked} regenerated=${regenerated} `
     + `unchanged=${unchanged} failed=${failed}`);
+
+  settings.lastRunAt = new Date();
+  settings.lastRunStats = { checked, regenerated, unchanged, failed };
+  await settings.save();
 }
 
 /**

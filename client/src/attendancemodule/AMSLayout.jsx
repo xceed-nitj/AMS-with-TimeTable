@@ -38,6 +38,7 @@ const NAV = [
     label: 'Confidence Monitor',
   },
   { id: 'institute', route: '/attendance/institute-identification', label: 'Institute Identification' },
+  { id: 'erpOverrides', route: '/attendance/erp-overrides', label: 'ERP Overrides' },
   { id: 'manual', route: '/ams-manual', label: 'Help & Manual', newTab: true },
 ];
 
@@ -55,6 +56,7 @@ const COLORS = {
   record: '#ef4444',
   manual: '#64748b',
   institute: '#8b5cf6',
+  erpOverrides: '#f59e0b',
 };
 
 const CSS = `

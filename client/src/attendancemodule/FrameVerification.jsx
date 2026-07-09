@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { cssReset, styles, theme } from './config';
 import getEnvironment from '../getenvironment';
 
@@ -79,13 +80,16 @@ function EmptyState({ title, subtitle }) {
 }
 
 export default function FrameVerification({ fixedDepartment = '' }) {
+    // Deep-link support (e.g. from the ERP Overrides page): ?room=&date=&period=
+    // pre-fills the selectors so the linked folder loads without manual clicks.
+    const [searchParams] = useSearchParams();
     const [rooms, setRooms] = useState([]);
-    const [room, setRoom] = useState('');
+    const [room, setRoom] = useState(() => searchParams.get('room') || '');
     const [availableDates, setAvailableDates] = useState([]);
     const [availablePeriods, setAvailablePeriods] = useState([]);
     const [availableFolders, setAvailableFolders] = useState([]);
-    const [date, setDate] = useState('');
-    const [period, setPeriod] = useState('');
+    const [date, setDate] = useState(() => searchParams.get('date') || '');
+    const [period, setPeriod] = useState(() => searchParams.get('period') || '');
     const [availabilityLoading, setAvailabilityLoading] = useState(false);
     const [framesLoading, setFramesLoading] = useState(false);
     const [galleryData, setGalleryData] = useState(null);

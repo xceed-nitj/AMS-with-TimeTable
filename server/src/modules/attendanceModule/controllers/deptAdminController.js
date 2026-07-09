@@ -583,6 +583,7 @@ const getDeptMenus = async (req, res) => {
     livePreview: true,
     gpuMetrics: true,       // ← new
     confidenceMonitor: true,
+    erpOverrides: false,    // off by default — enable per-dept from Dept Menu Config
     helpManual: true,
 };
         res.json({ deptMenus: batch?.deptMenus ?? defaults });

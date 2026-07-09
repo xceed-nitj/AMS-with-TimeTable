@@ -2180,9 +2180,15 @@ function MultiRunTable({ report, readOnly, onOverride, theme, styles }) {
   // Max-of-K shadow comparison (diagnostic only) — fires on at most one run
   // per period (the middle one for scheduled sessions). Find the last run
   // that actually carries a completed comparison, and use its per-student
-  // breakdown for the trailing "Max-of-K" column below.
+  // breakdown for the trailing "Max-of-K" column below. If the toggle was on
+  // but every attempt was skipped (missing prerequisites), fall back to that
+  // skipped run so the column still surfaces the fact instead of vanishing
+  // as if the toggle were simply off.
   const comparisonRun = [...runs].reverse().find(
     (r) => r.matchingComparison?.enabled && !r.matchingComparison?.skipped,
+  );
+  const comparisonSkippedRun = !comparisonRun && [...runs].reverse().find(
+    (r) => r.matchingComparison?.enabled && r.matchingComparison?.skipped,
   );
   const comparisonByRoll = comparisonRun?.matchingComparison?.per_student || {};
 
@@ -2190,11 +2196,17 @@ function MultiRunTable({ report, readOnly, onOverride, theme, styles }) {
   const faissRun = [...runs].reverse().find(
     (r) => r.faissComparison?.enabled && !r.faissComparison?.skipped,
   );
+  const faissSkippedRun = !faissRun && [...runs].reverse().find(
+    (r) => r.faissComparison?.enabled && r.faissComparison?.skipped,
+  );
   const faissByRoll = faissRun?.faissComparison?.per_student || {};
 
   // Same idea, for the AdaFace shadow comparison (independent on/off toggle).
   const adafaceRun = [...runs].reverse().find(
     (r) => r.adafaceComparison?.enabled && !r.adafaceComparison?.skipped,
+  );
+  const adafaceSkippedRun = !adafaceRun && [...runs].reverse().find(
+    (r) => r.adafaceComparison?.enabled && r.adafaceComparison?.skipped,
   );
   const adafaceByRoll = adafaceRun?.adafaceComparison?.per_student || {};
 
@@ -2203,7 +2215,19 @@ function MultiRunTable({ report, readOnly, onOverride, theme, styles }) {
   const meanRun = [...runs].reverse().find(
     (r) => r.meanComparison?.enabled && !r.meanComparison?.skipped,
   );
+  const meanSkippedRun = !meanRun && [...runs].reverse().find(
+    (r) => r.meanComparison?.enabled && r.meanComparison?.skipped,
+  );
   const meanByRoll = meanRun?.meanComparison?.per_student || {};
+
+  const skippedBadgeStyle = {
+    padding: '2px 6px',
+    borderRadius: 4,
+    fontSize: '10px',
+    fontWeight: 600,
+    color: theme.textMuted,
+    background: theme.accentDim,
+  };
 
   const cellStyle = (status) => ({
     padding: '2px 6px',
@@ -2281,51 +2305,71 @@ function MultiRunTable({ report, readOnly, onOverride, theme, styles }) {
                 )}
               </th>
             ))}
-            {comparisonRun && (
+            {(comparisonRun || comparisonSkippedRun) && (
               <th
-                title="Max-of-K shadow comparison — diagnostic only, does not affect Final"
+                title={
+                  comparisonRun
+                    ? "Max-of-K shadow comparison — diagnostic only, does not affect Final"
+                    : `Max-of-K shadow comparison skipped: ${comparisonSkippedRun.matchingComparison.reason || 'prerequisites not met'}`
+                }
                 style={{ textAlign: 'center', borderLeft: '2px solid #e4e8f5', color: theme.accent }}
               >
                 Max-of-K
                 <div style={{ fontSize: '9px', color: theme.textMuted, fontWeight: 400, marginTop: 2 }}>
-                  {comparisonRun.matchingComparison.agree}/
-                  {comparisonRun.matchingComparison.clusters_compared} agree
+                  {comparisonRun
+                    ? `${comparisonRun.matchingComparison.agree}/${comparisonRun.matchingComparison.clusters_compared} agree`
+                    : 'skipped'}
                 </div>
               </th>
             )}
-            {faissRun && (
+            {(faissRun || faissSkippedRun) && (
               <th
-                title="FAISS shadow comparison — diagnostic only, does not affect Final"
+                title={
+                  faissRun
+                    ? "FAISS shadow comparison — diagnostic only, does not affect Final"
+                    : `FAISS shadow comparison skipped: ${faissSkippedRun.faissComparison.reason || 'prerequisites not met'}`
+                }
                 style={{ textAlign: 'center', borderLeft: '2px solid #e4e8f5', color: theme.accent }}
               >
                 FAISS
                 <div style={{ fontSize: '9px', color: theme.textMuted, fontWeight: 400, marginTop: 2 }}>
-                  {faissRun.faissComparison.agree}/
-                  {faissRun.faissComparison.clusters_compared} agree
+                  {faissRun
+                    ? `${faissRun.faissComparison.agree}/${faissRun.faissComparison.clusters_compared} agree`
+                    : 'skipped'}
                 </div>
               </th>
             )}
-            {adafaceRun && (
+            {(adafaceRun || adafaceSkippedRun) && (
               <th
-                title="AdaFace shadow comparison — diagnostic only, does not affect Final"
+                title={
+                  adafaceRun
+                    ? "AdaFace shadow comparison — diagnostic only, does not affect Final"
+                    : `AdaFace shadow comparison skipped: ${adafaceSkippedRun.adafaceComparison.reason || 'prerequisites not met'}`
+                }
                 style={{ textAlign: 'center', borderLeft: '2px solid #e4e8f5', color: theme.accent }}
               >
                 AdaFace
                 <div style={{ fontSize: '9px', color: theme.textMuted, fontWeight: 400, marginTop: 2 }}>
-                  {adafaceRun.adafaceComparison.agree}/
-                  {adafaceRun.adafaceComparison.clusters_compared} agree
+                  {adafaceRun
+                    ? `${adafaceRun.adafaceComparison.agree}/${adafaceRun.adafaceComparison.clusters_compared} agree`
+                    : 'skipped'}
                 </div>
               </th>
             )}
-            {meanRun && (
+            {(meanRun || meanSkippedRun) && (
               <th
-                title="Mean (InsightFace) run as a shadow — another model was the primary decision-maker"
+                title={
+                  meanRun
+                    ? "Mean (InsightFace) run as a shadow — another model was the primary decision-maker"
+                    : `Mean shadow comparison skipped: ${meanSkippedRun.meanComparison.reason || 'prerequisites not met'}`
+                }
                 style={{ textAlign: 'center', borderLeft: '2px solid #e4e8f5', color: theme.accent }}
               >
                 Mean
                 <div style={{ fontSize: '9px', color: theme.textMuted, fontWeight: 400, marginTop: 2 }}>
-                  {meanRun.meanComparison.agree}/
-                  {meanRun.meanComparison.clusters_compared} agree
+                  {meanRun
+                    ? `${meanRun.meanComparison.agree}/${meanRun.meanComparison.clusters_compared} agree`
+                    : 'skipped'}
                 </div>
               </th>
             )}
@@ -2399,7 +2443,19 @@ function MultiRunTable({ report, readOnly, onOverride, theme, styles }) {
                     </td>
                   );
                 })}
-                {comparisonRun && (() => {
+                {(comparisonRun || comparisonSkippedRun) && (() => {
+                  if (!comparisonRun) {
+                    return (
+                      <td style={{ textAlign: 'center', borderLeft: '2px solid #e4e8f5' }}>
+                        <span
+                          title={comparisonSkippedRun.matchingComparison.reason || 'Skipped — prerequisites not met'}
+                          style={skippedBadgeStyle}
+                        >
+                          skipped
+                        </span>
+                      </td>
+                    );
+                  }
                   const cmp = comparisonByRoll[rollNo];
                   return (
                     <td style={{ textAlign: 'center', borderLeft: '2px solid #e4e8f5' }}>
@@ -2427,7 +2483,19 @@ function MultiRunTable({ report, readOnly, onOverride, theme, styles }) {
                     </td>
                   );
                 })()}
-                {faissRun && (() => {
+                {(faissRun || faissSkippedRun) && (() => {
+                  if (!faissRun) {
+                    return (
+                      <td style={{ textAlign: 'center', borderLeft: '2px solid #e4e8f5' }}>
+                        <span
+                          title={faissSkippedRun.faissComparison.reason || 'Skipped — prerequisites not met'}
+                          style={skippedBadgeStyle}
+                        >
+                          skipped
+                        </span>
+                      </td>
+                    );
+                  }
                   const cmp = faissByRoll[rollNo];
                   return (
                     <td style={{ textAlign: 'center', borderLeft: '2px solid #e4e8f5' }}>
@@ -2455,7 +2523,19 @@ function MultiRunTable({ report, readOnly, onOverride, theme, styles }) {
                     </td>
                   );
                 })()}
-                {adafaceRun && (() => {
+                {(adafaceRun || adafaceSkippedRun) && (() => {
+                  if (!adafaceRun) {
+                    return (
+                      <td style={{ textAlign: 'center', borderLeft: '2px solid #e4e8f5' }}>
+                        <span
+                          title={adafaceSkippedRun.adafaceComparison.reason || 'Skipped — prerequisites not met'}
+                          style={skippedBadgeStyle}
+                        >
+                          skipped
+                        </span>
+                      </td>
+                    );
+                  }
                   const cmp = adafaceByRoll[rollNo];
                   return (
                     <td style={{ textAlign: 'center', borderLeft: '2px solid #e4e8f5' }}>
@@ -2483,7 +2563,19 @@ function MultiRunTable({ report, readOnly, onOverride, theme, styles }) {
                     </td>
                   );
                 })()}
-                {meanRun && (() => {
+                {(meanRun || meanSkippedRun) && (() => {
+                  if (!meanRun) {
+                    return (
+                      <td style={{ textAlign: 'center', borderLeft: '2px solid #e4e8f5' }}>
+                        <span
+                          title={meanSkippedRun.meanComparison.reason || 'Skipped — prerequisites not met'}
+                          style={skippedBadgeStyle}
+                        >
+                          skipped
+                        </span>
+                      </td>
+                    );
+                  }
                   const cmp = meanByRoll[rollNo];
                   return (
                     <td style={{ textAlign: 'center', borderLeft: '2px solid #e4e8f5' }}>

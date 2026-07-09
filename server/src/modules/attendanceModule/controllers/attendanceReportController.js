@@ -520,6 +520,66 @@ class AttendanceReportController {
     }
   }
 
+  // List reports containing at least one manually/ERP-overridden student —
+  // powers the "ERP Overrides" audit page. Optional filters: department,
+  // batch, from/to date (both inclusive, "YYYY-MM-DD").
+  // GET /attendancemodule/reports/erp-overrides
+  async listOverriddenAttendance(req, res) {
+    try {
+      const { department, batch, from, to, limit = 100, skip = 0 } = req.query;
+      const filter = { "finalReport.isOverridden": true };
+      if (batch) filter.batch = batch;
+      if (department) {
+        const escapeRegex = (v) => String(v).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const norm = escapeRegex(department.trim().replace(/\s+/g, "_"));
+        filter.department = new RegExp(`^${norm.replace(/_/g, "[ _]")}$`, "i");
+      }
+      if (from || to) {
+        filter.date = {};
+        if (from) filter.date.$gte = from;
+        if (to) filter.date.$lte = to;
+      }
+
+      const reports = await AttendanceReport.find(filter)
+        .select("batch department semester subject faculty room date timeSlot finalReport summary")
+        .sort({ date: -1 })
+        .skip(Number(skip))
+        .limit(Number(limit));
+
+      const total = await AttendanceReport.countDocuments(filter);
+
+      const items = reports.map((r) => ({
+        reportId: r._id,
+        batch: r.batch,
+        department: r.department,
+        semester: r.semester,
+        subject: r.subject,
+        faculty: r.faculty,
+        room: r.room,
+        date: r.date,
+        timeSlot: r.timeSlot,
+        summary: {
+          present: r.summary?.present || 0,
+          absent: r.summary?.absent || 0,
+          total: r.summary?.totalStudents || r.finalReport.length,
+        },
+        // Only the students actually changed — the frame link/room/date/
+        // timeSlot above is shared context for the whole report.
+        overrides: r.finalReport
+          .filter((s) => s.isOverridden)
+          .map((s) => ({
+            rollNo: s.rollNo,
+            from: s.autoFinalStatus,
+            to: s.finalStatus,
+          })),
+      }));
+
+      res.json({ items, total, skip: Number(skip), limit: Number(limit) });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  }
+
   // Delete a draft report
   // DELETE /attendancemodule/reports/:id
   async deleteReport(req, res) {
