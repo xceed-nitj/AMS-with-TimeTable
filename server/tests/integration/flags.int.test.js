@@ -36,7 +36,7 @@ describe("POST /flags/flag", () => {
   });
 
   it("flags a cluster and marks the ClusterMatch record flagged", async () => {
-    await ClusterMatch.create({ batch: TEST_BATCH, folderName: "person_001", status: "pending" });
+    await ClusterMatch.create({ batch: TEST_BATCH, folderName: "person_001", status: "matched" });
 
     const res = await request(app)
       .post(`${BASE}/flag`)
@@ -59,7 +59,7 @@ describe("GET /flags/flagged/:batch", () => {
   });
 
   it("lists an open (unresolved) flag after flagging", async () => {
-    await ClusterMatch.create({ batch: TEST_BATCH, folderName: "person_002", status: "pending" });
+    await ClusterMatch.create({ batch: TEST_BATCH, folderName: "person_002", status: "matched" });
     await request(app)
       .post(`${BASE}/flag`)
       .set("Cookie", authCookie())
@@ -81,7 +81,7 @@ describe("POST /flags/resolve-flag", () => {
   });
 
   it("resolves a flagged cluster and approves the ClusterMatch record", async () => {
-    await ClusterMatch.create({ batch: TEST_BATCH, folderName: "person_003", status: "pending" });
+    await ClusterMatch.create({ batch: TEST_BATCH, folderName: "person_003", status: "matched" });
     await request(app)
       .post(`${BASE}/flag`)
       .set("Cookie", authCookie())

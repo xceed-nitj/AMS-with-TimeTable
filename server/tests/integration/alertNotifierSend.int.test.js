@@ -88,7 +88,7 @@ describe("sendAlert (via notifyClassBunk)", () => {
     await seedSettings();
     const alertNotifier = freshAlertNotifier();
 
-    jest.useFakeTimers().setSystemTime(new Date("2026-07-09T00:00:00Z"));
+    jest.useFakeTimers({ toFake: ["Date"] }).setSystemTime(new Date("2026-07-09T00:00:00Z"));
     await alertNotifier.notifyNoReportSaved({
       batch: "BTECH_CSE_2027", subject: "DBMS", dept: "CSE", date: "2026-07-09", timeSlot: "09:00-10:00",
     });

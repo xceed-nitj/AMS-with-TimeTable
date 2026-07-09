@@ -27,6 +27,9 @@ afterAll(async () => {
 
 describe("smoke", () => {
   it("returns 200 for an authenticated admin on /health/status", async () => {
+    mlServiceClient.getTargetInfo.mockReturnValue({
+      kind: "local", label: "Local ML service", host: "localhost", port: "8500", display: "localhost:8500",
+    });
     mlServiceClient.healthCheck.mockResolvedValue({ status: "ok" });
     axios.get.mockResolvedValue({ data: {} });
 

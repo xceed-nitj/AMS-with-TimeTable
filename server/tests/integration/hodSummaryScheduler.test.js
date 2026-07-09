@@ -40,7 +40,7 @@ describe("runDailySummaryCheck", () => {
   });
 
   it("in threshold mode, only includes rows below the threshold", async () => {
-    jest.useFakeTimers().setSystemTime(new Date("2026-07-09T12:00:00")); // a Thursday
+    jest.useFakeTimers({ toFake: ["Date"] }).setSystemTime(new Date("2026-07-09T12:00:00")); // a Thursday
     await NotificationSettings.create({
       enabled: true,
       dailySummaryConfig: { enabled: true, frequency: "daily", mode: "threshold", threshold: 75 },
@@ -64,7 +64,7 @@ describe("runDailySummaryCheck", () => {
   });
 
   it("skips a weekly run entirely on a non-Friday", async () => {
-    jest.useFakeTimers().setSystemTime(new Date("2026-07-09T12:00:00")); // Thursday
+    jest.useFakeTimers({ toFake: ["Date"] }).setSystemTime(new Date("2026-07-09T12:00:00")); // Thursday
     await NotificationSettings.create({
       enabled: true,
       dailySummaryConfig: { enabled: true, frequency: "weekly", mode: "all", threshold: 75 },
