@@ -9,13 +9,23 @@
 //        - Annotated frames → per camera, keep strictly ONE frame with the
 //          highest face count; delete everything else (2 frames total per period).
 //
-// Folder format (set by rtsp_routes.py line 640):
+// Folder format actually produced in practice:
 //   {ROOM_CLEAN}_{SLOT_CLEAN}_{YYYYMMDD}
-//   e.g.  LT_103_PERIOD3_20250610
+//   e.g.  LT103_PERIOD3_20260415
 //
-// File format (rtsp_routes.py line 694):
-//   frame_{elapsed:04d}s_cam{N}.jpg
-//   e.g.  frame_0045s_cam1.jpg   frame_0060s_cam2.jpg
+// File format actually produced in practice — the face count is embedded
+// directly in the filename (there is no `_faces.json` sidecar written):
+//   {YYYY-MM-DD}_period{N}_cam{N}_{elapsed}s_{faces}faces.jpg
+//   e.g.  2026-04-15_period1_cam1_6s_13faces.jpg
+//
+// NOTE: an older doc comment here previously described a different,
+// sidecar-based format (`frame_{elapsed:04d}s_cam{N}.jpg` + `_faces.json`).
+// That format is not what's actually on disk, and the parsing below was
+// silently falling back to faces=0 for every real file as a result —
+// meaning "keep highest face count" was effectively "keep whichever file
+// readdir happened to return first". Fixed below to parse the real
+// filenames; the sidecar path is kept only as a secondary fallback in
+// case some other producer of these folders still writes one.
 
 'use strict';
 
@@ -23,6 +33,7 @@ const path       = require('path');
 const fsSync     = require('fs');
 const fs         = require('fs').promises;
 const cron       = require('node-cron');
+const FrameCleanupSettings = require('../../../models/attendanceModule/frameCleanupSettings');
 
 // ── Paths (match rtsp_routes.py exactly) ─────────────────────────────────────
 const SERVER_ROOT        = path.join(__dirname, '..', '..', '..', '..');
@@ -52,9 +63,23 @@ function parseCam(filename) {
 }
 
 // ── Parse elapsed seconds from filename ──────────────────────────────────────
+// Matches "..._6s_..." — the elapsed-seconds segment sits between the cam
+// number and the face-count segment in the real filenames
+// (e.g. "..._cam1_6s_13faces.jpg"), not immediately before "s_cam" as an
+// earlier version of this file assumed.
 function parseElapsed(filename) {
-    const m = /(\d+)s_cam/i.exec(filename);
+    const m = /_(\d+)s_/i.exec(filename);
     return m ? parseInt(m[1], 10) : 0;
+}
+
+// ── Parse face count embedded directly in the filename ────────────────────────
+// This is the real source of truth in practice — filenames look like
+// "2026-04-15_period1_cam1_6s_13faces.jpg", i.e. "<N>faces" right before
+// the extension. Returns null if the filename doesn't carry a count at
+// all, so callers can fall back to the sidecar/elapsed-based guesses.
+function parseFaceCountFromFilename(filename) {
+    const m = /(\d+)\s*faces?\b/i.exec(filename);
+    return m ? parseInt(m[1], 10) : null;
 }
 
 // ── Read _faces.json sidecar written by attendanceSessionController ───────────
@@ -125,7 +150,15 @@ async function pruneAnnotatedFolder(folderPath) {
     for (const filename of images) {
         const cam = parseCam(filename);
         if (!byCam.has(cam)) byCam.set(cam, []);
-        const faces = sidecar[filename] ?? parseElapsed(filename);
+        // Priority: real face count embedded in the filename (what's
+        // actually produced) → _faces.json sidecar (if some other
+        // producer writes one) → elapsed-seconds as a last-resort,
+        // arbitrary tie-breaker so ties still resolve deterministically
+        // rather than "whatever readdir returned first".
+        const faces =
+            parseFaceCountFromFilename(filename) ??
+            sidecar[filename] ??
+            parseElapsed(filename);
         byCam.get(cam).push({ filename, faces });
     }
 
@@ -224,6 +257,16 @@ async function runCleanup() {
     console.log(`[FrameCleanup] Raw frames deleted      : ${stats.rawDeleted}`);
     console.log(`[FrameCleanup] Annotated kept (best)   : ${stats.annotatedKept}`);
     console.log(`[FrameCleanup] Annotated deleted (dups): ${stats.annotatedDeleted}`);
+
+    try {
+        const settings = await FrameCleanupSettings.getSettings();
+        settings.lastRunAt = new Date();
+        settings.lastRunStats = { ...stats };
+        await settings.save();
+    } catch (err) {
+        console.warn('[FrameCleanup] Could not persist lastRunStats:', err.message);
+    }
+
     return stats;
 }
 
@@ -231,15 +274,28 @@ async function runCleanup() {
 
 /**
  * Register the daily cron job (call once at server startup).
- * Runs at 02:00 every night — low traffic window.
+ * Runs at 02:00 every night — low traffic window. The job itself always
+ * fires; whether it actually does anything is governed by the enabled
+ * flag in FrameCleanupSettings, so toggling it in the settings UI takes
+ * effect on the very next tick without a server restart.
  */
 function startFrameCleanupScheduler() {
-    cron.schedule('0 2 * * *', () => {
+    cron.schedule('0 2 * * *', async () => {
+        try {
+            const settings = await FrameCleanupSettings.getSettings();
+            if (!settings.enabled) {
+                console.log('[FrameCleanup] Skipped — disabled via settings.');
+                return;
+            }
+        } catch (err) {
+            console.error('[FrameCleanup] Could not read settings, skipping this run:', err.message);
+            return;
+        }
         runCleanup().catch(err =>
             console.error('[FrameCleanup] Unhandled error:', err.message)
         );
     });
-    console.log('[FrameCleanup] Scheduler registered — runs daily at 02:00');
+    console.log('[FrameCleanup] Scheduler registered — runs daily at 02:00 (subject to on/off setting)');
 }
 
 /**
