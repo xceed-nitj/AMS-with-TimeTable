@@ -7,6 +7,7 @@ import NotificationSettingsTab from './NotificationSettingsTab';
 import { theme as T, cssReset } from './config';
 import DeptMenuConfig from './DeptMenuConfig';
 import DegreeManagement from './DegreeManagement';
+import ErpSyncSettingsTab from './ErpSyncSettingsTab';
 
 const apiUrl = getEnvironment();
 const ALLOTMENT_API = `${apiUrl}/timetablemodule/allotment`;
@@ -175,7 +176,7 @@ export default function EditSessionDates() {
   const isFetching = useRef(false);
 
   // ── Tab ───────────────────────────────────────────────────────────────────
-  const initialTab = ['session', 'batch', 'deptMenu'].includes(
+  const initialTab = ['session', 'batch', 'notifications', 'deptMenu', 'degree', 'erpSync'].includes(
     searchParams.get('tab'),
   )
     ? searchParams.get('tab')
@@ -877,6 +878,12 @@ export default function EditSessionDates() {
             onClick={() => setActiveTab('degree')}
           >
             Degree Management
+          </button>
+          <button
+            className={`ams-tab${activeTab === 'erpSync' ? ' active' : ''}`}
+            onClick={() => setActiveTab('erpSync')}
+          >
+            ERP Auto-Sync
           </button>
         </div>
 
@@ -1666,6 +1673,8 @@ export default function EditSessionDates() {
         {activeTab === 'deptMenu' && <DeptMenuConfig />}
         {/* ══ DEGREE MANAGEMENT TAB ═══════════════════════════════════════════ */}
         {activeTab === 'degree' && <DegreeManagement apiUrl={apiUrl} />}
+
+        {activeTab === 'erpSync' && <ErpSyncSettingsTab />}
       </div>
 
       {/* ── Holiday delete confirmation modal ── */}

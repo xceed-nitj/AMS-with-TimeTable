@@ -87,7 +87,7 @@ async function getHealthStatus() {
       if (prevErpStatus === "online" && !erpAlertInProgress) {
         erpAlertInProgress = true;
         prevErpStatus = "offline";
-        await alertNotifier.notifyServerDown("ERP Server", error.message);
+        await alertNotifier.notifyErpDown(error.message);
         erpAlertInProgress = false;
       }
     }
@@ -131,11 +131,14 @@ router.get("/stream", (req, res) => {
   });
 });
 
-// Background health monitor
-setInterval(() => {
-  getHealthStatus().catch((err) =>
-    console.error("[HealthMonitor] check failed:", err.message),
-  );
-}, 30 * 1000);
+// Background health monitor (skipped under test — module-load timers leak
+// into test runners; unref'd so it never keeps the process alive on its own)
+if (process.env.NODE_ENV !== "test") {
+  setInterval(() => {
+    getHealthStatus().catch((err) =>
+      console.error("[HealthMonitor] check failed:", err.message),
+    );
+  }, 30 * 1000).unref();
+}
 
 module.exports = router;

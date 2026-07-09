@@ -5,7 +5,9 @@
 const fs   = require('fs');
 const path = require('path');
 
-const DAILY_DATA_DIR = path.join(__dirname, '..', 'attendance-daily-data');
+const DAILY_DATA_DIR =
+    process.env.ATTENDANCE_DAILY_DATA_DIR ||
+    path.join(__dirname, '..', 'attendance-daily-data');
 if (!fs.existsSync(DAILY_DATA_DIR)) {
     fs.mkdirSync(DAILY_DATA_DIR, { recursive: true });
 }

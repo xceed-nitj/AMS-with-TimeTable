@@ -114,4 +114,5 @@ module.exports = {
     attendanceRoleAccess,
     enforceAttendanceDepartment,
     batchBelongsToDepartment,
+    normalizeDepartment,
 };

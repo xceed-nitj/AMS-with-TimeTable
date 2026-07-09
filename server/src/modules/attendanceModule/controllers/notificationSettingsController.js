@@ -1,6 +1,6 @@
 const NotificationSettings = require('../../../models/attendanceModule/notificationSettings');
 
-const ALERT_KEYS = ['serverDown', 'lowConfidence', 'noReportSaved', 'classBunk', 'duplicateAttendance', 'dailySummary', 'embeddingProgress'];
+const ALERT_KEYS = ['serverDown', 'erpDown', 'lowConfidence', 'noReportSaved', 'classBunk', 'duplicateAttendance', 'dailySummary', 'embeddingProgress'];
 const VALID_ROLES = ['admin', 'coordinator', 'head'];
 const VALID_FREQUENCIES = ['daily', 'weekly'];
 const VALID_MODES = ['all', 'threshold'];
@@ -113,3 +113,5 @@ class NotificationSettingsController {
 }
 
 module.exports = NotificationSettingsController;
+// Exposed for unit tests (static on the class; `new` callers unaffected)
+module.exports.normalizeAlertTypes = normalizeAlertTypes;

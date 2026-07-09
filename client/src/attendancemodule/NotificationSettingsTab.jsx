@@ -29,6 +29,18 @@ const ALERT_TYPES = [
     ),
   },
   {
+    key: 'erpDown',
+    label: 'ERP Down',
+    description: 'ERP server endpoints unreachable — nightly auto-sync will be skipped',
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+        <path d="M8 1.5c-3 0-5.5 1-5.5 2.2v8.6c0 1.2 2.5 2.2 5.5 2.2s5.5-1 5.5-2.2V3.7C13.5 2.5 11 1.5 8 1.5z" stroke="currentColor" strokeWidth="1.4"/>
+        <path d="M2.5 3.7c0 1.2 2.5 2.2 5.5 2.2s5.5-1 5.5-2.2" stroke="currentColor" strokeWidth="1.4"/>
+        <path d="M2.5 8c0 1.2 2.5 2.2 5.5 2.2s5.5-1 5.5-2.2" stroke="currentColor" strokeWidth="1.4"/>
+      </svg>
+    ),
+  },
+  {
     key: 'lowConfidence',
     label: 'Low Confidence',
     description: 'Face match confidence below threshold',

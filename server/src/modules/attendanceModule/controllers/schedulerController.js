@@ -46,6 +46,38 @@ function currentSession() {
   return `${start}-${String(start + 1).slice(2)}`;
 }
 
+// Merge per-student status across multiple ML runs according to presentLogic
+// (any_run | all_runs | first_run | majority). Returns { attendance, summary }.
+function mergeRunResults(runResults, presentLogic) {
+  const rollMap = {};
+  for (const r of runResults) {
+    for (const [rollNo, data] of Object.entries(r.attendance || {})) {
+      (rollMap[rollNo] ||= []).push(data);
+    }
+  }
+  const mlResult = {
+    attendance: Object.fromEntries(
+      Object.entries(rollMap).map(([rollNo, entries]) => {
+        const presentCount = entries.filter((e) => e.status === 'present').length;
+        const isPresent =
+          presentLogic === 'any_run'   ? presentCount > 0 :
+          presentLogic === 'all_runs'  ? presentCount === entries.length :
+          presentLogic === 'first_run' ? entries[0].status === 'present' :
+          /* majority */                  presentCount > entries.length / 2;
+        const best = entries.reduce((p, c) => (c.avg_confidence > p.avg_confidence ? c : p), entries[0]);
+        return [rollNo, { ...best, status: isPresent ? 'present' : (entries.some(e => e.status === 'review') ? 'review' : 'absent') }];
+      }),
+    ),
+    summary: {
+      present: 0, absent: 0, review: 0, // recomputed below from merged attendance
+    },
+  };
+  mlResult.summary.present = Object.values(mlResult.attendance).filter((s) => s.status === 'present').length;
+  mlResult.summary.absent  = Object.values(mlResult.attendance).filter((s) => s.status === 'absent').length;
+  mlResult.summary.review  = Object.values(mlResult.attendance).filter((s) => s.status === 'review').length;
+  return mlResult;
+}
+
 function timeStrToMin(t) {
   if (!t) return 0;
   const [h, m] = (t || '').split(':').map(Number);
@@ -346,33 +378,7 @@ async function runRoom({ room, roomOverride, slot, date, config }) {
   }
 
   // Merge per-student status across runs according to presentLogic
-  const rollMap = {};
-  for (const r of runResults) {
-    for (const [rollNo, data] of Object.entries(r.attendance || {})) {
-      (rollMap[rollNo] ||= []).push(data);
-    }
-  }
-  const mlResult = {
-    attendance: Object.fromEntries(
-      Object.entries(rollMap).map(([rollNo, entries]) => {
-        const presentCount = entries.filter((e) => e.status === 'present').length;
-        const isPresent =
-          presentLogic === 'any_run'   ? presentCount > 0 :
-          presentLogic === 'all_runs'  ? presentCount === entries.length :
-          presentLogic === 'first_run' ? entries[0].status === 'present' :
-          /* majority */                  presentCount > entries.length / 2;
-        const best = entries.reduce((p, c) => (c.avg_confidence > p.avg_confidence ? c : p), entries[0]);
-        return [rollNo, { ...best, status: isPresent ? 'present' : (entries.some(e => e.status === 'review') ? 'review' : 'absent') }];
-      }),
-    ),
-    summary: {
-      present: 0, absent: 0, review: 0, // recomputed below from merged attendance
-    },
-  };
-  mlResult.summary.present = Object.values(mlResult.attendance).filter((s) => s.status === 'present').length;
-  mlResult.summary.absent  = Object.values(mlResult.attendance).filter((s) => s.status === 'absent').length;
-  mlResult.summary.review  = Object.values(mlResult.attendance).filter((s) => s.status === 'review').length;
-
+  const mlResult = mergeRunResults(runResults, presentLogic);
 
 
   // 8. Save report
@@ -457,6 +463,8 @@ async function runRoom({ room, roomOverride, slot, date, config }) {
 
 // ── POST /attendancemodule/scheduler/run-all ──────────────────────────────
 // Body: { slot, date? }
+exports.mergeRunResults = mergeRunResults;
+
 exports.runAll = async (req, res) => {
   try {
     const { slot } = req.body;

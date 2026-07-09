@@ -26,6 +26,17 @@ const ERP_SYNC_API = `${apiUrl}/attendancemodule/erp-sync`;
 const FIRST_YEAR_SENTINEL = 'FIRST_YEAR';
 const EMB_API      = `${apiUrl}/attendancemodule/embeddings`;
 
+// 'none'    — never generated
+// 'stale'   — embeddings exist but predate the last ERP sync (roster may
+//             have changed since); a failed/skipped generate also shows here
+//             since embeddingUpdatedAt then stays behind erpSyncedAt
+// 'current' — embeddings generated at or after the last sync
+function embeddingStatus(s) {
+  if (!s.embeddingUpdatedAt) return 'none';
+  if (s.erpSyncedAt && new Date(s.embeddingUpdatedAt) < new Date(s.erpSyncedAt)) return 'stale';
+  return 'current';
+}
+
 function StatusBadge({ status }) {
   const cfg = {
     done:       { bg: '#dcfce7', color: '#16a34a', label: 'done' },
@@ -56,12 +67,6 @@ export default function ERPSync({ fixedDepartment, embedded = false }) {
   const [subjects, setSubjects] = useState([]);
   const [erpConfigured, setErpConfigured] = useState(true);
   const [subjectsLoading, setSubjectsLoading] = useState(false);
-
-  // Nightly auto-sync on/off — independent of erpConfigured; manual
-  // Fetch/Generate below still work when this is off, only the unattended
-  // scheduled run (erpAutoSyncScheduler.js) is paused.
-  const [autoSyncEnabled, setAutoSyncEnabled] = useState(true);
-  const [autoSyncSaving, setAutoSyncSaving] = useState(false);
 
   const [fetchingId, setFetchingId] = useState(null);
   const [bulkFetching, setBulkFetching] = useState(false);
@@ -116,34 +121,10 @@ export default function ERPSync({ fixedDepartment, embedded = false }) {
 
   useEffect(() => { loadSubjects(); }, [loadSubjects]);
 
-  useEffect(() => {
-    fetch(`${ERP_SYNC_API}/settings`)
-      .then((r) => r.json())
-      .then((d) => setAutoSyncEnabled(d.enabled !== false))
-      .catch(() => {});
-  }, []);
-
-  const toggleAutoSync = async () => {
-    const next = !autoSyncEnabled;
-    setAutoSyncSaving(true);
-    try {
-      const res = await fetch(`${ERP_SYNC_API}/settings`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enabled: next }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to update setting');
-      setAutoSyncEnabled(data.enabled);
-      showToast(`Nightly auto-sync ${data.enabled ? 'enabled' : 'disabled'}`);
-    } catch (err) {
-      showToast(err.message, 'error');
-    } finally {
-      setAutoSyncSaving(false);
-    }
-  };
-
-  const fetchRolls = async (subject) => {
+  // subject param carries the live row so fetchingId reflects real per-subject
+  // progress — used both for the single "Fetch from ERP" button and, looped
+  // sequentially, for "Fetch all from ERP" below.
+  const fetchRolls = async (subject, { silent = false } = {}) => {
     setFetchingId(subject._id);
     try {
       const res = await fetch(`${ERP_SYNC_API}/fetch-rolls`, {
@@ -153,35 +134,32 @@ export default function ERPSync({ fixedDepartment, embedded = false }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'ERP fetch failed');
-      showToast(`${subject.subName || subject.subjectFullName}: ${data.total} rolls (${data.missedCount} missing GT)`);
+      if (!silent) showToast(`${subject.subName || subject.subjectFullName}: ${data.total} rolls (${data.missedCount} missing GT)`);
       await loadSubjects();
+      return true;
     } catch (err) {
-      showToast(err.message, 'error');
+      showToast(`${subject.subName || subject.subjectFullName}: ${err.message}`, 'error');
+      return false;
     } finally {
       setFetchingId(null);
     }
   };
 
+  // Sequential client-side loop (not the one-shot bulk endpoint) so each
+  // subject's row shows its own "Syncing…" state as it's reached, instead of
+  // the whole table going dark until the batch finishes.
   const fetchAllRolls = async () => {
+    if (!subjects.length) { showToast('No subjects to sync', 'error'); return; }
     setBulkFetching(true);
-    try {
-      const res = await fetch(`${ERP_SYNC_API}/fetch-rolls-bulk`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dept, ...(semester ? { sem: semester } : {}), instituteWise }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Bulk ERP fetch failed');
-      const ok = data.results.filter((r) => r.ok).length;
-      const failed = data.results.filter((r) => !r.ok);
-      showToast(`Fetched ${ok}/${data.total} subjects from ERP${failed.length ? ` — ${failed.length} failed` : ''}`,
-        failed.length ? 'error' : 'success');
-      await loadSubjects();
-    } catch (err) {
-      showToast(err.message, 'error');
-    } finally {
-      setBulkFetching(false);
+    let ok = 0, failed = 0;
+    for (const subject of subjects) {
+      // eslint-disable-next-line no-await-in-loop
+      const success = await fetchRolls(subject, { silent: true });
+      if (success) ok += 1; else failed += 1;
     }
+    setBulkFetching(false);
+    showToast(`Fetched ${ok}/${subjects.length} subjects from ERP${failed ? ` — ${failed} failed` : ''}`,
+      failed ? 'error' : 'success');
   };
 
   // Reuses the Embedding Generation page's SSE endpoint — with subjectId
@@ -314,43 +292,11 @@ export default function ERPSync({ fixedDepartment, embedded = false }) {
       )}
 
       <div style={{ marginBottom: embedded ? 14 : 24 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-          <div>
-            {!embedded && <div style={styles.heading}>ERP Sync</div>}
-            <div style={{ ...styles.subheading, marginBottom: 0 }}>
-              Fetch each subject&rsquo;s enrolled roll numbers from the ERP server (key: semester +
-              subject abbreviation) and generate embeddings for every model — InsightFace, top-K
-              galleries and AdaFace — over the fetched roster.
-            </div>
-          </div>
-
-          {/* Nightly auto-sync on/off */}
-          <div
-            onClick={autoSyncSaving ? undefined : toggleAutoSync}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 12, cursor: autoSyncSaving ? 'default' : 'pointer',
-              padding: '10px 18px', borderRadius: 10, userSelect: 'none',
-              background: autoSyncEnabled ? theme.successDim : theme.dangerDim,
-              border: `1px solid ${autoSyncEnabled ? theme.success : theme.danger}`,
-              opacity: autoSyncSaving ? 0.6 : 1,
-            }}
-            title="Manual Fetch/Generate below still work either way — this only controls the unattended nightly job."
-          >
-            <div style={{
-              width: 34, height: 18, borderRadius: 9, position: 'relative', flexShrink: 0,
-              background: autoSyncEnabled ? theme.success : theme.border,
-              transition: 'background .2s',
-            }}>
-              <div style={{
-                position: 'absolute', top: 2, left: autoSyncEnabled ? 18 : 2,
-                width: 14, height: 14, borderRadius: '50%',
-                background: '#fff', transition: 'left .2s',
-              }} />
-            </div>
-            <span style={{ fontSize: 12.5, fontWeight: 700, color: autoSyncEnabled ? theme.success : theme.danger }}>
-              {autoSyncEnabled ? '✅ Nightly Auto-Sync ON' : '⛔ Nightly Auto-Sync OFF'}
-            </span>
-          </div>
+        {!embedded && <div style={styles.heading}>ERP Sync</div>}
+        <div style={{ ...styles.subheading, marginBottom: 0 }}>
+          Fetch each subject&rsquo;s enrolled roll numbers from the ERP server (key: semester +
+          subject abbreviation) and generate embeddings for every model — InsightFace, top-K
+          galleries and AdaFace — over the fetched roster.
         </div>
       </div>
 
@@ -484,12 +430,20 @@ export default function ERPSync({ fixedDepartment, embedded = false }) {
                               FIRST YEAR
                             </span>
                           )}
-                          {s.embeddingFile && (
+                          {s.embeddingFile && embeddingStatus(s) === 'current' && (
                             <span
-                              title={`Embeddings already exist (${s.embeddingFile}) — generating again will replace them`}
+                              title={`Embeddings up to date (${s.embeddingFile}) — generating again will replace them`}
                               style={{ marginLeft: 6, fontSize: 9, fontWeight: 700, padding: '1px 6px', borderRadius: 999, background: '#dcfce7', color: '#16a34a', verticalAlign: 'middle' }}
                             >
                               EMBEDDED
+                            </span>
+                          )}
+                          {s.embeddingFile && embeddingStatus(s) === 'stale' && (
+                            <span
+                              title={`Roster changed since these embeddings were generated (${s.embeddingFile}) — regenerate`}
+                              style={{ marginLeft: 6, fontSize: 9, fontWeight: 700, padding: '1px 6px', borderRadius: 999, background: '#fef3c7', color: '#b45309', verticalAlign: 'middle' }}
+                            >
+                              STALE
                             </span>
                           )}
                         </div>
@@ -525,9 +479,30 @@ export default function ERPSync({ fixedDepartment, embedded = false }) {
                           </div>
                         )}
                       </td>
-                      <td style={{ padding: '9px 12px', fontFamily: theme.fontMono, fontSize: 11 }}>{s.embeddingFile || '—'}</td>
+                      <td style={{ padding: '9px 12px', fontFamily: theme.fontMono, fontSize: 11 }}>
+                        {generatingId === s._id ? (
+                          <span style={{ color: theme.accent, fontWeight: 700, fontFamily: theme.fontBody }}>⏳ Generating…</span>
+                        ) : embeddingStatus(s) === 'current' ? (
+                          <span title="Embeddings up to date with the last sync">
+                            <span style={{ color: theme.success, fontWeight: 700 }}>✓ </span>{s.embeddingFile}
+                          </span>
+                        ) : embeddingStatus(s) === 'stale' ? (
+                          <span title="Roster changed since these embeddings were generated — regenerate">
+                            <span style={{ color: theme.warning, fontWeight: 700 }}>⚠ </span>{s.embeddingFile}
+                          </span>
+                        ) : (
+                          <span style={{ color: theme.textMuted, fontFamily: theme.fontBody }}>— not generated</span>
+                        )}
+                      </td>
                       <td style={{ padding: '9px 12px', fontSize: 11, color: theme.textMuted }}>
-                        {s.erpSyncedAt ? new Date(s.erpSyncedAt).toLocaleString([], { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'never'}
+                        {fetchingId === s._id ? (
+                          <span style={{ color: theme.accent, fontWeight: 700 }}>⏳ Syncing…</span>
+                        ) : s.erpSyncedAt ? (
+                          <span>
+                            <span style={{ color: theme.success, fontWeight: 700 }}>✓ </span>
+                            {new Date(s.erpSyncedAt).toLocaleString([], { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        ) : 'never'}
                       </td>
                       <td style={{ padding: '9px 12px', whiteSpace: 'nowrap' }}>
                         <button
