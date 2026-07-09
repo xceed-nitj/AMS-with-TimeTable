@@ -170,6 +170,7 @@ export default function HealthDashboard() {
     ml:       clientStatus === 'online' ? (healthData?.services?.ml?.status       || 'offline') : directMlStatus,
     database: clientStatus === 'online' ? (healthData?.services?.database?.status || 'offline') : 'unknown',
     tunnel:   clientStatus === 'online' ? (healthData?.services?.tunnel?.status   || 'unknown') : 'unknown',
+    erp:      clientStatus === 'online' ? (healthData?.services?.erp?.status      || 'offline') : 'unknown',
   };
   const mlTarget = healthData?.services?.ml?.target || healthData?.services?.tunnel?.target;
 
@@ -253,6 +254,17 @@ export default function HealthDashboard() {
           ...(mlTarget?.kind === 'h100' ? modelLines : []),
         ]}
         action={{ label: 'View Metrics', onClick: () => navigate('/attendance/gpu') }}
+      />
+
+      <ServiceButton
+        label="ERP"
+        status={svc.erp}
+        details={[
+          svc.erp === 'not_configured'
+            ? 'Not configured (ERP_API_URL unset)'
+            : `Latency: ${healthData?.services?.erp?.latency ? healthData.services.erp.latency + 'ms' : '—'}`,
+        ]}
+        action={{ label: 'Manage ERP Sync', onClick: () => navigate('/attendance/erp-sync') }}
       />
 
     </div>

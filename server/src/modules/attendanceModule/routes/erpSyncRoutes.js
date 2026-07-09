@@ -8,10 +8,12 @@
 
 const express = require('express');
 const router  = express.Router();
-const { listSubjects, fetchRolls, fetchRollsBulk } = require('../controllers/erpSyncController');
+const { listSubjects, fetchRolls, fetchRollsBulk, getSettings, updateSettings } = require('../controllers/erpSyncController');
 
 router.get('/subjects', listSubjects);
 router.post('/fetch-rolls', fetchRolls);
 router.post('/fetch-rolls-bulk', fetchRollsBulk);
+router.get('/settings', getSettings);
+router.patch('/settings', updateSettings);
 
 module.exports = router;

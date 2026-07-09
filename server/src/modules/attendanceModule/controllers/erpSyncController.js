@@ -30,6 +30,7 @@ const axios = require('axios');
 const Subject = require('../../../models/subject');
 const LockSem = require('../../../models/locksem');
 const TimeTable = require('../../../models/timetable');
+const ErpSyncSettings = require('../../../models/attendanceModule/erpSyncSettings');
 
 // First-year subjects live under the "Basic Sciences" timetable (no real
 // owning department exists) and are mapped to the teaching faculty's
@@ -214,6 +215,23 @@ function facultyNamesMatch(erpFaculty, timetableFaculty) {
     });
 }
 
+// Set-based symmetric-difference comparison (same idiom as
+// erpEmbeddingSyncHelper.js's getErpStatus) — NOT array/string equality,
+// since syncSubjectRolls doesn't sort before persisting and the ERP is free
+// to return the same roster in a different order on every call. Used by
+// erpAutoSyncScheduler.js to decide whether a subject's roster actually
+// changed since the last sync, so it only regenerates embeddings for
+// subjects that need it instead of every subject on every run.
+function rollSetsEqual(a, b) {
+    const setA = new Set((a || []).map((r) => String(r).trim().toUpperCase()));
+    const setB = new Set((b || []).map((r) => String(r).trim().toUpperCase()));
+    if (setA.size !== setB.size) return false;
+    for (const roll of setA) {
+        if (!setB.has(roll)) return false;
+    }
+    return true;
+}
+
 // Same scan the xlsx upload flow uses (embeddingController.uploadRollNosXlsx):
 // a roll is "missed" when no ground_truth/{batch}/{roll} folder exists —
 // across all batch folders when instituteWise, else dept-matching ones only.
@@ -233,11 +251,16 @@ function computeMissedGroundTruth(rollNos, dept, instituteWise) {
 }
 
 async function syncSubjectRolls(subject, instituteWise, isFirstYear = false) {
+    const previousRollNos = subject.enrolledRollNos || [];
     const { rollNos, faculty: erpFaculty } = await fetchRollsFromErp(subject, isFirstYear);
     if (rollNos.length === 0) {
         return { subjectId: subject._id, subject: subject.subjectFullName,
                  ok: false, error: 'ERP returned no roll numbers' };
     }
+    // Roster diff — used by erpAutoSyncScheduler.js to skip embedding
+    // regeneration entirely when nothing actually changed since last sync.
+    const rollsChanged = !rollSetsEqual(previousRollNos, rollNos);
+
     // First-year subjects always scan institute-wide — their students' GT
     // folders never live under the teaching department's batch folders.
     const effectiveInstituteWise = instituteWise || isFirstYear;
@@ -267,6 +290,8 @@ async function syncSubjectRolls(subject, instituteWise, isFirstYear = false) {
         subjectId: subject._id,
         subject:   subject.subjectFullName,
         ok:        true,
+        rollsChanged,
+        rollNos,
         total:     rollNos.length,
         missedCount: missedGroundTruth.length,
         missedGroundTruth,
@@ -286,8 +311,33 @@ async function syncSubjectRolls(subject, instituteWise, isFirstYear = false) {
 //     module's first-year allotment. Marked with __isFirstYear.
 // First-year subjects are included when no sem filter is set, or when the
 // filter equals the current first-year student semester (1/2).
+// Sentinel the frontend's Semester dropdown sends for its explicit
+// "First Year" entry — first-year subjects have no real semester number
+// (their Subject.sem holds a section string like "B.Tech-CH+VLSI-SectionB6"),
+// so they can't be reached via the normal numeric dropdown at all.
+const FIRST_YEAR_SENTINEL = 'FIRST_YEAR';
+
 async function collectSubjectsForDept(dept, sem) {
     const normDept = (v) => String(v || '').toUpperCase().replace(/[\s_]+/g, '');
+    const firstYearOnly = sem === FIRST_YEAR_SENTINEL;
+    const firstYearCodes = await getFirstYearCodes();
+
+    // ── Explicit "First Year" selection — ONLY first-year subjects taught
+    // by this department's faculty, regardless of the derived student sem.
+    if (firstYearOnly) {
+        if (firstYearCodes.size === 0) return [];
+        const fyCandidates = await Subject.find({ code: { $in: [...firstYearCodes] } }).lean();
+        const subjects = [];
+        for (const fy of fyCandidates) {
+            const teachingDepts = await resolveFirstYearTeachingDepts(fy);
+            if ([...teachingDepts].some((d) => normDept(d) === normDept(dept))) {
+                subjects.push({ ...fy, __isFirstYear: true });
+            }
+        }
+        subjects.sort((a, b) => String(a.subjectFullName).localeCompare(String(b.subjectFullName)));
+        return subjects;
+    }
+
     const filter = {
         dept: { $regex: new RegExp(String(dept).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') },
     };
@@ -296,9 +346,7 @@ async function collectSubjectsForDept(dept, sem) {
     const subjects = (await Subject.find(filter).lean())
         .map((s) => ({ ...s, __isFirstYear: false }));
 
-    const firstYearCodes = await getFirstYearCodes();
-    const fySem = firstYearStudentSem();
-    const includeFY = firstYearCodes.size > 0 && (!sem || String(sem) === String(fySem));
+    const includeFY = firstYearCodes.size > 0 && !sem;
     if (includeFY) {
         const seen = new Set(subjects.map((s) => String(s._id)));
         const fyCandidates = await Subject.find({ code: { $in: [...firstYearCodes] } }).lean();
@@ -319,7 +367,6 @@ async function collectSubjectsForDept(dept, sem) {
             if (firstYearCodes.has(s.code)) s.__isFirstYear = true;
         }
     }
-
     subjects.sort((a, b) => {
         // First Year group leads, then numeric semesters ascending.
         const keyOf = (s) => s.__isFirstYear
@@ -432,4 +479,44 @@ async function fetchRollsBulk(req, res) {
     }
 }
 
-module.exports = { listSubjects, fetchRolls, fetchRollsBulk };
+// GET /erp-sync/settings — on/off state of the nightly auto-sync scheduler
+// (erpAutoSyncScheduler.js). Independent of ERP_API_URL being configured —
+// the toggle can be flipped either way regardless of reachability.
+async function getSettings(req, res) {
+    try {
+        const settings = await ErpSyncSettings.getSettings();
+        res.json({ enabled: settings.enabled });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+}
+
+// PATCH /erp-sync/settings  { enabled }
+async function updateSettings(req, res) {
+    try {
+        const { enabled } = req.body;
+        if (typeof enabled !== 'boolean') {
+            return res.status(400).json({ error: 'enabled (boolean) is required' });
+        }
+        const settings = await ErpSyncSettings.getSettings();
+        settings.enabled = enabled;
+        await settings.save();
+        res.json({ enabled: settings.enabled });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+}
+
+module.exports = {
+    listSubjects, fetchRolls, fetchRollsBulk, FIRST_YEAR_SENTINEL,
+    getSettings, updateSettings,
+    // Exported for erpAutoSyncScheduler.js — the nightly change-detected sync
+    // reuses the exact same per-subject logic the manual Fetch/Generate
+    // buttons use, rather than duplicating it.
+    syncSubjectRolls, getFirstYearCodes, resolveFirstYearTeachingDepts,
+    firstYearStudentSem, rollSetsEqual, erpConfigured,
+    // Exported for healthRoutes.js — the header health bar's ERP reachability
+    // check hits this same base URL directly (no dedicated ERP health route
+    // is assumed to exist on the ERP server).
+    ERP_API_URL,
+};
