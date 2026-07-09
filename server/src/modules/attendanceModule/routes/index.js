@@ -117,6 +117,9 @@ router.use(
     ...attendanceRoleAccess,
     require("./notificationSettingsRoutes"),
 );
+router.use('/settings/frame-cleanup',
+    ...attendanceRoleAccess,
+    require("./frameCleanupSettingsRoutes"));
 router.use(
     '/health',
     ...attendanceRoleAccess,

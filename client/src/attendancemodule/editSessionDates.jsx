@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
 import NotificationSettingsTab from './NotificationSettingsTab';
+import FrameCleanupSettingsTab from './FrameCleanupSettingsTab';
 import { theme as T, cssReset } from './config';
 import DeptMenuConfig from './DeptMenuConfig';
 import DegreeManagement from './DegreeManagement';
@@ -878,6 +879,12 @@ export default function EditSessionDates() {
           >
             Degree Management
           </button>
+          <button
+            className={`ams-tab${activeTab === 'frameCleanup' ? ' active' : ''}`}
+            onClick={() => setActiveTab('frameCleanup')}
+          >
+            Frame Cleanup
+          </button>
         </div>
 
         {/* ══ SESSION DATES TAB ══════════════════════════════════════════════ */}
@@ -1666,6 +1673,27 @@ export default function EditSessionDates() {
         {activeTab === 'deptMenu' && <DeptMenuConfig />}
         {/* ══ DEGREE MANAGEMENT TAB ═══════════════════════════════════════════ */}
         {activeTab === 'degree' && <DegreeManagement apiUrl={apiUrl} />}
+        {/* ══ FRAME CLEANUP TAB ══════════════════════════════════════════════ */}
+        {activeTab === 'frameCleanup' && (
+          <div>
+            <div className="session-card">
+              <div className="session-card-header">
+                <span
+                  style={{
+                    fontSize: 11,
+                    color: T.textMuted,
+                    textTransform: 'uppercase',
+                    letterSpacing: '.08em',
+                    fontWeight: 700,
+                  }}
+                >
+                  Frame Cleanup 
+                </span>
+              </div>
+              <FrameCleanupSettingsTab />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Holiday delete confirmation modal ── */}
