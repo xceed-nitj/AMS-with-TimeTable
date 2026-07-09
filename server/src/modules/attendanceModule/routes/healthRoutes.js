@@ -5,9 +5,12 @@ const axios = require("axios");
 const mlClient = require("../controllers/mlServiceClient");
 const alertNotifier = require("../controllers/alertNotifier");
 const nodeLogBuffer = require("../../../nodeLogBuffer");
+const { erpConfigured, ERP_API_URL } = require("../controllers/erpSyncController");
 
 let prevMlStatus = "online";
 let mlAlertInProgress = false;
+let prevErpStatus = "online";
+let erpAlertInProgress = false;
 async function getHealthStatus() {
   const mlTarget = mlClient.getTargetInfo();
   const response = {
@@ -28,6 +31,10 @@ async function getHealthStatus() {
       tunnel: {
         status: mlTarget.kind === "h100" ? "checking" : "not_configured",
         target: mlTarget,
+      },
+      erp: {
+        status: "not_configured",
+        latency: null,
       },
     },
   };
@@ -61,6 +68,28 @@ async function getHealthStatus() {
       prevMlStatus = "offline";
       await alertNotifier.notifyServerDown("ML Service", error.message);
       mlAlertInProgress = false;
+    }
+  }
+
+  // ERP reachability check — a plain HTTP reachability probe, not an
+  // auth/data check. Any HTTP response (even 404/401) means the ERP server
+  // process answered, so it counts as online; only a network-level failure
+  // (timeout, DNS, connection refused) counts as offline.
+  if (erpConfigured()) {
+    const erpStart = Date.now();
+    try {
+      await axios.get(ERP_API_URL, { timeout: 5000, validateStatus: () => true });
+      response.services.erp.status = "online";
+      response.services.erp.latency = Date.now() - erpStart;
+      prevErpStatus = "online";
+    } catch (error) {
+      response.services.erp.status = "offline";
+      if (prevErpStatus === "online" && !erpAlertInProgress) {
+        erpAlertInProgress = true;
+        prevErpStatus = "offline";
+        await alertNotifier.notifyServerDown("ERP Server", error.message);
+        erpAlertInProgress = false;
+      }
     }
   }
 
