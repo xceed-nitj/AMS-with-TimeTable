@@ -83,6 +83,12 @@ router.use(
     require("./erpSyncRoutes"),
 );
 router.use(
+    '/erp-push',
+    ...attendanceRoleAccess,
+    enforceAttendanceDepartment,
+    require("./erpPushRoutes"),
+);
+router.use(
     '/frame-verification',
     ...attendanceRoleAccess,
     enforceAttendanceDepartment,

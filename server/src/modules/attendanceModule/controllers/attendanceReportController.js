@@ -4,6 +4,7 @@ const AttendanceReport = require("../../../models/attendanceReport");
 const LockSem = require("../../../models/locksem");
 const Student = require("../../../models/student");
 const Subject = require("../../../models/subject");
+const { pushAttendanceToErp } = require("./erpAttendancePushController");
 
 function mergeStudentStatus(slotResults) {
   const rollMap = {};
@@ -510,6 +511,10 @@ class AttendanceReportController {
       }
       report.summary = buildSummary(report.finalReport);
       await report.save();
+
+      // Correction — finalReport content changed, so this gets a new
+      // idempotency key and re-pushes to ERP automatically.
+      await pushAttendanceToErp(report);
 
       res.json({
         message: `Updated ${rollNo} → ${finalStatus}`,
