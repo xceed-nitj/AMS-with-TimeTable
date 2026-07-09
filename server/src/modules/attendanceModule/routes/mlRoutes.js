@@ -356,6 +356,18 @@ router.post('/faiss-config', async (req, res) => {
     }
 });
 
+router.post('/rebuild-faiss', async (req, res) => {
+    try {
+        const result = await axios.post(`${ML_URL}/rebuild-faiss-index`, {}, { timeout: 10000 });
+        res.json(result.data);
+    } catch (e) {
+        const status = e.response?.status || 503;
+        res.status(status).json({
+            error: e.response?.data?.error || e.message || 'Failed to trigger FAISS rebuild',
+        });
+    }
+});
+
 // ─── Max-of-K Shadow Comparison Config (ML Fine Tuning page) ───
 router.get('/max-k-config', async (req, res) => {
     try {

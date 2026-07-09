@@ -178,6 +178,7 @@ export default function MLFineTuning() {
     const [faissConfig,  setFaissConfig]  = useState(null);
     const [faissLoading, setFaissLoading] = useState(true);
     const [faissSaving,  setFaissSaving]  = useState(false);
+    const [faissRebuilding, setFaissRebuilding] = useState(false);
 
     const [maxKConfig,  setMaxKConfig]  = useState(null);
     const [maxKLoading, setMaxKLoading] = useState(true);
@@ -464,6 +465,20 @@ export default function MLFineTuning() {
             showToast(`Update failed: ${err.message}`, 'error');
         }
         setFaissSaving(false);
+    };
+
+    const triggerFaissRebuild = async () => {
+        if (!window.confirm('Trigger a manual FAISS index rebuild from the stored embeddings? (This usually happens automatically).')) return;
+        setFaissRebuilding(true);
+        try {
+            const res = await fetch(`${apiUrl}/api/v1/ml/rebuild-faiss`, { method: 'POST' });
+            const data = await res.json();
+            if (data.error) throw new Error(data.error);
+            showToast('FAISS index rebuild triggered successfully');
+        } catch (err) {
+            showToast(`Failed to trigger FAISS rebuild: ${err.message}`, 'error');
+        }
+        setFaissRebuilding(false);
     };
 
     const updateAttendThresh = async (patch) => {
@@ -947,9 +962,26 @@ export default function MLFineTuning() {
                             call — no restart needed.
                         </div>
                     </div>
-                    <span style={{ fontSize: 11, color: theme.textMuted, whiteSpace: 'nowrap' }}>
-                        Run role: Model Pipeline card above
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <button
+                            onClick={triggerFaissRebuild}
+                            disabled={faissRebuilding}
+                            style={{
+                                ...styles.button,
+                                background: 'transparent',
+                                border: `1px solid ${theme.border}`,
+                                color: theme.text,
+                                padding: '4px 10px',
+                                fontSize: 12,
+                                opacity: faissRebuilding ? 0.6 : 1,
+                            }}
+                        >
+                            {faissRebuilding ? 'Rebuilding...' : 'Rebuild Index'}
+                        </button>
+                        <span style={{ fontSize: 11, color: theme.textMuted, whiteSpace: 'nowrap' }}>
+                            Run role: Model Pipeline card above
+                        </span>
+                    </div>
                 </div>
 
                 {faissLoading ? (
