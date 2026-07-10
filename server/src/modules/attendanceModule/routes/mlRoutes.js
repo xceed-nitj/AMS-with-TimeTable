@@ -10,6 +10,13 @@ const axios = require('axios');
 const mlClient = require('../controllers/mlServiceClient');
 const { processVideoFile } = require('../controllers/videoWatcher');
 const mlProcess = require('../controllers/mlProcessController');
+const { checkRole } = require('../../checkRole.middleware');
+
+// Router-level mount already requires admin/iams-admin/iams-dept-admin (see
+// server/src/routes.js). Process control and GPU metrics are further
+// restricted to admin/iams-admin only — a dept-admin can run/monitor
+// attendance but shouldn't be able to stop the ML service for everyone else.
+const adminOnly = checkRole(['iams-admin']);
 const LockSem = require('../../../models/locksem');
 const TimeTable = require('../../../models/timetable');
 const { saveAttendanceDailyData, listDailyDataFiles, readDailyDataFile } = require('../controllers/attendanceDailyDataSaver');
@@ -256,7 +263,7 @@ router.get('/target', (req, res) => {
     res.json(mlClient.getTargetInfo());
 });
 
-router.get('/gpu-metrics', async (req, res) => {
+router.get('/gpu-metrics', adminOnly, async (req, res) => {
     try {
         const result = await axios.get(`${ML_URL}/metrics/gpu`, { timeout: 5000 });
         res.json(result.data);
@@ -398,7 +405,7 @@ router.post('/max-k-config', async (req, res) => {
 // no SSH/local process control involved (unlike mlProcessController.js,
 // which only works when the service is on this same host). A dropped
 // connection right after triggering is expected — the process is going down.
-router.post('/restart-ml-service', async (req, res) => {
+router.post('/restart-ml-service', adminOnly, async (req, res) => {
     try {
         const result = await axios.post(`${ML_URL}/restart-service`, {}, { timeout: 8000 });
         res.json(result.data);
@@ -512,7 +519,7 @@ router.get('/status', (req, res) => {
 });
 
 // ─── Python Process Control ───────────────────────────────────
-router.post('/start', async (req, res) => {
+router.post('/start', adminOnly, async (req, res) => {
     try {
         res.json(await mlProcess.startPython());
     } catch (e) {
@@ -520,7 +527,7 @@ router.post('/start', async (req, res) => {
     }
 });
 
-router.post('/stop', async (req, res) => {
+router.post('/stop', adminOnly, async (req, res) => {
     try {
         res.json(await mlProcess.stopPython());
     } catch (e) {
@@ -528,7 +535,7 @@ router.post('/stop', async (req, res) => {
     }
 });
 
-router.post('/restart', async (req, res) => {
+router.post('/restart', adminOnly, async (req, res) => {
     try {
         res.json(await mlProcess.restartPython());
     } catch (e) {

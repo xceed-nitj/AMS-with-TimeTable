@@ -3,7 +3,7 @@
 const express = require("express");
 const router = express.Router();
 const AttendanceReportController = require("../controllers/attendanceReportController");
-const { attendanceRoleAccess, enforceAttendanceDepartment } = require("../middleware/attendanceAccess");
+const { attendanceRoleAccess, enforceAttendanceDepartment, requireDeptMenu } = require("../middleware/attendanceAccess");
 
 const ctrl = new AttendanceReportController();
 
@@ -355,9 +355,21 @@ router.get("/lookup-context", ...attendanceRoleAccess, async (req, res) => {
 
 // List reports with at least one manually/ERP-overridden student
 // GET /attendancemodule/reports/erp-overrides?department=&batch=&from=&to=
-router.get("/erp-overrides", ...attendanceRoleAccess, enforceAttendanceDepartment, async (req, res) => {
+router.get("/erp-overrides", ...attendanceRoleAccess, enforceAttendanceDepartment, requireDeptMenu('erpOverrides'), async (req, res) => {
   try {
     await ctrl.listOverriddenAttendance(req, res);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Dept coordinator's verification remark for one overridden student.
+// enforceAttendanceDepartment intentionally omitted — see updateCoordinatorRemark's
+// own comment; department scoping is done inside the controller instead.
+// PATCH /attendancemodule/reports/:id/student/:rollNo/coordinator-remark
+router.patch("/:id/student/:rollNo/coordinator-remark", ...attendanceRoleAccess, requireDeptMenu('erpOverrides'), async (req, res) => {
+  try {
+    await ctrl.updateCoordinatorRemark(req, res);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

@@ -14,6 +14,10 @@ const cookieParser = require("cookie-parser");
 const axios = require("axios");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
+// Must load before any route module makes its first request to the ML
+// service — registers the axios interceptor that attaches the shared-secret
+// header (see mlServiceAuth.js).
+require("./modules/attendanceModule/controllers/mlServiceAuth");
 const v1router = require("./routes");
 const { startAutoScheduler } = require('./modules/attendanceModule/controllers/autoAttendanceScheduler');
 

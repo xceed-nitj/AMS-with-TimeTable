@@ -35,6 +35,7 @@ const batchSchema = new mongoose.Schema({
     recordStream:      { type: Boolean, default: true },
     instituteIdentification: { type: Boolean, default: false },
     erpOverrides:      { type: Boolean, default: false },
+    erpSync:           { type: Boolean, default: false },
     helpManual:        { type: Boolean, default: true },
 },
 }, { timestamps: true });

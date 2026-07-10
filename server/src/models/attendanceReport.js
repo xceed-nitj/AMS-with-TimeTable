@@ -28,7 +28,36 @@ const studentAttendanceSchema = new Schema({
     // updateStudentStatus(). Preserved so accuracy metrics can compare the
     // model's call against any later human correction without ambiguity.
     autoFinalStatus: { type: String, enum: ['P', 'A', 'R', null], default: null },
+    // Reason the faculty gave for the override, entered on the ERP side and
+    // forwarded to us via the same override call — read-only here.
+    facultyRemark:   { type: String, default: '' },
+    // Dept coordinator's fixed-vocabulary verification remark (ERP Overrides page).
+    coordinatorRemark: {
+        type: String,
+        enum: [
+            'No ground truth',
+            'Student came late',
+            'Change in student appearance',
+            'Sitting in last row',
+            'Sitting in middle row',
+            'Lighting issues',
+            null,
+            '',
+        ],
+        default: null,
+    },
+    // Flips true once a coordinatorRemark has been saved for this student.
+    coordinatorVerified: { type: Boolean, default: false },
 }, { _id: false });
+
+const COORDINATOR_REMARK_OPTIONS = [
+    'No ground truth',
+    'Student came late',
+    'Change in student appearance',
+    'Sitting in last row',
+    'Sitting in middle row',
+    'Lighting issues',
+];
 
 // Per-time-slot sub-document (matches notebook: 8:45, 9:00, 9:15 columns)
 const slotResultSchema = new Schema({
@@ -176,3 +205,4 @@ attendanceReportSchema.index({ faculty: 1, date: -1 });
 
 const AttendanceReport = mongoose.model('AttendanceReport', attendanceReportSchema);
 module.exports = AttendanceReport;
+module.exports.COORDINATOR_REMARK_OPTIONS = COORDINATOR_REMARK_OPTIONS;

@@ -488,7 +488,7 @@ class AttendanceReportController {
   async updateStudentStatus(req, res) {
     try {
       const { id, rollNo } = req.params;
-      const { finalStatus, isOverridden } = req.body;
+      const { finalStatus, isOverridden, remark } = req.body;
 
       if (!["P", "A", "R"].includes(finalStatus)) {
         return res
@@ -509,6 +509,9 @@ class AttendanceReportController {
       } else {
         student.isOverridden = true;
       }
+      // The faculty's reason for the override is entered on the ERP side and
+      // forwarded here as part of the same call — just store it if present.
+      if (remark !== undefined) student.facultyRemark = String(remark).trim();
       report.summary = buildSummary(report.finalReport);
       await report.save();
 
@@ -527,18 +530,31 @@ class AttendanceReportController {
 
   // List reports containing at least one manually/ERP-overridden student —
   // powers the "ERP Overrides" audit page. Optional filters: department,
-  // batch, from/to date (both inclusive, "YYYY-MM-DD").
+  // batch, semester, faculty, from/to date (both inclusive, "YYYY-MM-DD").
+  // Dept-scoped users (not iams-admin/admin) are always restricted to their
+  // own department, even if `department` is omitted — enforceAttendanceDepartment
+  // only rejects a *mismatched* explicit department param, it never applies
+  // this default on its own.
   // GET /attendancemodule/reports/erp-overrides
   async listOverriddenAttendance(req, res) {
     try {
-      const { department, batch, from, to, limit = 100, skip = 0 } = req.query;
+      const { department, batch, semester, faculty, from, to, limit = 100, skip = 0 } = req.query;
       const filter = { "finalReport.isOverridden": true };
       if (batch) filter.batch = batch;
-      if (department) {
-        const escapeRegex = (v) => String(v).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        const norm = escapeRegex(department.trim().replace(/\s+/g, "_"));
-        filter.department = new RegExp(`^${norm.replace(/_/g, "[ _]")}$`, "i");
+
+      const escapeRegex = (v) => String(v).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const deptRegex = (value) => {
+        const norm = escapeRegex(value.trim().replace(/\s+/g, "_"));
+        return new RegExp(`^${norm.replace(/_/g, "[ _]")}$`, "i");
+      };
+      if (!req.attendanceFullAccess) {
+        filter.department = deptRegex(req.attendanceDepartment);
+      } else if (department) {
+        filter.department = deptRegex(department);
       }
+
+      if (semester) filter.semester = semester;
+      if (faculty) filter.faculty = faculty;
       if (from || to) {
         filter.date = {};
         if (from) filter.date.$gte = from;
@@ -576,10 +592,56 @@ class AttendanceReportController {
             rollNo: s.rollNo,
             from: s.autoFinalStatus,
             to: s.finalStatus,
+            facultyRemark: s.facultyRemark || "",
+            coordinatorRemark: s.coordinatorRemark || "",
+            coordinatorVerified: Boolean(s.coordinatorVerified),
           })),
       }));
 
       res.json({ items, total, skip: Number(skip), limit: Number(limit) });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  }
+
+  // Dept coordinator's verification remark for one overridden student —
+  // independent of the faculty's override, entered when reviewing the ERP
+  // Overrides page. enforceAttendanceDepartment is intentionally NOT used on
+  // this route (its recordId branch assumes a ClusterMatch id, but :id here
+  // is an AttendanceReport id — it would 404 every request), so department
+  // scoping is done manually below instead.
+  // PATCH /attendancemodule/reports/:id/student/:rollNo/coordinator-remark
+  // Body: { coordinatorRemark: <one of AttendanceReport.COORDINATOR_REMARK_OPTIONS> }
+  async updateCoordinatorRemark(req, res) {
+    try {
+      const { id, rollNo } = req.params;
+      const { coordinatorRemark } = req.body;
+
+      if (!AttendanceReport.COORDINATOR_REMARK_OPTIONS.includes(coordinatorRemark)) {
+        return res.status(400).json({
+          error: `coordinatorRemark must be one of: ${AttendanceReport.COORDINATOR_REMARK_OPTIONS.join(", ")}`,
+        });
+      }
+
+      const report = await AttendanceReport.findById(id);
+      if (!report) return res.status(404).json({ error: "Report not found" });
+
+      if (!req.attendanceFullAccess) {
+        const norm = (v) => String(v || "").trim().replace(/[\s_-]+/g, "").toUpperCase();
+        if (norm(report.department) !== norm(req.attendanceDepartment)) {
+          return res.status(403).json({ error: "Department access denied." });
+        }
+      }
+
+      const student = report.finalReport.find((s) => s.rollNo === rollNo);
+      if (!student)
+        return res.status(404).json({ error: "Student not found in report" });
+
+      student.coordinatorRemark = coordinatorRemark;
+      student.coordinatorVerified = true;
+      await report.save();
+
+      res.json({ rollNo, coordinatorRemark, coordinatorVerified: true });
     } catch (err) {
       res.status(500).json({ error: err.message });
     }

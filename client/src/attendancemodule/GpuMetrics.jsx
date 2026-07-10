@@ -15,11 +15,11 @@ import ServiceConsole from './ServiceConsole';
 const HISTORY_LIMIT = 28800;
 const POLL_MS = 3000;
 const HISTORY_KEY = 'ams_gpu_metrics_history_v1';
-const METRICS_URLS = [
-  '/api/v1/ml/gpu-metrics',
-  'http://127.0.0.1:8500/metrics/gpu',
-  'http://localhost:8500/metrics/gpu',
-];
+// Only the Node proxy — direct-to-Python fallback URLs used to live here,
+// but that let anyone bypass Node's admin-only gate on this endpoint (GPU
+// metrics are restricted to admin/iams-admin — see mlRoutes.js) by just
+// hitting the Python service's port directly.
+const METRICS_URLS = ['/api/v1/ml/gpu-metrics'];
 const LOGS_URL = '/api/v1/ml/logs';
 const RANGE_OPTIONS = [
   { id: 'live', label: 'Live' },

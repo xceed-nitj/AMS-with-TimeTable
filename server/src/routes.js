@@ -47,8 +47,16 @@ const diabeticsModule = require("./modules/diabeticsModule/routes/index");
 v1router.use("/diabeticsModule", diabeticsModule);
 
 // face recognition
+// Was mounted with zero auth middleware — any of the ~40 endpoints below
+// (process control, RTSP attendance runs, config, GPU metrics) was reachable
+// by anyone who could reach the server, no cookie required. Now gated the
+// same as every other attendance-module route: admin / iams-admin /
+// iams-dept-admin only (see attendanceRoleAccess); mlRoutes.js additionally
+// locks its most sensitive endpoints (process control, gpu-metrics) down to
+// admin / iams-admin.
+const { attendanceRoleAccess } = require("./modules/attendanceModule/middleware/attendanceAccess");
 const mlRoutes = require("./modules/attendanceModule/routes/mlRoutes");
-v1router.use("/ml", mlRoutes);
+v1router.use("/ml", ...attendanceRoleAccess, mlRoutes);
 
 const guideModule = require("./modules/guideModule/routes/index");
 v1router.use("/guide", guideModule);

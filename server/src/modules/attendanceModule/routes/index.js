@@ -8,6 +8,7 @@ const schedulerRoutes = require('./schedulerRoutes');
 const {
     attendanceRoleAccess,
     enforceAttendanceDepartment,
+    requireDeptMenu,
 } = require("../middleware/attendanceAccess");
 const deptAdminController = require("../controllers/deptAdminController");
 
@@ -80,12 +81,14 @@ router.use(
     '/erp-sync',
     ...attendanceRoleAccess,
     enforceAttendanceDepartment,
+    requireDeptMenu('erpSync'),
     require("./erpSyncRoutes"),
 );
 router.use(
     '/erp-push',
     ...attendanceRoleAccess,
     enforceAttendanceDepartment,
+    requireDeptMenu('erpSync'),
     require("./erpPushRoutes"),
 );
 router.use(
@@ -98,6 +101,7 @@ router.use(
     '/ground-truth-upload',
     ...attendanceRoleAccess,
     enforceAttendanceDepartment,
+    requireDeptMenu('erpUpload'),
     require("./groundTruthUploadRoutes"),
 );
 router.use(
