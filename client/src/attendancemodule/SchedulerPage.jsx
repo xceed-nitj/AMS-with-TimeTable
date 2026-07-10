@@ -73,25 +73,54 @@ function Label({ children }) {
 function Toast({ toast }) {
   if (!toast) return null;
   const isErr = toast.type === 'error';
+  const isWarn = toast.type === 'warning';
+  const accent = isErr ? theme.danger : isWarn ? theme.warning : theme.success;
+  const dim = isErr ? theme.dangerDim : isWarn ? theme.warningDim : theme.successDim;
+  const icon = isErr ? '\u26a0\ufe0f' : isWarn ? '\u26a0\ufe0f' : '\u2705';
   return (
     <div
       style={{
         position: 'fixed',
-        top: 20,
+        top: 90,
         right: 20,
-        zIndex: 9999,
-        padding: '12px 20px',
-        borderRadius: 8,
-        fontSize: 13,
-        fontWeight: 700,
-        background: isErr ? theme.dangerDim : theme.successDim,
-        color: isErr ? theme.danger : theme.success,
-        border: `1px solid ${isErr ? theme.danger : theme.success}`,
+        zIndex: 10002,
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 12,
+        padding: '14px 18px',
+        borderRadius: 12,
+        background: theme.surface,
+        border: `1.5px solid ${accent}`,
+        boxShadow: '0 10px 30px rgba(0,0,0,0.45)',
         animation: 'fadeIn .3s',
         maxWidth: 420,
       }}
     >
-      {toast.msg}
+      <div
+        style={{
+          fontSize: 16,
+          width: 28,
+          height: 28,
+          borderRadius: '50%',
+          flexShrink: 0,
+          background: dim,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {icon}
+      </div>
+      <span
+        style={{
+          fontSize: 13,
+          fontWeight: 600,
+          color: theme.text,
+          lineHeight: 1.5,
+        }}
+      >
+        {toast.msg}
+      </span>
     </div>
   );
 }
@@ -697,6 +726,7 @@ const EMPTY_EXTRA = {
   endTime: '',
 };
 
+//extra class tab
 function ExtraClassForm({ onAdd, allRooms }) {
   const [form, setForm] = useState({ ...EMPTY_EXTRA });
   const [saving, setSaving] = useState(false);
@@ -898,6 +928,234 @@ function ExtraClassForm({ onAdd, allRooms }) {
   );
 }
 
+//altering class #if two classes switcehes between scheduled time
+const EMPTY_ALTER = {
+  date: new Date().toISOString().split('T')[0],
+  periodKey: 'period1',
+  sem: '',
+  room: '',
+  originalSubject: '',
+  originalFaculty: '',
+  subject: '',
+  faculty: '',
+};
+
+function AlterClassForm({ onAdd }) {
+  const [form, setForm] = useState({ ...EMPTY_ALTER });
+  const [semesters, setSemesters] = useState([]);
+  const [allSubjects, setAllSubjects] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const [lookupDone, setLookupDone] = useState(false);
+  const [looking, setLooking] = useState(false);
+
+  useEffect(() => {
+    fetch(`${SUBJECT_API}/sem`)
+      .then((r) => r.json())
+      .then((data) =>
+        setSemesters(Array.isArray(data) ? data.filter(Boolean).sort() : []),
+      )
+      .catch(() => {});
+    fetch(SUBJECT_API)
+      .then((r) => r.json())
+      .then((data) => setAllSubjects(Array.isArray(data) ? data : []))
+      .catch(() => {});
+  }, []);
+
+  const subjectsForSem = allSubjects.filter((s) => s.sem === form.sem);
+  const update = (k, v) => setForm((p) => ({ ...p, [k]: v }));
+
+  const updateSem = (sem) => {
+    setForm((p) => ({ ...p, sem, subject: '', faculty: '' }));
+    setLookupDone(false);
+  };
+
+  const runLookup = async () => {
+    if (!form.date || !form.sem || !form.periodKey) return;
+    setLooking(true);
+    const res = await fetch(
+      `${AC_API}/class-lookup?date=${form.date}&sem=${form.sem}&periodKey=${form.periodKey}`,
+    );
+    const data = await res.json();
+    const slot = (data.slotData || [])[0];
+    setForm((p) => ({
+      ...p,
+      room: slot?.room || '',
+      originalSubject: slot?.subject || '',
+      originalFaculty: slot?.faculty || '',
+    }));
+    setLookupDone(true);
+    setLooking(false);
+  };
+
+  const pickSubject = async (subj) => {
+    update('subject', subj);
+    update('faculty', '');
+    if (!subj || !form.sem) return;
+    const res = await fetch(
+      `${AC_API}/faculty-for-subject?sem=${form.sem}&subject=${encodeURIComponent(subj)}`,
+    );
+    const data = await res.json();
+    update('faculty', data.faculty || '');
+  };
+
+  const handleAdd = async () => {
+    if (!form.room || !form.sem || !form.subject || !form.faculty) return;
+    setSaving(true);
+    const result = await onAdd(form);
+    if (result?.success) {
+      setForm({ ...EMPTY_ALTER });
+      setLookupDone(false);
+    }
+    setSaving(false);
+  };
+
+  const canAdd = lookupDone && form.room && form.subject && form.faculty;
+
+  return (
+    <div style={{ ...styles.card, padding: 20, background: theme.surfaceAlt }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr 1fr',
+          gap: 12,
+          marginBottom: 12,
+        }}
+      >
+        <div>
+          <Label>Date</Label>
+          <input
+            type="date"
+            value={form.date}
+            onChange={(e) => {
+              update('date', e.target.value);
+              setLookupDone(false);
+            }}
+            style={styles.input}
+          />
+        </div>
+        <div>
+          <Label>Period / Slot</Label>
+          <select
+            value={form.periodKey}
+            onChange={(e) => {
+              update('periodKey', e.target.value);
+              setLookupDone(false);
+            }}
+            style={styles.select}
+          >
+            {PERIOD_KEYS.map((k) => (
+              <option key={k} value={k}>
+                {SLOT_LABELS[k]}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <Label>Semester</Label>
+          <select
+            value={form.sem}
+            onChange={(e) => updateSem(e.target.value)}
+            style={styles.select}
+          >
+            <option value="">Select semester…</option>
+            {semesters.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <button
+        onClick={runLookup}
+        disabled={looking || !form.date || !form.sem}
+        style={{
+          ...styles.btnGhost,
+          marginBottom: 16,
+          opacity: !form.date || !form.sem ? 0.5 : 1,
+        }}
+      >
+        {looking ? 'Looking up…' : '🔍 Lookup Original Class'}
+      </button>
+
+      {lookupDone && (
+        <div
+          style={{
+            fontSize: 12,
+            color: theme.textMuted,
+            marginBottom: 16,
+            padding: '10px 14px',
+            borderRadius: 6,
+            background: theme.bg,
+            border: `1px solid ${theme.border}`,
+          }}
+        >
+          Room:{' '}
+          <strong style={{ color: theme.text }}>
+            {form.room || '— not found'}
+          </strong>
+          {form.room && (
+            <>
+              {' '}
+              · Original:{' '}
+              <strong style={{ color: theme.text }}>
+                {form.originalSubject || '—'}
+              </strong>{' '}
+              ({form.originalFaculty || '—'})
+            </>
+          )}
+        </div>
+      )}
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: 12,
+          marginBottom: 12,
+        }}
+      >
+        <div>
+          <Label>Altering Subject</Label>
+          <select
+            value={form.subject}
+            onChange={(e) => pickSubject(e.target.value)}
+            style={styles.select}
+            disabled={!lookupDone || !form.room}
+          >
+            <option value="">
+              {lookupDone ? 'Select subject…' : 'Lookup first'}
+            </option>
+            {subjectsForSem.map((s) => (
+              <option key={s._id} value={s.subName}>
+                {s.subName} ({s.subCode})
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <Label>Faculty (auto-filled)</Label>
+          <input
+            value={form.faculty}
+            readOnly
+            style={{ ...styles.input, opacity: 0.7 }}
+            placeholder="Pick subject first"
+          />
+        </div>
+      </div>
+
+      <button
+        onClick={handleAdd}
+        disabled={saving || !canAdd}
+        style={{ ...styles.btnPrimary, opacity: saving || !canAdd ? 0.5 : 1 }}
+      >
+        {saving ? 'Saving…' : '+ Add Alteration'}
+      </button>
+    </div>
+  );
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
 export default function SchedulerPage() {
   const [config, setConfig] = useState(null);
@@ -1062,6 +1320,44 @@ export default function SchedulerPage() {
     return { success: true };
   };
 
+  const postAlteration = (body) =>
+    fetch(`${AC_API}/alteration`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+  const addAlteration = async (form) => {
+    let res = await postAlteration(form);
+    let data = await res.json();
+
+    if (res.status === 409 && data.conflict) {
+      if (
+        data.type === 'faculty_regular_busy' ||
+        data.type === 'faculty_already_altered'
+      ) {
+        showToast(data.message, 'error');
+        return { success: false };
+      }
+      // duplicate_slot — same replace-confirm pattern as extra classes
+      const choice = await askConfirm(data.message, false);
+      if (choice !== 'replace') {
+        showToast('Alteration not added', 'error');
+        return { success: false };
+      }
+      res = await postAlteration({ ...form, confirm: true });
+      data = await res.json();
+    }
+
+    if (data.error) {
+      showToast(data.error, 'error');
+      return { success: false };
+    }
+    setConfig((p) => ({ ...p, extraClasses: data }));
+    showToast(`${form.faculty} now covering "${form.subject}" — swap saved`);
+    return { success: true };
+  };
+
   const deleteExtraClass = (id) => setDeleteTarget(id);
 
   const confirmDeleteExtraClass = async () => {
@@ -1183,6 +1479,7 @@ export default function SchedulerPage() {
           ['periods', 'Period Timings'],
           ['rooms', 'Rooms'],
           ['extras', 'Extra Classes'],
+          ['alterations', 'Altering Classes'],
         ].map(([id, label]) => (
           <button
             key={id}
@@ -1463,6 +1760,176 @@ export default function SchedulerPage() {
                       </td>
                     </tr>
                   ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {tab === 'alterations' && (
+        <div>
+          <SectionHead
+            title="Altering Classes"
+            sub="One-time faculty/subject swap for an already-scheduled class"
+            color={theme.warning}
+          />
+          <div style={{ marginBottom: 20 }}>
+            <div
+              style={{
+                fontSize: 12,
+                fontWeight: 600,
+                color: theme.textMuted,
+                marginBottom: 10,
+              }}
+            >
+              Add New Alteration
+            </div>
+            <AlterClassForm onAdd={addAlteration} />
+          </div>
+          <div
+            style={{
+              fontSize: 12,
+              fontWeight: 600,
+              color: theme.textMuted,
+              marginBottom: 12,
+            }}
+          >
+            Active Alterations (
+            {
+              (config?.extraClasses || []).filter(
+                (e) => e.isAlteration && e.active,
+              ).length
+            }
+            )
+          </div>
+          {(config?.extraClasses || []).filter((e) => e.isAlteration).length ===
+          0 ? (
+            <div
+              style={{
+                ...styles.card,
+                padding: 40,
+                textAlign: 'center',
+                color: theme.textMuted,
+                borderStyle: 'dashed',
+              }}
+            >
+              No alterations scheduled yet.
+            </div>
+          ) : (
+            <div style={{ ...styles.card, padding: 0, overflow: 'hidden' }}>
+              <table
+                style={{
+                  width: '100%',
+                  borderCollapse: 'collapse',
+                  fontSize: 13,
+                }}
+              >
+                <thead>
+                  <tr style={{ borderBottom: `1px solid ${theme.border}` }}>
+                    {[
+                      'Date',
+                      'Period',
+                      'Room',
+                      'Original → New Subject',
+                      'New Faculty',
+                      'Sem',
+                      'Status',
+                      '',
+                    ].map((h) => (
+                      <th
+                        key={h}
+                        style={{
+                          padding: '10px 12px',
+                          textAlign: 'left',
+                          fontSize: 10,
+                          color: theme.textMuted,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.08em',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {(config?.extraClasses || [])
+                    .filter((e) => e.isAlteration)
+                    .map((ec) => (
+                      <tr
+                        key={ec._id}
+                        style={{ borderBottom: `1px solid ${theme.border}` }}
+                      >
+                        <td
+                          style={{
+                            padding: '10px 12px',
+                            fontFamily: theme.fontMono,
+                            fontSize: 12,
+                          }}
+                        >
+                          {ec.date}
+                        </td>
+                        <td
+                          style={{
+                            padding: '10px 12px',
+                            fontSize: 12,
+                            color: theme.textMuted,
+                          }}
+                        >
+                          {SLOT_LABELS[ec.periodKey] || ec.periodKey}
+                        </td>
+                        <td style={{ padding: '10px 12px', fontWeight: 700 }}>
+                          {ec.room}
+                        </td>
+                        <td
+                          style={{
+                            padding: '10px 12px',
+                            color: theme.textMuted,
+                          }}
+                        >
+                          {ec.originalSubject || '—'} → {ec.subject}
+                        </td>
+                        <td style={{ padding: '10px 12px' }}>{ec.faculty}</td>
+                        <td
+                          style={{
+                            padding: '10px 12px',
+                            color: theme.textMuted,
+                          }}
+                        >
+                          {ec.semester || '—'}
+                        </td>
+                        <td style={{ padding: '10px 12px' }}>
+                          <span
+                            style={{
+                              padding: '2px 8px',
+                              borderRadius: 99,
+                              fontSize: 10,
+                              fontWeight: 700,
+                              background: ec.active
+                                ? theme.successDim
+                                : theme.dangerDim,
+                              color: ec.active ? theme.success : theme.danger,
+                            }}
+                          >
+                            {ec.active ? 'Active' : 'Inactive'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '10px 12px' }}>
+                          <button
+                            onClick={() => deleteExtraClass(ec._id)}
+                            style={{
+                              ...styles.btnDanger,
+                              padding: '4px 10px',
+                              fontSize: 11,
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
             </div>

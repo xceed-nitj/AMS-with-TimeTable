@@ -14,6 +14,10 @@ async function getOrCreateDefault() {
   return doc;
 }
 
+function escapeRegex(str) {
+  return String(str).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function buildDefaultPeriods() {
   const slots = [
     {
@@ -365,6 +369,179 @@ exports.deleteExtraClass = async (req, res) => {
   }
 };
 
+// ── GET /acquisitioncontrol/class-lookup?date&sem&periodKey ──────────────────
+// Step 1 of alteration flow: show what's originally scheduled for this slot.
+exports.classLookup = async (req, res) => {
+  try {
+    const { date, sem, periodKey } = req.query;
+    if (!date || !sem || !periodKey) {
+      return res.status(400).json({ error: "date, sem, periodKey required" });
+    }
+    const LockSem = require("../../../models/locksem");
+    const d = new Date(date);
+    const days = [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+    ];
+    const day = days[d.getDay()];
+
+    const record = await LockSem.findOne({ sem, slot: periodKey, day });
+    if (!record || !record.slotData || !record.slotData.length) {
+      return res.json({ day, slotData: [] });
+    }
+    res.json({
+      day,
+      slotData: record.slotData.map((s) => ({
+        room: s.room,
+        subject: s.subject,
+        faculty: s.faculty,
+      })),
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+};
+
+// ── GET /acquisitioncontrol/faculty-for-subject?sem&subject ──────────────────
+// Step 3 of alteration flow: auto-fill faculty name for the chosen altering subject.
+exports.facultyForSubject = async (req, res) => {
+  try {
+    const { sem, subject } = req.query;
+    if (!sem || !subject) {
+      return res.status(400).json({ error: "sem, subject required" });
+    }
+    const LockSem = require("../../../models/locksem");
+    const record = await LockSem.findOne({
+      sem,
+      "slotData.subject": {
+        $regex: new RegExp(`^${escapeRegex(subject.trim())}$`, "i"),
+      },
+    });
+    if (!record) return res.json({ faculty: null });
+    const entry = record.slotData.find(
+      (s) => s.subject?.toLowerCase().trim() === subject.toLowerCase().trim(),
+    );
+    res.json({ faculty: entry?.faculty || null });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+};
+
+// ── POST /acquisitioncontrol/alteration ───────────────────────────────────────
+// Step 4-5 of alteration flow: faculty-conflict-checked, one-time class swap.
+exports.addAlteration = async (req, res) => {
+  try {
+    const {
+      date,
+      periodKey,
+      room,
+      sem,
+      subject, // altering (new) subject
+      faculty, // altering (new) faculty
+      originalSubject, // snapshot, for audit/display
+      originalFaculty,
+      confirm,
+    } = req.body;
+
+    if (!date || !periodKey || !room || !sem || !subject || !faculty) {
+      return res.status(400).json({
+        error: "date, periodKey, room, sem, subject, faculty required",
+      });
+    }
+
+    const doc = await getOrCreateDefault();
+    const LockSem = require("../../../models/locksem");
+    const d = new Date(date);
+    const days = [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+    ];
+    const day = days[d.getDay()];
+
+    // ── Conflict 1: is the new faculty already teaching a regular class this period? ──
+    const regularConflict = await LockSem.findOne({
+      slot: periodKey,
+      day,
+      "slotData.faculty": {
+        $regex: new RegExp(`^${escapeRegex(faculty.trim())}$`, "i"),
+      },
+    });
+    if (regularConflict) {
+      const slotEntry = regularConflict.slotData.find(
+        (s) => s.faculty?.toLowerCase().trim() === faculty.toLowerCase().trim(),
+      );
+      return res.status(409).json({
+        conflict: true,
+        type: "faculty_regular_busy",
+        message: `${faculty} is already teaching "${slotEntry?.subject || "another subject"}" (room ${slotEntry?.room || "n/a"}) during "${periodKey}" on ${day}s. Cannot alter.`,
+      });
+    }
+
+    // ── Conflict 2: is the new faculty already covering a different alteration/extra class this exact period? ──
+    const extraConflict = doc.extraClasses.find(
+      (ec) =>
+        ec.active &&
+        ec.date === date &&
+        ec.periodKey === periodKey &&
+        ec.faculty?.toLowerCase().trim() === faculty.toLowerCase().trim() &&
+        ec.room?.toLowerCase().trim() !== room.toLowerCase().trim(),
+    );
+    if (extraConflict) {
+      return res.status(409).json({
+        conflict: true,
+        type: "faculty_already_altered",
+        message: `${faculty} is already covering room "${extraConflict.room}" during "${periodKey}" on ${date}. Cannot alter.`,
+      });
+    }
+
+    // ── Duplicate override for this exact room+date+slot ──
+    const duplicate = doc.extraClasses.find(
+      (ec) =>
+        ec.active &&
+        ec.room?.toLowerCase().trim() === room.toLowerCase().trim() &&
+        ec.periodKey === periodKey &&
+        ec.date === date,
+    );
+    if (duplicate && !confirm) {
+      return res.status(409).json({
+        conflict: true,
+        type: "duplicate_slot",
+        message: `Room "${room}" during "${periodKey}" on ${date} already has an override (subject: ${duplicate.subject || "n/a"}, faculty: ${duplicate.faculty || "n/a"}). Replace it?`,
+        existing: duplicate,
+      });
+    }
+    if (duplicate) duplicate.active = false;
+
+    doc.extraClasses.push({
+      date,
+      periodKey,
+      room,
+      subject,
+      faculty,
+      semester: sem,
+      active: true,
+      replacedRegular: true,
+      isAlteration: true,
+      originalSubject: originalSubject || "",
+      originalFaculty: originalFaculty || "",
+    });
+    doc.markModified("extraClasses");
+    await doc.save();
+    res.json(doc.extraClasses);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+};
 // ── GET /acquisitioncontrol/attendance-thresholds ────────────────────────────
 exports.getAttendanceThresholds = async (req, res) => {
   try {
@@ -394,6 +571,25 @@ exports.updateAttendanceThresholds = async (req, res) => {
     doc.markModified("attendanceThresholds");
     await doc.save();
     res.json(doc.attendanceThresholds);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+};
+
+// ── GET /acquisitioncontrol/subjects-for-sem?sem= ────────────────────────────
+exports.subjectsForSem = async (req, res) => {
+  try {
+    const { sem } = req.query;
+    if (!sem) return res.status(400).json({ error: "sem required" });
+    const LockSem = require("../../../models/locksem");
+    const records = await LockSem.find({ sem });
+    const subjects = new Set();
+    for (const rec of records) {
+      for (const s of rec.slotData || []) {
+        if (s.subject) subjects.add(s.subject.trim());
+      }
+    }
+    res.json([...subjects].sort());
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
