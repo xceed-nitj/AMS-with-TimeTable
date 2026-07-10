@@ -178,7 +178,7 @@ export default function EditSessionDates() {
   const isFetching = useRef(false);
 
   // ── Tab ───────────────────────────────────────────────────────────────────
-  const initialTab = ['session', 'batch', 'notifications', 'deptMenu', 'degree', 'erpSync', 'erpPush', 'frameCleanup'].includes(
+  const initialTab = ['session', 'batch', 'notifications', 'deptMenu', 'degree', 'erpControls', 'frameCleanup'].includes(
     searchParams.get('tab'),
   )
     ? searchParams.get('tab')
@@ -882,16 +882,10 @@ export default function EditSessionDates() {
             Degree Management
           </button>
           <button
-            className={`ams-tab${activeTab === 'erpSync' ? ' active' : ''}`}
-            onClick={() => setActiveTab('erpSync')}
+            className={`ams-tab${activeTab === 'erpControls' ? ' active' : ''}`}
+            onClick={() => setActiveTab('erpControls')}
           >
-            ERP Auto-Sync
-          </button>
-          <button
-            className={`ams-tab${activeTab === 'erpPush' ? ' active' : ''}`}
-            onClick={() => setActiveTab('erpPush')}
-          >
-            ERP Push
+            ERP Controls
           </button>
           <button
             className={`ams-tab${activeTab === 'frameCleanup' ? ' active' : ''}`}
@@ -1688,8 +1682,20 @@ export default function EditSessionDates() {
         {/* ══ DEGREE MANAGEMENT TAB ═══════════════════════════════════════════ */}
         {activeTab === 'degree' && <DegreeManagement apiUrl={apiUrl} />}
 
-        {activeTab === 'erpSync' && <ErpSyncSettingsTab />}
-        {activeTab === 'erpPush' && <ErpPushSettingsTab />}
+        {/* ══ ERP CONTROLS TAB (auto-sync + push, merged) ═══════════════════ */}
+        {activeTab === 'erpControls' && (
+          <div>
+            <div style={{ padding: '20px 20px 0', fontSize: 14, fontWeight: 700, color: T.text }}>
+              Nightly Auto-Sync
+            </div>
+            <ErpSyncSettingsTab />
+            <div style={{ margin: '0 20px', borderTop: `1px solid ${T.border}` }} />
+            <div style={{ padding: '20px 20px 0', fontSize: 14, fontWeight: 700, color: T.text }}>
+              Attendance Push
+            </div>
+            <ErpPushSettingsTab />
+          </div>
+        )}
         {activeTab === 'frameCleanup' && <FrameCleanupSettingsTab />}
       </div>
 

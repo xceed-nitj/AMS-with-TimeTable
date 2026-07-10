@@ -6,6 +6,8 @@ const { buildTestApp } = require("../helpers/testApp");
 const { connect, clearDatabase, disconnect } = require("../helpers/db");
 const { authCookie } = require("../helpers/auth");
 const AttendanceReport = require("../../src/models/attendanceReport");
+const User = require("../../src/models/usermanagement/user");
+const Batch = require("../../src/models/attendanceModule/batch");
 
 const BASE = "/api/v1/attendancemodule/reports";
 
@@ -29,6 +31,15 @@ function baseReport(overrides = {}) {
     summary: { totalStudents: 1, present: 1, absent: 0, review: 0, attendancePct: 100 },
     ...overrides,
   };
+}
+
+async function deptAdminCookie(dept) {
+  const user = await User.create({ role: ["iams-dept-admin"], password: "x", email: [`${dept.toLowerCase()}@x.com`], dept });
+  return authCookie(["iams-dept-admin"], user._id.toString());
+}
+
+async function enableErpOverrides() {
+  await Batch.create({ batchYear: "2027", deptMenus: { erpOverrides: true } });
 }
 
 describe("GET /reports", () => {
@@ -114,6 +125,172 @@ describe("PATCH /reports/:id/student/:rollNo (unauthenticated ERP override)", ()
       .patch(`${BASE}/${report._id}/student/21CS001`)
       .send({ finalStatus: "X" });
     expect(res.status).toBe(400);
+  });
+
+  it("stores the faculty's remark, forwarded from ERP with the same call", async () => {
+    const report = await AttendanceReport.create(baseReport());
+    const res = await request(app)
+      .patch(`${BASE}/${report._id}/student/21CS001`)
+      .send({ finalStatus: "A", remark: "Student came late" });
+    expect(res.status).toBe(200);
+
+    const updated = await AttendanceReport.findById(report._id);
+    const student = updated.finalReport.find((s) => s.rollNo === "21CS001");
+    expect(student.facultyRemark).toBe("Student came late");
+  });
+});
+
+describe("GET /reports/erp-overrides", () => {
+  function overriddenReport(overrides = {}) {
+    return baseReport({
+      finalReport: [
+        {
+          rollNo: "21CS001",
+          finalStatus: "A",
+          autoFinalStatus: "P",
+          isOverridden: true,
+        },
+      ],
+      ...overrides,
+    });
+  }
+
+  it("lets a full-access role see overrides across all departments", async () => {
+    await AttendanceReport.create(overriddenReport());
+    await AttendanceReport.create(
+      overriddenReport({ batch: "BTECH_ECE_2027", department: "ECE", date: "2026-07-08" }),
+    );
+
+    const res = await request(app).get(`${BASE}/erp-overrides`).set("Cookie", authCookie());
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBe(2);
+  });
+
+  it("scopes a dept-admin to their own department with no department query param", async () => {
+    await enableErpOverrides();
+    await AttendanceReport.create(overriddenReport());
+    await AttendanceReport.create(
+      overriddenReport({ batch: "BTECH_ECE_2027", department: "ECE", date: "2026-07-08" }),
+    );
+
+    const res = await request(app)
+      .get(`${BASE}/erp-overrides`)
+      .set("Cookie", await deptAdminCookie("CSE"));
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBe(1);
+    expect(res.body.items[0].department).toBe("CSE");
+  });
+
+  it("filters by semester and faculty", async () => {
+    await AttendanceReport.create(overriddenReport({ semester: "5", faculty: "Dr. A" }));
+    await AttendanceReport.create(
+      overriddenReport({ semester: "3", faculty: "Dr. B", date: "2026-07-08" }),
+    );
+
+    const res = await request(app)
+      .get(`${BASE}/erp-overrides?semester=5&faculty=${encodeURIComponent("Dr. A")}`)
+      .set("Cookie", authCookie());
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBe(1);
+    expect(res.body.items[0].faculty).toBe("Dr. A");
+  });
+
+  it("includes facultyRemark, coordinatorRemark and coordinatorVerified on each override", async () => {
+    await AttendanceReport.create(
+      overriddenReport({
+        finalReport: [
+          {
+            rollNo: "21CS001",
+            finalStatus: "A",
+            autoFinalStatus: "P",
+            isOverridden: true,
+            facultyRemark: "Student came late",
+          },
+        ],
+      }),
+    );
+
+    const res = await request(app).get(`${BASE}/erp-overrides`).set("Cookie", authCookie());
+    expect(res.status).toBe(200);
+    const [override] = res.body.items[0].overrides;
+    expect(override.facultyRemark).toBe("Student came late");
+    expect(override.coordinatorRemark).toBe("");
+    expect(override.coordinatorVerified).toBe(false);
+  });
+});
+
+describe("PATCH /reports/:id/student/:rollNo/coordinator-remark", () => {
+  function overriddenReport(overrides = {}) {
+    return baseReport({
+      finalReport: [
+        {
+          rollNo: "21CS001",
+          finalStatus: "A",
+          autoFinalStatus: "P",
+          isOverridden: true,
+        },
+      ],
+      ...overrides,
+    });
+  }
+
+  it("rejects a value outside the fixed option list", async () => {
+    const report = await AttendanceReport.create(overriddenReport());
+    const res = await request(app)
+      .patch(`${BASE}/${report._id}/student/21CS001/coordinator-remark`)
+      .set("Cookie", authCookie())
+      .send({ coordinatorRemark: "Not a real option" });
+    expect(res.status).toBe(400);
+  });
+
+  it("accepts a valid option and flips coordinatorVerified", async () => {
+    const report = await AttendanceReport.create(overriddenReport());
+    const res = await request(app)
+      .patch(`${BASE}/${report._id}/student/21CS001/coordinator-remark`)
+      .set("Cookie", authCookie())
+      .send({ coordinatorRemark: "Student came late" });
+    expect(res.status).toBe(200);
+
+    const updated = await AttendanceReport.findById(report._id);
+    const student = updated.finalReport.find((s) => s.rollNo === "21CS001");
+    expect(student.coordinatorRemark).toBe("Student came late");
+    expect(student.coordinatorVerified).toBe(true);
+  });
+
+  it("returns 403 for a dept-admin acting on a report outside their department", async () => {
+    await enableErpOverrides();
+    const report = await AttendanceReport.create(overriddenReport({ department: "ECE" }));
+    const res = await request(app)
+      .patch(`${BASE}/${report._id}/student/21CS001/coordinator-remark`)
+      .set("Cookie", await deptAdminCookie("CSE"))
+      .send({ coordinatorRemark: "Student came late" });
+    expect(res.status).toBe(403);
+  });
+
+  it("lets a full-access role act on any department's report", async () => {
+    const report = await AttendanceReport.create(overriddenReport({ department: "ECE" }));
+    const res = await request(app)
+      .patch(`${BASE}/${report._id}/student/21CS001/coordinator-remark`)
+      .set("Cookie", authCookie())
+      .send({ coordinatorRemark: "Lighting issues" });
+    expect(res.status).toBe(200);
+  });
+
+  it("returns 404 for an unknown report id", async () => {
+    const res = await request(app)
+      .patch(`${BASE}/64f000000000000000000000/student/21CS001/coordinator-remark`)
+      .set("Cookie", authCookie())
+      .send({ coordinatorRemark: "Student came late" });
+    expect(res.status).toBe(404);
+  });
+
+  it("returns 404 for a roll number not in the report", async () => {
+    const report = await AttendanceReport.create(overriddenReport());
+    const res = await request(app)
+      .patch(`${BASE}/${report._id}/student/99CS999/coordinator-remark`)
+      .set("Cookie", authCookie())
+      .send({ coordinatorRemark: "Student came late" });
+    expect(res.status).toBe(404);
   });
 });
 

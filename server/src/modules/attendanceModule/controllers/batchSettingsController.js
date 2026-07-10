@@ -97,6 +97,7 @@ class BatchSettingsController {
     confidenceMonitor: true,
     instituteIdentification: false,  // off by default — enable per-dept from Dept Menu Config
     erpOverrides: false,             // off by default — enable per-dept from Dept Menu Config
+    erpSync: false,                  // off by default — enable per-dept from Dept Menu Config
     helpManual: true,
 };
             res.json({ deptMenus: batch?.deptMenus ?? defaults });

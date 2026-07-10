@@ -30,8 +30,9 @@ warnings.filterwarnings("ignore", message=r"`estimate` is deprecated",  category
 warnings.filterwarnings("ignore", message=r"`rcond` parameter will change", category=FutureWarning)
 
 import uvicorn
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 import state
@@ -286,6 +287,33 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Shared-secret gate — this service used to be reachable by anyone who could
+# route to its port, no auth at all (Node's /ml/* proxy handled its own auth,
+# but that only protects requests that go THROUGH Node). Node now attaches
+# this header on every call it makes here (see
+# server/src/modules/attendanceModule/controllers/mlServiceAuth.js), so a
+# request that skips Node is rejected. /health is exempt: the frontend's
+# HealthContext.jsx polls it directly as a last-resort "is ML alive?" check
+# used only when Node itself is unreachable, so there's no way to route that
+# one case through Node's auth. It's read-only and discloses nothing beyond
+# "the process is up," matching the other documented unauthenticated
+# exceptions on the Node side (e.g. attendanceReportRoutes.js's ERP override
+# PATCH).
+ML_SERVICE_SECRET = os.environ.get("ML_SERVICE_SECRET", "")
+if not ML_SERVICE_SECRET:
+    logging.getLogger("ml_service").warning(
+        "ML_SERVICE_SECRET is not set — this service is reachable without authentication."
+    )
+
+
+@app.middleware("http")
+async def require_shared_secret(request: Request, call_next):
+    if not ML_SERVICE_SECRET or request.url.path == "/health":
+        return await call_next(request)
+    if request.headers.get("x-ml-service-key") != ML_SERVICE_SECRET:
+        return JSONResponse(status_code=401, content={"error": "Unauthorized"})
+    return await call_next(request)
 
 # Register all route modules
 app.include_router(video_router)

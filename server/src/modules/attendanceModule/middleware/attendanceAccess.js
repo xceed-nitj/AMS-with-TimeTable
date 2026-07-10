@@ -1,4 +1,5 @@
 const ClusterMatch = require('../../../models/attendanceModule/clusterMatch');
+const Batch = require('../../../models/attendanceModule/batch');
 const { checkRole } = require('../../checkRole.middleware');
 const getUserDetails = require('../../usermanagement/controllers/dto');
 
@@ -105,6 +106,28 @@ const enforceAttendanceDepartment = async (req, res, next) => {
     }
 };
 
+// Mirrors the deptMenus toggle in DeptMenuConfig.jsx server-side, so a dept
+// with a menu switched off can't reach the underlying API directly (the
+// frontend toggle previously only hid the sidebar link). Full-access admins
+// manage the toggles themselves and always bypass this check, same as
+// enforceAttendanceDepartment above. Fetched without .lean() so Mongoose
+// applies the subdocument's schema defaults for keys missing on older
+// Batch documents, matching how getDeptMenus already reads this field.
+const requireDeptMenu = (menuKey) => async (req, res, next) => {
+    try {
+        if (req.attendanceFullAccess) return next();
+
+        const batch = await Batch.findOne({}).sort({ batchYear: -1 });
+        if (batch?.deptMenus?.[menuKey] !== true) {
+            return res.status(403).json({ message: 'This feature is not enabled for your department.' });
+        }
+        next();
+    } catch (error) {
+        console.error('[AttendanceAccess] requireDeptMenu', error);
+        res.status(500).json({ message: 'Failed to verify menu access.' });
+    }
+};
+
 const attendanceRoleAccess = [
     checkRole(['iams-admin', 'iams-dept-admin']),
     resolveAttendanceAccess,
@@ -113,6 +136,7 @@ const attendanceRoleAccess = [
 module.exports = {
     attendanceRoleAccess,
     enforceAttendanceDepartment,
+    requireDeptMenu,
     batchBelongsToDepartment,
     normalizeDepartment,
 };

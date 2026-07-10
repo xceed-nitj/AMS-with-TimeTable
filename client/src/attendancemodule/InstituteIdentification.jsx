@@ -79,18 +79,20 @@ export default function InstituteGateIdentification() {
       let response;
       
       if (useStreamUrl) {
-        response = await fetch(`http://127.0.0.1:8500/identify-institute-url`, {
+        response = await fetch(`${GATE_API}/identify-url`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({ url: streamUrl }),
           signal: abortControllerRef.current.signal
         });
       } else {
         const formData = new FormData();
         formData.append('file', file);
-        
-        response = await fetch(`http://127.0.0.1:8500/identify-institute-video`, {
+
+        response = await fetch(`${GATE_API}/identify-video`, {
           method: 'POST',
+          credentials: 'include',
           body: formData,
           signal: abortControllerRef.current.signal
         });

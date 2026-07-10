@@ -39,7 +39,7 @@ const NAV = [
   },
   { id: 'institute', route: '/attendance/institute-identification', label: 'Institute Identification' },
   { id: 'erpOverrides', route: '/attendance/erp-overrides', label: 'ERP Overrides' },
-  { id: 'erpPush', route: '/attendance/edit-session-dates?tab=erpPush', label: 'ERP Push' },
+  { id: 'erpSync', route: '/attendance/edit-session-dates?tab=erpControls', label: 'ERP Sync' },
   { id: 'manual', route: '/ams-manual', label: 'Help & Manual', newTab: true },
 ];
 
@@ -120,7 +120,7 @@ export default function AMSLayout() {
         location.pathname === item.route ||
         location.pathname === item.route + '/'
       );
-    // Items that deep-link into a specific settings tab (e.g. "?tab=erpPush")
+    // Items that deep-link into a specific settings tab (e.g. "?tab=erpControls")
     // need the query string compared too, since pathname alone can't tell
     // them apart from the page's other tabs.
     if (item.route.includes('?')) {
