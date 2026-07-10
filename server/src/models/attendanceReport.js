@@ -150,6 +150,21 @@ const attendanceReportSchema = new Schema({
         enum: ['draft', 'finalized','live'],
         default: 'draft',
     },
+
+    // Outbound push of finalReport (roll no + finalStatus) to the external
+    // ERP's attendance-posting endpoint — see erpAttendancePushController.js.
+    // Re-pushed (new attempt, same idempotencyKey unless finalReport content
+    // changed) every time finalReport is recomputed, so a later manual
+    // override also propagates as a correction.
+    erpPush: {
+        status:        { type: String, enum: ['pending', 'sent', 'failed'], default: 'pending' },
+        attempts:      { type: Number, default: 0 },
+        lastAttemptAt: { type: Date, default: null },
+        sentAt:        { type: Date, default: null },   // set once ERP acks success
+        lastError:     { type: String, default: null },
+        lastResponse:  { type: Schema.Types.Mixed, default: null },
+        idempotencyKey:{ type: String, default: null }, // hash of reportId + finalReport content
+    },
 });
 
 attendanceReportSchema.add(commonFields);

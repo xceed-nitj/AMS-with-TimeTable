@@ -222,6 +222,14 @@ mongoose
       const { startErpAutoSyncScheduler } = require('./modules/attendanceModule/controllers/erpAutoSyncScheduler');
       startErpAutoSyncScheduler();
 
+      // ── ERP Attendance Push Retry Scheduler ───────────────────
+      // Sweeps every 5 min for reports whose push to ERP's attendance-posting
+      // endpoint is pending/failed and due for a backoff retry (no-op until
+      // ERP_ATTENDANCE_PUSH_URL/ERP_PUSH_SECRET are configured; toggle on/off
+      // from the ERP Push settings tab — see ErpPushSettings).
+      const { startErpPushRetryScheduler } = require('./modules/attendanceModule/controllers/erpAttendancePushController');
+      startErpPushRetryScheduler();
+
     });
     server.setTimeout(600000); // 10 min — prevents Node killing long SSE connections
     server.keepAliveTimeout = 620000;

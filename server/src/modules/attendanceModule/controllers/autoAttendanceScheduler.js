@@ -25,6 +25,7 @@ const {
   buildEnrolledEmbeddingsAdafaceTopK,
 } = require("./embeddingSyncHelper");
 const alertNotifier = require("./alertNotifier");
+const { pushAttendanceToErp } = require("./erpAttendancePushController");
 
 const ML_URL = process.env.ML_SERVICE_URL || "http://localhost:8500";
 const EMBEDDINGS_DIR = path.join(
@@ -461,6 +462,11 @@ async function saveCheckResult({
   report.summary.unknownFaceCount = currentUnknownCount;
 
   await report.save();
+
+  // Push the just-recomputed finalReport (roll no + finalStatus) to ERP —
+  // fires after every completed run, not just at finalize. Never throws;
+  // failures are recorded on report.erpPush and picked up by the retry sweep.
+  await pushAttendanceToErp(report);
 
   saveAttendanceDailyData(
     {
