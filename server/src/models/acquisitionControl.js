@@ -37,7 +37,7 @@ const ExtraClassSchema = new mongoose.Schema({
   date: { type: String },
   periodKey: { type: String },
   room: { type: String, required: true },
-  batch: { type: String }, // no longer user-entered; kept for legacy records
+  batch: { type: String },
   subject: { type: String },
   faculty: { type: String },
   semester: { type: String },
@@ -45,7 +45,11 @@ const ExtraClassSchema = new mongoose.Schema({
   startTime: { type: String },
   endTime: { type: String },
   active: { type: Boolean, default: true },
-  replacedRegular: { type: Boolean, default: false }, // true if this overrode a regular timetable slot
+  replacedRegular: { type: Boolean, default: false },
+  // ── new: class-alteration specific fields ──
+  isAlteration: { type: Boolean, default: false }, // true = faculty swap, not a brand-new extra class
+  originalSubject: { type: String }, // snapshot of what was scheduled before the swap
+  originalFaculty: { type: String },
   createdAt: { type: Date, default: Date.now },
 });
 
