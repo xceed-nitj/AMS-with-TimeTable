@@ -569,6 +569,42 @@ class AttendanceReportController {
 
       const total = await AttendanceReport.countDocuments(filter);
 
+      // Filter-wide overview (not limited to the current page): how many
+      // sessions/students are overridden and how many the coordinator has
+      // verified — drives the stat cards on the ERP Overrides page.
+      const [agg] = await AttendanceReport.aggregate([
+        { $match: filter },
+        { $unwind: "$finalReport" },
+        { $match: { "finalReport.isOverridden": true } },
+        {
+          $group: {
+            _id: null,
+            sessions: { $addToSet: "$_id" },
+            overriddenStudents: { $sum: 1 },
+            verified: {
+              $sum: { $cond: [{ $eq: ["$finalReport.coordinatorVerified", true] }, 1, 0] },
+            },
+          },
+        },
+      ]);
+      const stats = {
+        sessions: agg ? agg.sessions.length : 0,
+        overriddenStudents: agg?.overriddenStudents || 0,
+        verified: agg?.verified || 0,
+        unverified: (agg?.overriddenStudents || 0) - (agg?.verified || 0),
+      };
+
+      // Department dropdown options — full-access users only; dept-scoped
+      // users are locked to their own department and get no selector.
+      let departments;
+      if (req.attendanceFullAccess) {
+        departments = (
+          await AttendanceReport.distinct("department", { "finalReport.isOverridden": true })
+        )
+          .filter(Boolean)
+          .sort((a, b) => a.localeCompare(b));
+      }
+
       const items = reports.map((r) => ({
         reportId: r._id,
         batch: r.batch,
@@ -598,7 +634,14 @@ class AttendanceReportController {
           })),
       }));
 
-      res.json({ items, total, skip: Number(skip), limit: Number(limit) });
+      res.json({
+        items,
+        total,
+        skip: Number(skip),
+        limit: Number(limit),
+        stats,
+        ...(departments ? { departments } : {}),
+      });
     } catch (err) {
       res.status(500).json({ error: err.message });
     }

@@ -220,6 +220,7 @@ import SchedulerPage from './attendancemodule/SchedulerPage';
 import LiveReportPage from './attendancemodule/LiveReportPage';
 import RecordStream from './attendancemodule/RecordStream';
 import ErpOverrides from './attendancemodule/ErpOverrides';
+import ErpOverrideAnalysis from './attendancemodule/ErpOverrideAnalysis';
 
 import AMSDashboard from './attendancemodule/AMSDashboard';
 import AMSLayout from './attendancemodule/AMSLayout';
@@ -692,6 +693,7 @@ function App() {
           <Route path="reports" element={<AttendanceReport />} />
           <Route path="frame-verification" element={<FrameVerification />} />
           <Route path="erp-overrides" element={<ErpOverrides />} />
+          <Route path="erp-overrides/:reportId" element={<ErpOverrideAnalysis />} />
           <Route path="confidence" element={<ConfidenceMonitor />} />
           <Route path="ml-fine-tuning" element={<MLFineTuning />} />
           <Route path="acquisition-control" element={<SchedulerPage />} />

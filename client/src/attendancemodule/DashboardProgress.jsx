@@ -46,27 +46,6 @@ function buildSummary(groundTruthRows, embeddingRows) {
     };
 }
 
-function buildBranchOverview(data, departments) {
-    return departments.map((department) => {
-        const groundTruthRows = (data.groundTruthProgress || [])
-            .filter((row) => row.departmentKey === department.key);
-        const embeddingRows = (data.embeddingProgress || [])
-            .filter((row) => row.departmentKey === department.key);
-        const summary = buildSummary(groundTruthRows, embeddingRows);
-
-        return {
-            departmentKey: department.key,
-            label: department.label,
-            rollProgressPct: summary.groundTruthProgressPct,
-            embeddingProgressPct: summary.embeddingProgressPct,
-            approvedAssignments: summary.approvedAssignments,
-            erpPhotoCount: summary.erpPhotoCount,
-            completedSubjectEmbeddings: summary.completedSubjectEmbeddings,
-            theorySubjects: summary.theorySubjects,
-        };
-    });
-}
-
 function LoadingPanel({ compact, text }) {
     return (
         <section style={{ ...styles.card, marginTop: compact ? 18 : 0, color: theme.textMuted }}>
@@ -206,31 +185,6 @@ function ChartTooltip({ active, payload, label }) {
     );
 }
 
-function OverviewTooltip({ active, payload, label }) {
-    if (!active || !payload?.length) return null;
-    const row = payload[0]?.payload || {};
-    return (
-        <div style={{
-            background: theme.surface,
-            border: `1px solid ${theme.border}`,
-            borderRadius: 8,
-            padding: '10px 12px',
-            boxShadow: '0 8px 22px rgba(26,31,60,0.14)',
-            fontSize: 12,
-        }}>
-            <div style={{ color: theme.text, fontWeight: 700, marginBottom: 7 }}>{label}</div>
-            <div style={{ color: theme.textMuted }}>
-                Roll assignment: <strong style={{ color: theme.success }}>{formatPercent(row.rollProgressPct)}</strong>
-                {' '}({formatCount(row.approvedAssignments)} of {formatCount(row.erpPhotoCount)})
-            </div>
-            <div style={{ marginTop: 5, color: theme.textMuted }}>
-                Subject embeddings: <strong style={{ color: theme.warning }}>{formatPercent(row.embeddingProgressPct)}</strong>
-                {' '}({formatCount(row.completedSubjectEmbeddings)} of {formatCount(row.theorySubjects)})
-            </div>
-        </div>
-    );
-}
-
 function SectionHeader({ title, subtitle }) {
     return (
         <div style={{ marginBottom: 12 }}>
@@ -249,110 +203,6 @@ function compactDepartmentLabel(value) {
         .replace(/\bElectronics\b/g, 'Electronics')
         .replace(/\bInstrumentation\b/g, 'Instr')
         .replace(/\bControl\b/g, 'Ctrl');
-}
-
-function BranchOverviewChart({ rows, selectedDepartment, onSelectDepartment }) {
-    if (!rows.length) return null;
-
-    return (
-        <div style={{ ...panelBase, padding: 16, marginBottom: 14 }}>
-            <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                gap: 12,
-                flexWrap: 'wrap',
-                marginBottom: 10,
-            }}>
-                <SectionHeader
-                    title="All Branches Overview"
-                    subtitle="ERP-backed branch comparison for institute admin."
-                />
-                <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontSize: 11, color: theme.textMuted }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                        <span style={{ width: 9, height: 9, borderRadius: 2, background: theme.success }} />
-                        Roll
-                    </span>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                        <span style={{ width: 9, height: 9, borderRadius: 2, background: theme.warning }} />
-                        Embeddings
-                    </span>
-                </div>
-            </div>
-
-            <div style={{ height: Math.max(210, rows.length * 58) }}>
-                <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                        data={rows}
-                        layout="vertical"
-                        margin={{ top: 6, right: 36, left: 18, bottom: 8 }}
-                        barCategoryGap={16}
-                        onClick={(event) => {
-                            const key = event?.activePayload?.[0]?.payload?.departmentKey;
-                            if (key) onSelectDepartment(key);
-                        }}
-                    >
-                        <CartesianGrid stroke={theme.border} strokeDasharray="3 3" horizontal={false} />
-                        <XAxis
-                            type="number"
-                            domain={[0, 100]}
-                            tickFormatter={formatPercent}
-                            tick={{ fontSize: 11, fill: theme.textMuted }}
-                            axisLine={false}
-                            tickLine={false}
-                        />
-                        <YAxis
-                            type="category"
-                            dataKey="label"
-                            width={180}
-                            tick={{ fontSize: 11, fill: theme.textMuted }}
-                            axisLine={false}
-                            tickLine={false}
-                        />
-                        <Tooltip content={<OverviewTooltip />} cursor={{ fill: 'rgba(99,102,241,0.05)' }} />
-                        <Bar
-                            dataKey="rollProgressPct"
-                            name="Roll assignment"
-                            fill={theme.success}
-                            radius={[0, 5, 5, 0]}
-                            isAnimationActive
-                            animationBegin={80}
-                            animationDuration={800}
-                            style={{ cursor: 'pointer' }}
-                        >
-                            <LabelList
-                                dataKey="rollProgressPct"
-                                position="right"
-                                formatter={formatPercent}
-                                style={{ fill: theme.success, fontSize: 10, fontWeight: 700 }}
-                            />
-                        </Bar>
-                        <Bar
-                            dataKey="embeddingProgressPct"
-                            name="Subject embeddings"
-                            fill={theme.warning}
-                            radius={[0, 5, 5, 0]}
-                            isAnimationActive
-                            animationBegin={160}
-                            animationDuration={800}
-                            style={{ cursor: 'pointer' }}
-                        >
-                            <LabelList
-                                dataKey="embeddingProgressPct"
-                                position="right"
-                                formatter={formatPercent}
-                                style={{ fill: theme.warning, fontSize: 10, fontWeight: 700 }}
-                            />
-                        </Bar>
-                    </BarChart>
-                </ResponsiveContainer>
-            </div>
-            <div style={{ marginTop: 8, color: theme.textMuted, fontSize: 11 }}>
-                Selected branch: <strong style={{ color: theme.text }}>
-                    {rows.find((row) => row.departmentKey === selectedDepartment)?.label || 'None'}
-                </strong>
-            </div>
-        </div>
-    );
 }
 
 function BatchChart({ rows }) {
@@ -552,7 +402,6 @@ export default function DashboardProgress({ title = 'Dashboard Progress', compac
 
     const data = useMemo(() => state.data || {}, [state.data]);
     const departments = useMemo(() => getDepartmentOptions(data), [data]);
-    const overviewRows = useMemo(() => buildBranchOverview(data, departments), [data, departments]);
 
     useEffect(() => {
         if (!departments.length) {
@@ -592,14 +441,6 @@ export default function DashboardProgress({ title = 'Dashboard Progress', compac
 
     return (
         <>
-            {data.fullAccess && departments.length > 0 && (
-                <BranchOverviewChart
-                    rows={overviewRows}
-                    selectedDepartment={activeDepartment}
-                    onSelectDepartment={setSelectedDepartment}
-                />
-            )}
-
             <section style={{ ...styles.card, marginTop: compact ? 18 : 0, padding: compact ? 18 : 24 }}>
                 <div style={{
                     display: 'flex',
