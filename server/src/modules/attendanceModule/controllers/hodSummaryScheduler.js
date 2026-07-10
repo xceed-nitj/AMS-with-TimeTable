@@ -25,12 +25,11 @@ function currentWeekRange(d) {
   return { from: toDateStr(monday), to: toDateStr(friday) };
 }
 
-async function runDailySummaryCheck() {
+async function runDailySummaryCheck(now = new Date()) {
   const settings = await NotificationSettings.getSettings();
   if (!settings.enabled || !settings.dailySummaryConfig?.enabled) return;
 
   const cfg = settings.dailySummaryConfig;
-  const now = new Date();
 
   if (cfg.frequency === "weekly" && now.getDay() !== 5) return; // only fire on Friday
 

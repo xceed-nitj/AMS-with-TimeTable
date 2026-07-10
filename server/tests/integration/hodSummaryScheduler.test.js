@@ -40,7 +40,7 @@ describe("runDailySummaryCheck", () => {
   });
 
   it("in threshold mode, only includes rows below the threshold", async () => {
-    jest.useFakeTimers({ toFake: ["Date"] }).setSystemTime(new Date("2026-07-09T12:00:00")); // a Thursday
+    const thursday = new Date("2026-07-09T12:00:00"); // a Thursday
     await NotificationSettings.create({
       enabled: true,
       dailySummaryConfig: { enabled: true, frequency: "daily", mode: "threshold", threshold: 75 },
@@ -54,7 +54,7 @@ describe("runDailySummaryCheck", () => {
       subject: "OS", summary: { totalStudents: 10, present: 9, absent: 1, review: 0, attendancePct: 90 },
     });
 
-    await runDailySummaryCheck();
+    await runDailySummaryCheck(thursday);
 
     expect(alertNotifier.notifyDailySummary).toHaveBeenCalledTimes(1);
     const call = alertNotifier.notifyDailySummary.mock.calls[0][0];
@@ -64,7 +64,7 @@ describe("runDailySummaryCheck", () => {
   });
 
   it("skips a weekly run entirely on a non-Friday", async () => {
-    jest.useFakeTimers({ toFake: ["Date"] }).setSystemTime(new Date("2026-07-09T12:00:00")); // Thursday
+    const thursday = new Date("2026-07-09T12:00:00");
     await NotificationSettings.create({
       enabled: true,
       dailySummaryConfig: { enabled: true, frequency: "weekly", mode: "all", threshold: 75 },
@@ -74,7 +74,7 @@ describe("runDailySummaryCheck", () => {
       summary: { totalStudents: 10, present: 5, absent: 5, review: 0, attendancePct: 50 },
     });
 
-    await runDailySummaryCheck();
+    await runDailySummaryCheck(thursday);
     expect(alertNotifier.notifyDailySummary).not.toHaveBeenCalled();
   });
 });

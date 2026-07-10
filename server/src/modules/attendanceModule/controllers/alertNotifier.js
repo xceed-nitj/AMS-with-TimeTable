@@ -159,4 +159,11 @@ module.exports = {
   // Exposed for unit tests
   shouldSend,
   getRecipients,
+  // Clears the module-level cooldown map between tests. `delete
+  // require.cache[...]` + re-require does NOT actually reset this module
+  // inside Jest's module sandbox (unlike plain Node), so tests must call
+  // this explicitly instead of relying on cache eviction for isolation.
+  _resetCooldowns: () => {
+    for (const key of Object.keys(lastSent)) delete lastSent[key];
+  },
 };
