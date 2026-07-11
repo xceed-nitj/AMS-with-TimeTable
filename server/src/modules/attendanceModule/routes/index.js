@@ -64,10 +64,8 @@ router.use(
     require("./flagRoutes"),
 );
 
-// /reports: attendanceReportRoutes.js applies attendanceRoleAccess itself,
-// per-route, so the ERP override PATCH (called by an external system with no
-// browser session) can stay unauthenticated while every other route in that
-// file is gated — see the comment at that route for details.
+// /reports: attendanceReportRoutes.js applies route-specific guards because
+// browser reads are role-based while attendance writes are service-key based.
 router.use('/reports',      require("./attendanceReportRoutes"));
 router.use('/firstyearsubjectmapping', require("./firstYearSubjectMappingRoutes"));
 router.use(
@@ -160,9 +158,8 @@ router.use(
 
 // INTENTIONALLY LEFT UNAUTHENTICATED: called by the Python ML service itself
 // (institute_identification_routes.py's get_ground_truth_b64()), not a
-// browser session — Python has no JWT cookie to present. Same class of
-// exception as the ERP override PATCH in attendanceReportRoutes.js. Read-only,
-// single-photo lookup by roll number, low sensitivity.
+// browser session. Read-only, single-photo lookup by roll number, low
+// sensitivity; attendance write endpoints are service-key protected instead.
 router.get('/ground-truth-photo-by-roll/:rollNo', async (req, res) => {
     try {
         const rollNo = String(req.params.rollNo || '').trim();

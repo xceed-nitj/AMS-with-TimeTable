@@ -10,12 +10,12 @@ const axios = require('axios');
 const mlClient = require('../controllers/mlServiceClient');
 const { processVideoFile } = require('../controllers/videoWatcher');
 const mlProcess = require('../controllers/mlProcessController');
+const AttendanceReportController = require('../controllers/attendanceReportController');
 const { checkRole } = require('../../checkRole.middleware');
 
 // Router-level mount already requires admin/iams-admin/iams-dept-admin (see
-// server/src/routes.js). Process control and GPU metrics are further
-// restricted to admin/iams-admin only — a dept-admin can run/monitor
-// attendance but shouldn't be able to stop the ML service for everyone else.
+// server/src/routes.js). Process control and GPU metrics remain further
+// restricted to admin/iams-admin only.
 const adminOnly = checkRole(['iams-admin']);
 const LockSem = require('../../../models/locksem');
 const TimeTable = require('../../../models/timetable');
@@ -30,6 +30,31 @@ const {
 
 const ML_URL = process.env.ML_SERVICE_URL || 'http://localhost:8500';
 const GROUND_TRUTH_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'ground_truth');
+const reportController = new AttendanceReportController();
+
+function saveAttendanceReportFromMl(payload) {
+    return new Promise((resolve, reject) => {
+        const res = {
+            statusCode: 200,
+            status(code) {
+                this.statusCode = code;
+                return this;
+            },
+            json(body) {
+                if (this.statusCode >= 400 || body?.error) {
+                    const err = new Error(body?.error || `Attendance save failed with ${this.statusCode}`);
+                    err.statusCode = this.statusCode;
+                    err.body = body;
+                    reject(err);
+                    return;
+                }
+                resolve(body);
+            },
+        };
+
+        Promise.resolve(reportController.saveReport({ body: payload }, res)).catch(reject);
+    });
+}
 
 // ─── Roll Lists Directory ─────────────────────────────────────
 const ROLL_LISTS_DIR = path.join(__dirname, '../roll-lists');
@@ -905,7 +930,8 @@ router.post('/run-attendance-rtsp', async (req, res) => {
         // persist them server-side without relaying that payload to the
         // browser, which only needs the lightweight events.
         let sseBuffer = '';
-        pyRes.data.on('data', (chunk) => {
+        let pendingDoneSave = Promise.resolve();
+        pyRes.data.on('data', async (chunk) => {
             sseBuffer += chunk.toString();
 
             let boundary;
@@ -927,21 +953,51 @@ router.post('/run-attendance-rtsp', async (req, res) => {
                     continue; // not forwarded — browser doesn't need raw image bytes
                 }
 
-                if (!res.writableEnded) res.write(eventText);
-
                 if (event && event.type === 'done' && event.result) {
-                    saveAttendanceDailyData(
-                        { batch: resolvedBatch, date: req.body.date, slot: req.body.slot,
-                          room: req.body.room, subject: resolvedSubject, faculty: resolvedFaculty,
-                          semester: resolvedSem, locksemId: resolvedLocksem },
-                        event.result,
-                        1
-                    );
+                    pendingDoneSave = (async () => {
+                        saveAttendanceDailyData(
+                            { batch: resolvedBatch, date: req.body.date, slot: req.body.slot,
+                              room: req.body.room, subject: resolvedSubject, faculty: resolvedFaculty,
+                              semester: resolvedSem, locksemId: resolvedLocksem },
+                            event.result,
+                            1
+                        );
+
+                        try {
+                            event.savedReport = await saveAttendanceReportFromMl({
+                                batch: resolvedBatch,
+                                department: ctx?.dept || req.body.department || '',
+                                semester: resolvedSem,
+                                subject: resolvedSubject,
+                                faculty: resolvedFaculty,
+                                room: req.body.room,
+                                date: req.body.date,
+                                timeSlot: req.body.slot,
+                                locksemId: resolvedLocksem || null,
+                                videoLink: req.body.rtspUrl || '',
+                                mlResult: event.result,
+                            });
+                        } catch (err) {
+                            console.error('[AttendanceRTSP] Failed to save report:', err.message);
+                            event.saveError = err.message;
+                        }
+                    })();
+                    await pendingDoneSave;
+
+                    if (!res.writableEnded) {
+                        res.write(`data: ${JSON.stringify(event)}\n\n`);
+                    }
+                    continue;
                 }
+
+                if (!res.writableEnded) res.write(eventText);
             }
         });
 
-        pyRes.data.on('end', () => { if (!res.writableEnded) res.end(); });
+        pyRes.data.on('end', async () => {
+            await pendingDoneSave;
+            if (!res.writableEnded) res.end();
+        });
         pyRes.data.on('error', () => { if (!res.writableEnded) res.end(); });
     } catch (e) {
         if (!res.writableEnded) {

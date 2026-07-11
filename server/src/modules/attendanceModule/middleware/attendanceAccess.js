@@ -2,6 +2,7 @@ const ClusterMatch = require('../../../models/attendanceModule/clusterMatch');
 const Batch = require('../../../models/attendanceModule/batch');
 const { checkRole } = require('../../checkRole.middleware');
 const getUserDetails = require('../../usermanagement/controllers/dto');
+const crypto = require('crypto');
 
 const normalizeDepartment = (value) =>
     String(value || '').trim().replace(/[\s_-]+/g, '').toUpperCase();
@@ -12,6 +13,35 @@ const batchBelongsToDepartment = (batch, department) => {
         .replace(/[\s-]+/g, '_')
         .replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     return new RegExp(`^[^_]+_${safeDepartment}_`, 'i').test(String(batch || ''));
+};
+
+const timingSafeEqual = (provided, expected) => {
+    const providedBuffer = Buffer.from(String(provided || ''));
+    const expectedBuffer = Buffer.from(String(expected || ''));
+    return (
+        providedBuffer.length === expectedBuffer.length
+        && crypto.timingSafeEqual(providedBuffer, expectedBuffer)
+    );
+};
+
+const getAttendanceWriteSecret = () =>
+    process.env.ML_SERVICE_SECRET || '';
+
+const requireAttendanceWriteAccess = (req, res, next) => {
+    const secret = getAttendanceWriteSecret();
+    if (!secret) {
+        return res.status(503).json({
+            error: 'Attendance service write access is not configured.',
+        });
+    }
+
+    const provided = req.get('X-ML-Service-Key') || '';
+    if (!timingSafeEqual(provided, secret)) {
+        return res.status(401).json({ error: 'Unauthorized attendance writer.' });
+    }
+
+    req.attendanceServiceWrite = true;
+    next();
 };
 
 const resolveAttendanceAccess = async (req, res, next) => {
@@ -136,6 +166,7 @@ const attendanceRoleAccess = [
 module.exports = {
     attendanceRoleAccess,
     enforceAttendanceDepartment,
+    requireAttendanceWriteAccess,
     requireDeptMenu,
     batchBelongsToDepartment,
     normalizeDepartment,

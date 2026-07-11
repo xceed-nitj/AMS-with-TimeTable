@@ -482,7 +482,7 @@ class AttendanceReportController {
     }
   }
 
-  // Update final status of a student (called by ERP system or manually)
+  // Update final status of a student (called by a trusted service only)
   // PATCH /attendancemodule/reports/:id/student/:rollNo
   // Body: { finalStatus: 'P' | 'A' | 'R', isOverridden?: boolean }
   async updateStudentStatus(req, res) {
