@@ -92,6 +92,15 @@ async function readFacesSidecar(folderPath) {
     }
 }
 
+// Sidecar entries were plain face-count ints before roll numbers were added
+// ({ faces, rolls } objects since); normalize both to a number — null (not
+// undefined) so a ?? chain can still fall through to the next guess.
+function sidecarFaces(entry) {
+    if (typeof entry === 'number') return entry;
+    if (entry && typeof entry.faces === 'number') return entry.faces;
+    return null;
+}
+
 // ── Delete a file safely ──────────────────────────────────────────────────────
 async function safeUnlink(filePath) {
     try {
@@ -157,7 +166,7 @@ async function pruneAnnotatedFolder(folderPath) {
         // rather than "whatever readdir returned first".
         const faces =
             parseFaceCountFromFilename(filename) ??
-            sidecar[filename] ??
+            sidecarFaces(sidecar[filename]) ??
             parseElapsed(filename);
         byCam.get(cam).push({ filename, faces });
     }

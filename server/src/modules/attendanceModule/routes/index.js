@@ -31,6 +31,11 @@ router.get(
     deptAdminController.getDashboardProgress,
 );
 router.get(
+    '/dept-admin/stats/overrides-by-dept',
+    ...attendanceRoleAccess,
+    deptAdminController.getOverridesByDept,
+);
+router.get(
     '/dept-admin/reports',
     ...attendanceRoleAccess,
     deptAdminController.getReports,

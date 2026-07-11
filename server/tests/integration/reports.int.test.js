@@ -282,6 +282,75 @@ describe("GET /reports/erp-overrides", () => {
   });
 });
 
+describe("GET /reports/erp-overrides — overview stats & departments", () => {
+  // Two CSE reports (3 overridden students, 1 verified) + one ECE report
+  // (1 overridden student, unverified).
+  async function seedMixed() {
+    await AttendanceReport.create(
+      baseReport({
+        finalReport: [
+          { rollNo: "21CS001", finalStatus: "A", autoFinalStatus: "P", isOverridden: true, coordinatorVerified: true, coordinatorRemark: "Student came late" },
+          { rollNo: "21CS002", finalStatus: "A", autoFinalStatus: "P", isOverridden: true },
+        ],
+      }),
+    );
+    await AttendanceReport.create(
+      baseReport({
+        date: "2026-07-08",
+        finalReport: [
+          { rollNo: "21CS003", finalStatus: "P", autoFinalStatus: "A", isOverridden: true },
+        ],
+      }),
+    );
+    await AttendanceReport.create(
+      baseReport({
+        batch: "BTECH_ECE_2027",
+        department: "ECE",
+        date: "2026-07-07",
+        finalReport: [
+          { rollNo: "21EC001", finalStatus: "A", autoFinalStatus: "P", isOverridden: true },
+        ],
+      }),
+    );
+  }
+
+  it("returns filter-wide stats and a sorted departments list for a full-access admin", async () => {
+    await seedMixed();
+    const res = await request(app).get(`${BASE}/erp-overrides`).set("Cookie", authCookie());
+    expect(res.status).toBe(200);
+    expect(res.body.stats).toEqual({ sessions: 3, overriddenStudents: 4, verified: 1, unverified: 3 });
+    expect(res.body.departments).toEqual(["CSE", "ECE"]);
+  });
+
+  it("scopes stats to ?department= but keeps the full departments list", async () => {
+    await seedMixed();
+    const res = await request(app).get(`${BASE}/erp-overrides?department=CSE`).set("Cookie", authCookie());
+    expect(res.status).toBe(200);
+    expect(res.body.stats).toEqual({ sessions: 2, overriddenStudents: 3, verified: 1, unverified: 2 });
+    expect(res.body.departments).toEqual(["CSE", "ECE"]);
+  });
+
+  it("scopes stats to a dept-admin's own department and omits the departments list", async () => {
+    await enableErpOverrides();
+    await seedMixed();
+    const res = await request(app)
+      .get(`${BASE}/erp-overrides`)
+      .set("Cookie", await deptAdminCookie("CSE"));
+    expect(res.status).toBe(200);
+    expect(res.body.stats).toEqual({ sessions: 2, overriddenStudents: 3, verified: 1, unverified: 2 });
+    expect(res.body.departments).toBeUndefined();
+  });
+
+  it("computes stats over the whole filter, ignoring pagination", async () => {
+    await seedMixed();
+    const res = await request(app).get(`${BASE}/erp-overrides?limit=1`).set("Cookie", authCookie());
+    expect(res.status).toBe(200);
+    expect(res.body.items.length).toBe(1);
+    expect(res.body.stats.sessions).toBe(3);
+    expect(res.body.stats.overriddenStudents).toBe(4);
+  });
+});
+
 describe("PATCH /reports/:id/student/:rollNo/coordinator-remark", () => {
   function overriddenReport(overrides = {}) {
     return baseReport({

@@ -108,6 +108,19 @@ async function getCombinedFolders() {
 async function listFrameFiles(rootDir, folderName, type) {
     const dirPath = path.join(rootDir, folderName);
     try {
+        // _faces.json sidecar (annotated folders only) maps
+        // filename → faces_count (old int format) | { faces, rolls } (current).
+        // `rolls` lists the roll numbers matched into that frame's annotations,
+        // letting the UI locate a specific student in the gallery.
+        let sidecar = {};
+        if (type === 'annotated') {
+            try {
+                sidecar = JSON.parse(
+                    await fsPromises.readFile(path.join(dirPath, '_faces.json'), 'utf8'),
+                );
+            } catch (_) { /* no sidecar / unreadable — fine */ }
+        }
+
         const entries = await fsPromises.readdir(dirPath, { withFileTypes: true });
         const files = await Promise.all(
             entries
@@ -116,6 +129,7 @@ async function listFrameFiles(rootDir, folderName, type) {
                     const parsed = parseFrameFilename(entry.name);
                     const filePath = path.join(dirPath, entry.name);
                     const stat = await fsPromises.stat(filePath);
+                    const meta = sidecar[entry.name];
 
                     return {
                         filename: entry.name,
@@ -124,7 +138,10 @@ async function listFrameFiles(rootDir, folderName, type) {
                         sizeKB: Math.max(1, Math.round(stat.size / 1024)),
                         elapsedSec: parsed.elapsedSec,
                         camera: parsed.camera,
-                        facesCount: parsed.facesCount,
+                        facesCount: parsed.facesCount
+                            ?? (typeof meta === 'number' ? meta
+                                : typeof meta?.faces === 'number' ? meta.faces : null),
+                        rolls: Array.isArray(meta?.rolls) ? meta.rolls : [],
                     };
                 })
         );
