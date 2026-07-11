@@ -45,23 +45,25 @@ def load_retinaface_model():
         return
 
     try:
-        from insightface import model_zoo
-        model = model_zoo.get_model(RETINAFACE_MODEL_PATH)
-        if model is None:
-            # model_zoo router may not recognise retinaface.onnx outputs
-            from insightface.model_zoo.retinaface import RetinaFace
-            model = RetinaFace(model_file=RETINAFACE_MODEL_PATH)
+        try:
+            from insightface import model_zoo
+            model = model_zoo.get_model(RETINAFACE_MODEL_PATH)
+        except Exception:
+            # Fallback to our custom wrapper for community 3-output PyTorch ONNX
+            try:
+                from custom_retinaface import CustomRetinaFace
+                model = CustomRetinaFace(RETINAFACE_MODEL_PATH)
+            except ImportError:
+                model = None
 
         if model is None or not hasattr(model, "detect"):
-            raise ValueError("model_zoo did not return a detector (wrong ONNX type?)")
+            raise ValueError("Failed to load a valid RetinaFace model (wrong ONNX type?).")
+            
         _prepare_detector(model)
         state.retinaface_det_model = model
         logger.info(f"[Detector] Loaded RetinaFace from {RETINAFACE_MODEL_PATH}")
     except Exception as e:
-        logger.warning(
-            f"[Detector] Failed to load RetinaFace from {RETINAFACE_MODEL_PATH}: {e} — "
-            f"staying on SCRFD-10G."
-        )
+        logger.error(f"[Detector] Failed to load RetinaFace. Error: {e}")
         state.retinaface_det_model = None
 
 
