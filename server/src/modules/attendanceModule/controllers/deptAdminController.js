@@ -137,20 +137,21 @@ const getContext = async (req, res) => {
 
 const getTodayAttendanceStats = async (req, res) => {
     try {
-        const department = req.attendanceDepartment;
+        // Dept-admins are locked to their own department. Full-access admins
+        // see the whole institute, but may narrow to one via ?department=.
+        const department = req.attendanceFullAccess
+            ? (req.query.department ? String(req.query.department).trim() : null)
+            : req.attendanceDepartment;
         const today = getCampusDate();
+        const scoped = Boolean(department);
         const reportMatch = {
             date: today,
-            ...(req.attendanceFullAccess ? {} : { department: departmentRegex(department) }),
+            ...(scoped ? { department: departmentRegex(department) } : {}),
         };
-        const reportScope = req.attendanceFullAccess
-            ? {}
-            : { department: departmentRegex(department) };
-        const groundTruthScope = req.attendanceFullAccess
-            ? {}
-            : { batch: batchDepartmentRegex(department) };
+        const reportScope = scoped ? { department: departmentRegex(department) } : {};
+        const groundTruthScope = scoped ? { batch: batchDepartmentRegex(department) } : {};
 
-        const [yearStats, statusStats, groundTruthStats, recentReports] = await Promise.all([
+        const [yearStats, statusStats, groundTruthStats, verificationStats, recentReports] = await Promise.all([
             AttendanceReport.aggregate([
                 { $match: reportMatch },
                 {
@@ -242,6 +243,14 @@ const getTodayAttendanceStats = async (req, res) => {
                     },
                 },
             ]),
+            // Overridden students still awaiting a dept-coordinator remark —
+            // "attendance verifications pending" (all dates, dept-scoped).
+            AttendanceReport.aggregate([
+                { $match: { ...reportScope, 'finalReport.isOverridden': true } },
+                { $unwind: '$finalReport' },
+                { $match: { 'finalReport.isOverridden': true, 'finalReport.coordinatorVerified': { $ne: true } } },
+                { $count: 'pending' },
+            ]),
             AttendanceReport.find(reportScope)
                 .select('batch semester subject faculty room date timeSlot summary status')
                 .sort({ date: -1, created_at: -1 })
@@ -251,6 +260,7 @@ const getTodayAttendanceStats = async (req, res) => {
 
         const totals = statusStats[0] || {};
         const groundTruth = groundTruthStats[0] || {};
+        const attendanceVerificationPending = verificationStats[0]?.pending || 0;
         const attendancePct = totals.totalStudents > 0
             ? Math.round((totals.present / totals.totalStudents) * 100)
             : null;
@@ -261,7 +271,7 @@ const getTodayAttendanceStats = async (req, res) => {
             : null;
 
         res.json({
-            department: req.attendanceFullAccess ? 'Institute' : department,
+            department: department || 'Institute',
             fullAccess: Boolean(req.attendanceFullAccess),
             date: today,
             attendancePct,
@@ -272,6 +282,7 @@ const getTodayAttendanceStats = async (req, res) => {
             sessions: totals.sessions || 0,
             groundTruthPending: groundTruth.pending || 0,
             groundTruthApproved: groundTruth.approved || 0,
+            attendanceVerificationPending,
             matchAccuracy,
             byYear: yearStats
                 .filter((item) => item._id != null)
@@ -594,10 +605,51 @@ const getDeptMenus = async (req, res) => {
     }
 };
 
+// Department-wise override-verification breakdown for the admin dashboard:
+// per department, how many overridden students are verified vs still pending.
+// Full-access admins see every department; a dept-admin sees only their own.
+const getOverridesByDept = async (req, res) => {
+    try {
+        const match = { 'finalReport.isOverridden': true };
+        if (!req.attendanceFullAccess) {
+            match.department = departmentRegex(req.attendanceDepartment);
+        }
+        const rows = await AttendanceReport.aggregate([
+            { $match: match },
+            { $unwind: '$finalReport' },
+            { $match: { 'finalReport.isOverridden': true } },
+            {
+                $group: {
+                    _id: { $ifNull: ['$department', 'Unknown'] },
+                    total: { $sum: 1 },
+                    verified: {
+                        $sum: { $cond: [{ $eq: ['$finalReport.coordinatorVerified', true] }, 1, 0] },
+                    },
+                },
+            },
+            {
+                $project: {
+                    _id: 0,
+                    dept: '$_id',
+                    total: 1,
+                    verified: 1,
+                    pending: { $subtract: ['$total', '$verified'] },
+                },
+            },
+            { $sort: { total: -1 } },
+        ]);
+        res.json({ byDept: rows });
+    } catch (error) {
+        console.error('[DeptAdmin] getOverridesByDept:', error);
+        res.status(500).json({ message: 'Failed to fetch department override stats.' });
+    }
+};
+
 module.exports = {
     getContext,
     getTodayAttendanceStats,
     getDashboardProgress,
     getReports,
     getDeptMenus,
+    getOverridesByDept,
 };

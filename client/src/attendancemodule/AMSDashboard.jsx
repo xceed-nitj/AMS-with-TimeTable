@@ -9,6 +9,8 @@ import {
 import getEnvironment from '../getenvironment';
 import HealthDashboard from './HealthDashboard';
 import DashboardProgress from './DashboardProgress';
+import PendingActionsCard from './PendingActionsCard';
+import DeptOverridesChart from './DeptOverridesChart';
 import { MLDataFolder } from './MLDataFolder';
 import { createPortal } from "react-dom";
 import { useRef } from "react";
@@ -846,11 +848,18 @@ export default function AMSDashboard() {
         </div>
 
         <div style={{ marginBottom: 28 }}>
+          <PendingActionsCard />
+        </div>
+
+        <div style={{ marginBottom: 28 }}>
           <DashboardProgress title="Acquisition and Roll Assignment Progress" compact />
         </div>
 
         {/* ── Charts ── */}
         <div className="dash-chart-grid">
+
+          {/* dept-wise override verifications */}
+          <DeptOverridesChart />
 
           {/* dept-wise */}
           <ChartCard

@@ -1232,7 +1232,11 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
                                 (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8,
                                 (0, 200, 255), 2, cv2.LINE_AA)
                     ok_annot, annot_buf = cv2.imencode('.jpg', annot, [cv2.IMWRITE_JPEG_QUALITY, 85])
-            
+
+                    # Matched (non-"?") roll numbers drawn into this frame —
+                    # persisted by Node into the _faces.json sidecar so the UI
+                    # can locate the exact frames containing a given student.
+                    snap_rolls = sorted({lbl for lbl in face_labels if lbl != "?"})
 
                     if ok_raw and ok_annot:
                         yield {
@@ -1242,6 +1246,7 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
                             "cam":          cam_idx + 1,
                             "elapsed_sec":  round(elapsed, 1),
                             "faces_count":  faces_this_frame,
+                            "rolls":        snap_rolls,
                             "raw_data":     base64.b64encode(raw_buf.tobytes()).decode('ascii'),
                             "annotated_data": base64.b64encode(annot_buf.tobytes()).decode('ascii'),
                         }
@@ -1249,6 +1254,7 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
                             "cam":         cam_idx + 1,
                             "elapsed_sec": round(elapsed, 1),
                             "faces_count": faces_this_frame,
+                            "rolls":       snap_rolls,
                             "filename":    fname,
                             "folder":      snap_folder_name,
                         })

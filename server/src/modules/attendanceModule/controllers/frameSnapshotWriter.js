@@ -16,13 +16,17 @@ const RAW_DIR        = path.join(SERVER_ROOT, 'ml-data', 'frame_snapshots');
 const ANNOTATED_DIR  = path.join(SERVER_ROOT, 'ml-data', 'annotated_frames');
 
 /**
- * Persist one frame_snapshot event to disk and merge its face count into
- * the _faces.json sidecar (read-merge-write, since the same folder is
- * reused across multiple checks within a live session).
- * @param {object} snap { folder, filename, raw_data, annotated_data, faces_count }
+ * Persist one frame_snapshot event to disk and merge its face count and
+ * matched roll numbers into the _faces.json sidecar (read-merge-write,
+ * since the same folder is reused across multiple checks within a live
+ * session). Sidecar entry shape: { faces: <int>, rolls: [<rollNo>...] }.
+ * Folders written before rolls existed hold plain-int values for their
+ * filenames — the merge preserves those untouched, so readers must
+ * tolerate both formats.
+ * @param {object} snap { folder, filename, raw_data, annotated_data, faces_count, rolls }
  */
 function saveFrameSnapshot(snap) {
-    const { folder, filename, raw_data, annotated_data, faces_count } = snap || {};
+    const { folder, filename, raw_data, annotated_data, faces_count, rolls } = snap || {};
     if (!folder || !filename) return;
 
     try {
@@ -42,7 +46,10 @@ function saveFrameSnapshot(snap) {
             if (fs.existsSync(sidecarPath)) {
                 try { sidecar = JSON.parse(fs.readFileSync(sidecarPath, 'utf8')); } catch (_) {}
             }
-            sidecar[filename] = faces_count || 0;
+            sidecar[filename] = {
+                faces: faces_count || 0,
+                rolls: Array.isArray(rolls) ? rolls : [],
+            };
             fs.writeFileSync(sidecarPath, JSON.stringify(sidecar, null, 2));
         }
     } catch (err) {

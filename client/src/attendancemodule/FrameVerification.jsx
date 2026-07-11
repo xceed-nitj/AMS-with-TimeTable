@@ -100,6 +100,13 @@ export default function FrameVerification({ fixedDepartment = '' }) {
     const [classInfoLoading, setClassInfoLoading] = useState(false);
     const [downloadError, setDownloadError] = useState(null);
     const modalRef = useRef(null);
+    // Locate-a-student deep link (from ERP Override Analysis): ?roll= filters the
+    // annotated gallery to frames containing that roll; ?sec= (fallback for old
+    // sessions with no per-frame roll data) auto-opens the frame nearest that
+    // elapsed second. autoOpenedRef ensures the auto-open fires only once.
+    const [rollFilter, setRollFilter] = useState(() => searchParams.get('roll') || '');
+    const targetSec = Number(searchParams.get('sec'));
+    const autoOpenedRef = useRef(false);
 
     useEffect(() => {
         let cancelled = false;
@@ -204,10 +211,36 @@ export default function FrameVerification({ fixedDepartment = '' }) {
                 const data = await res.json();
                 if (!cancelled) {
                     setGalleryData(data);
-                    if ((data.annotatedFrames || []).length > 0) {
+                    const annotated = data.annotatedFrames || [];
+                    if (annotated.length > 0) {
                         setActiveTab('annotated');
                     } else {
                         setActiveTab('raw');
+                    }
+
+                    // Auto-open the frame for a deep-linked student, once.
+                    if (!autoOpenedRef.current && annotated.length > 0) {
+                        const matchIdx = rollFilter
+                            ? annotated.findIndex((f) => Array.isArray(f.rolls) && f.rolls.includes(rollFilter))
+                            : -1;
+                        if (matchIdx >= 0) {
+                            autoOpenedRef.current = true;
+                            openModal('annotated', matchIdx);
+                        } else if (Number.isFinite(targetSec)) {
+                            // No per-frame roll data (old session) — jump to the
+                            // annotated frame nearest the student's firstSeenSec.
+                            let bestIdx = -1;
+                            let bestDelta = Infinity;
+                            annotated.forEach((f, i) => {
+                                if (f.elapsedSec == null) return;
+                                const delta = Math.abs(f.elapsedSec - targetSec);
+                                if (delta < bestDelta) { bestDelta = delta; bestIdx = i; }
+                            });
+                            if (bestIdx >= 0) {
+                                autoOpenedRef.current = true;
+                                openModal('annotated', bestIdx);
+                            }
+                        }
                     }
                 }
             } catch (_) {
@@ -225,6 +258,13 @@ export default function FrameVerification({ fixedDepartment = '' }) {
         })();
 
         return () => { cancelled = true; };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [room, date, period]);
+
+    // A change of room/date/period loads a different folder — allow the
+    // deep-link auto-open to fire again for the new gallery.
+    useEffect(() => {
+        autoOpenedRef.current = false;
     }, [room, date, period]);
 
     useEffect(() => {
@@ -341,6 +381,14 @@ export default function FrameVerification({ fixedDepartment = '' }) {
     const annotatedFrames = galleryData?.annotatedFrames || [];
     const activeFrames = modalState.tab === 'annotated' ? annotatedFrames : rawFrames;
     const modalFrame = activeFrames[modalState.index] || null;
+
+    // Frames containing the deep-linked student (empty if no per-frame roll
+    // data). When there are matches, the annotated gallery shows only those;
+    // the modal still indexes the FULL annotated list so prev/next don't drift.
+    const rollMatches = rollFilter
+        ? annotatedFrames.filter((f) => Array.isArray(f.rolls) && f.rolls.includes(rollFilter))
+        : [];
+    const displayedAnnotated = rollFilter && rollMatches.length > 0 ? rollMatches : annotatedFrames;
 
     function toImageUrl(relativeUrl) {
         return relativeUrl ? `${apiUrl}${relativeUrl}` : '';
@@ -613,8 +661,34 @@ export default function FrameVerification({ fixedDepartment = '' }) {
                             ) : null}
 
                             {!framesLoading && activeTab === 'annotated' && annotatedFrames.length > 0 ? (
-                                <div className="frame-gallery">
-                                    {annotatedFrames.map((frame, index) => (
+                                <>
+                                    {rollFilter ? (
+                                        <div style={{
+                                            display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+                                            padding: '10px 14px', marginBottom: 16, borderRadius: 8,
+                                            background: theme.accentDim, border: `1px solid ${theme.border}`,
+                                        }}>
+                                            <span style={{ fontSize: 13, color: theme.text }}>
+                                                {rollMatches.length > 0
+                                                    ? `Showing ${rollMatches.length} of ${annotatedFrames.length} annotated frame${annotatedFrames.length === 1 ? '' : 's'} containing `
+                                                    : `No per-frame roll data for `}
+                                                <span style={{ fontFamily: theme.fontMono, fontWeight: 700 }}>{rollFilter}</span>
+                                                {rollMatches.length === 0 ? ' — showing all frames' : ''}
+                                                {rollMatches.length === 0 && Number.isFinite(targetSec) ? ' (jumped to nearest frame by time)' : ''}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setRollFilter('')}
+                                                style={{ ...styles.btnGhost, padding: '4px 10px', fontSize: 12 }}
+                                            >
+                                                Show all frames
+                                            </button>
+                                        </div>
+                                    ) : null}
+                                    <div className="frame-gallery">
+                                        {displayedAnnotated.map((frame) => {
+                                            const index = annotatedFrames.indexOf(frame);
+                                            return (
                                         <button
                                             key={`${frame.filename}-${index}`}
                                             type="button"
@@ -649,9 +723,28 @@ export default function FrameVerification({ fixedDepartment = '' }) {
                                                 {frame.elapsedSec != null ? <StatBadge label="Sec" value={frame.elapsedSec} tone="warning" /> : null}
                                                 {frame.facesCount != null ? <StatBadge label="Faces" value={frame.facesCount} tone="danger" /> : null}
                                             </div>
+                                            {Array.isArray(frame.rolls) && frame.rolls.length > 0 ? (
+                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
+                                                    {frame.rolls.map((roll) => (
+                                                        <span
+                                                            key={roll}
+                                                            style={{
+                                                                fontFamily: theme.fontMono, fontSize: 10, fontWeight: 700,
+                                                                padding: '1px 6px', borderRadius: 4,
+                                                                color: roll === rollFilter ? theme.accent : theme.textMuted,
+                                                                background: roll === rollFilter ? theme.accentDim : theme.surfaceAlt,
+                                                            }}
+                                                        >
+                                                            {roll}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            ) : null}
                                         </button>
-                                    ))}
-                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </>
                             ) : null}
                         </div>
                     ) : null}
