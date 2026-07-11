@@ -5,6 +5,7 @@ const path = require("path");
 
 process.env.NODE_ENV = "test";
 process.env.JWT_SECRET = "test-secret";
+process.env.ML_SERVICE_SECRET = "test-ml-service-secret";
 process.env.ATTENDANCE_DAILY_DATA_DIR = path.join(__dirname, ".tmp-daily-data");
 
 // Default to the "unconfigured" branches; suites that need a configured ERP

@@ -3,12 +3,18 @@
 const express = require("express");
 const router = express.Router();
 const AttendanceReportController = require("../controllers/attendanceReportController");
-const { attendanceRoleAccess, enforceAttendanceDepartment, requireDeptMenu } = require("../middleware/attendanceAccess");
+const {
+  attendanceRoleAccess,
+  enforceAttendanceDepartment,
+  requireAttendanceWriteAccess,
+  requireDeptMenu,
+} = require("../middleware/attendanceAccess");
 
 const ctrl = new AttendanceReportController();
 
-// Save report after ML processes a video
-router.post("/save", ...attendanceRoleAccess, enforceAttendanceDepartment, async (req, res) => {
+// Save report after ML processes a video. This is service-authenticated so a
+// logged-in browser user cannot forge attendance writes directly into MongoDB.
+router.post("/save", requireAttendanceWriteAccess, async (req, res) => {
   try {
     await ctrl.saveReport(req, res);
   } catch (e) {
@@ -61,14 +67,9 @@ router.post("/:id/finalize", ...attendanceRoleAccess, async (req, res) => {
   }
 });
 
-// Manually override one student's final status.
-// INTENTIONALLY LEFT UNAUTHENTICATED: this is called directly by the external
-// ERP system (see updateStudentStatus's own comment in the controller), which
-// has no browser session/JWT cookie to present. There's no API-key/service-auth
-// mechanism in this codebase yet to gate it with instead — flagged as a known,
-// deliberate exception during the attendance-module access lockdown, not an
-// oversight. Revisit once the ERP integration can carry a shared-secret header.
-router.patch("/:id/student/:rollNo", async (req, res) => {
+// External attendance status writes must carry the service key; JWT cookies
+// alone are deliberately ignored for this endpoint.
+router.patch("/:id/student/:rollNo", requireAttendanceWriteAccess, async (req, res) => {
   try {
     await ctrl.updateStudentStatus(req, res);
   } catch (e) {
