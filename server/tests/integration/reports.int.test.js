@@ -42,6 +42,10 @@ async function enableErpOverrides() {
   await Batch.create({ batchYear: "2027", deptMenus: { erpOverrides: true } });
 }
 
+function serviceWriteHeader() {
+  return { "X-ML-Service-Key": process.env.ML_SERVICE_SECRET };
+}
+
 describe("GET /reports", () => {
   it("lists and filters seeded reports by batch", async () => {
     await AttendanceReport.create(baseReport());
@@ -53,6 +57,47 @@ describe("GET /reports", () => {
     expect(res.status).toBe(200);
     expect(res.body.total).toBe(1);
     expect(res.body.reports[0].batch).toBe("BTECH_CSE_2027");
+  });
+});
+
+describe("POST /reports/save", () => {
+  const mlPayload = {
+    batch: "BTECH_CSE_2027",
+    department: "CSE",
+    semester: "5",
+    subject: "Computer Networks",
+    faculty: "Dr. A",
+    room: "LT101",
+    date: "2026-07-09",
+    timeSlot: "period1",
+    mlResult: {
+      attendance: {
+        "21CS001": { status: "present", avg_confidence: 0.92, confidence_zone: "high" },
+      },
+      summary: { present: 1, absent: 0, review: 0, processing_time: 4 },
+    },
+  };
+
+  it("rejects a logged-in user without the attendance service key", async () => {
+    const res = await request(app)
+      .post(`${BASE}/save`)
+      .set("Cookie", authCookie())
+      .send(mlPayload);
+    expect(res.status).toBe(401);
+    expect(await AttendanceReport.countDocuments()).toBe(0);
+  });
+
+  it("allows the trusted ML service key to create the report", async () => {
+    const res = await request(app)
+      .post(`${BASE}/save`)
+      .set(serviceWriteHeader())
+      .send(mlPayload);
+    expect(res.status).toBe(200);
+    expect(res.body.reportId).toBeTruthy();
+
+    const report = await AttendanceReport.findById(res.body.reportId);
+    expect(report.batch).toBe("BTECH_CSE_2027");
+    expect(report.summary.present).toBe(1);
   });
 });
 
@@ -88,12 +133,26 @@ describe("POST /reports/:id/finalize", () => {
   });
 });
 
-describe("PATCH /reports/:id/student/:rollNo (unauthenticated ERP override)", () => {
-  it("updates a student's final status with no auth cookie at all", async () => {
+describe("PATCH /reports/:id/student/:rollNo (trusted service override)", () => {
+  it("rejects a browser/admin cookie without the attendance service key", async () => {
     const report = await AttendanceReport.create(baseReport());
     const res = await request(app)
       .patch(`${BASE}/${report._id}/student/21CS001`)
-      .send({ finalStatus: "A" }); // deliberately no .set("Cookie", ...)
+      .set("Cookie", authCookie())
+      .send({ finalStatus: "A" });
+    expect(res.status).toBe(401);
+
+    const unchanged = await AttendanceReport.findById(report._id);
+    const student = unchanged.finalReport.find((s) => s.rollNo === "21CS001");
+    expect(student.finalStatus).toBe("P");
+  });
+
+  it("updates a student's final status with the attendance service key", async () => {
+    const report = await AttendanceReport.create(baseReport());
+    const res = await request(app)
+      .patch(`${BASE}/${report._id}/student/21CS001`)
+      .set(serviceWriteHeader())
+      .send({ finalStatus: "A" });
     expect(res.status).toBe(200);
 
     const updated = await AttendanceReport.findById(report._id);
@@ -107,6 +166,7 @@ describe("PATCH /reports/:id/student/:rollNo (unauthenticated ERP override)", ()
   it("returns 404 for an unknown report id", async () => {
     const res = await request(app)
       .patch(`${BASE}/64f000000000000000000000/student/21CS001`)
+      .set(serviceWriteHeader())
       .send({ finalStatus: "A" });
     expect(res.status).toBe(404);
   });
@@ -115,6 +175,7 @@ describe("PATCH /reports/:id/student/:rollNo (unauthenticated ERP override)", ()
     const report = await AttendanceReport.create(baseReport());
     const res = await request(app)
       .patch(`${BASE}/${report._id}/student/99CS999`)
+      .set(serviceWriteHeader())
       .send({ finalStatus: "A" });
     expect(res.status).toBe(404);
   });
@@ -123,6 +184,7 @@ describe("PATCH /reports/:id/student/:rollNo (unauthenticated ERP override)", ()
     const report = await AttendanceReport.create(baseReport());
     const res = await request(app)
       .patch(`${BASE}/${report._id}/student/21CS001`)
+      .set(serviceWriteHeader())
       .send({ finalStatus: "X" });
     expect(res.status).toBe(400);
   });
@@ -131,6 +193,7 @@ describe("PATCH /reports/:id/student/:rollNo (unauthenticated ERP override)", ()
     const report = await AttendanceReport.create(baseReport());
     const res = await request(app)
       .patch(`${BASE}/${report._id}/student/21CS001`)
+      .set(serviceWriteHeader())
       .send({ finalStatus: "A", remark: "Student came late" });
     expect(res.status).toBe(200);
 

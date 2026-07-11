@@ -79,9 +79,9 @@ export default function AttendanceReport() {
   const [jobId, setJobId] = useState(null);
   const [snapshots, setSnapshots] = useState([]);
   const [previewActive, setPreviewActive] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [mlResult, setMlResult] = useState(null);
   const [savedReport, setSavedReport] = useState(null);
+  const [saveError, setSaveError] = useState('');
   const [derivedCtx, setDerivedCtx] = useState(null);
 
   // ── Session state (multi-run) ─────────────────────────────────
@@ -251,14 +251,13 @@ export default function AttendanceReport() {
       .then((data) => {
         const sems = data.sems || [];
         setAvailableSems(sems);
-        // Ensure selected sem is still valid if not empty
-        if (filterSem && !sems.includes(String(filterSem))) {
-          setFilterSem('');
-        }
+        setFilterSem((current) => (
+          current && !sems.includes(String(current)) ? '' : current
+        ));
       })
       .catch(() => setAvailableSems([]))
       .finally(() => setSemsLoading(false));
-  }, [filterDept]); // Notice filterSem is NOT in deps to avoid unnecessary clears
+  }, [filterDept]);
 
   useEffect(() => {
     if (tab === 'history') fetchReports();
@@ -351,6 +350,7 @@ export default function AttendanceReport() {
     setProcessing(true);
     setMlResult(null);
     setSavedReport(null);
+    setSaveError('');
     setSnapshots([]);
     setLiveFrame(null);
     setPreviewActive(true);
@@ -396,9 +396,13 @@ export default function AttendanceReport() {
       const decoder = new TextDecoder();
       let buffer = '';
 
-      while (true) {
+      let streamDone = false;
+      while (!streamDone) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done) {
+          streamDone = true;
+          continue;
+        }
         buffer += decoder.decode(value, { stream: true });
         const parts = buffer.split('\n\n');
         buffer = parts.pop();
@@ -438,12 +442,26 @@ export default function AttendanceReport() {
             }
             if (ev.type === 'done') {
               setMlResult(ev.result);
+              if (ev.savedReport) {
+                setSavedReport(ev.savedReport);
+                setSaveError('');
+              } else if (ev.saveError) {
+                setSavedReport(null);
+                setSaveError(ev.saveError);
+              }
               if (ev.result?.metadata) {
                 setDerivedCtx((prev) => ({ ...prev, ...ev.result.metadata }));
               }
               setSnapshots(ev.result?.frame_snapshots || []);
               setPreviewActive(false);
-              showToast('Processed — review and save');
+              showToast(
+                ev.savedReport
+                  ? 'Processed and saved'
+                  : ev.saveError
+                    ? `Processed but save failed: ${ev.saveError}`
+                    : 'Processed',
+                ev.saveError ? 'error' : 'success',
+              );
               setProcessing(false);
             }
             if (ev.type === 'error') {
@@ -451,7 +469,9 @@ export default function AttendanceReport() {
               setPreviewActive(false);
               setProcessing(false);
             }
-          } catch { }
+          } catch {
+            continue;
+          }
         }
       }
     } catch (e) {
@@ -549,55 +569,6 @@ export default function AttendanceReport() {
     }
   };
 
-  // ── Save report ───────────────────────────────────────────────
-  const saveReport = async () => {
-    if (!mlResult) return;
-    setSaving(true);
-    const ctx = derivedCtx || {};
-    try {
-      const res = await fetch(`${REPORT_API}/save`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          batch: ctx.batch || manualBatch,
-          department: ctx.dept || department,
-          semester: ctx.sem || '',
-          subject: ctx.subject || '',
-          faculty: ctx.faculty || '',
-          room,
-          date,
-          timeSlot: slot,
-          locksemId: ctx.locksemId || null,
-          videoLink: rtspUrl.trim(),
-          mlResult,
-        }),
-      });
-      const data = await res.json();
-      if (data.error) {
-        showToast(data.error, 'error');
-        // If a report already exists for this slot, fetch and open it
-        if (res.status === 409) {
-          const listRes = await fetch(
-            `${REPORT_API}?batch=${encodeURIComponent(ctx.batch || manualBatch)}&date=${date}`,
-          );
-          const listData = await listRes.json();
-          const existing = (listData.reports || []).find(
-            (r) => r.timeSlot === slot,
-          );
-          if (existing) openDetail(existing._id);
-        }
-      } else {
-        setSavedReport(data);
-        showToast(
-          `✓ Saved & merged — ${data.summary?.present ?? 0}P / ${data.summary?.absent ?? 0}A / ${data.summary?.review ?? 0}R`,
-        );
-      }
-    } catch {
-      showToast('Save failed', 'error');
-    }
-    setSaving(false);
-  };
-
   const openDetail = async (id) => {
     setTab('detail');
     setDetailLoading(true);
@@ -627,31 +598,6 @@ export default function AttendanceReport() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const overrideStatus = async (reportId, rollNo, finalStatus) => {
-    try {
-      const res = await fetch(`${REPORT_API}/${reportId}/student/${rollNo}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ finalStatus }),
-      });
-      const data = await res.json();
-      if (data.error) {
-        showToast(data.error, 'error');
-        return;
-      }
-      setDetailReport((prev) => ({
-        ...prev,
-        finalReport: prev.finalReport.map((s) =>
-          s.rollNo === rollNo ? { ...s, finalStatus } : s,
-        ),
-        summary: data.summary,
-      }));
-      showToast(`${rollNo} → ${finalStatus}`);
-    } catch {
-      showToast('Override failed', 'error');
-    }
-  };
 
   const finalizeReport = async (id) => {
     if (!window.confirm('Finalize? Cannot edit after.')) return;
@@ -852,7 +798,7 @@ export default function AttendanceReport() {
                             fontSize: '12px',
                           }}
                         >
-                          No rooms match "{roomSearch}"
+                          No rooms match &quot;{roomSearch}&quot;
                         </div>
                       )}
                   </div>
@@ -874,7 +820,7 @@ export default function AttendanceReport() {
                 </select>
               </div>
               <div>
-                <label style={styles.label}>Date (for saving only)</label>
+                <label style={styles.label}>Date</label>
                 <input
                   type="date"
                   value={date}
@@ -912,8 +858,8 @@ export default function AttendanceReport() {
                   color: theme.warning,
                 }}
               >
-                ⚠️ No timetable entry found for this room/slot — expand "Batch
-                override" below and fill in manually.
+                ⚠️ No timetable entry found for this room/slot — expand &quot;Batch
+                override&quot; below and fill in manually.
               </div>
             )}
 
@@ -1580,7 +1526,7 @@ export default function AttendanceReport() {
                   >
                     <div>
                       <div style={{ fontSize: '14px', fontWeight: 600 }}>
-                        Save to Database
+                        Database Record
                       </div>
                       <div
                         style={{
@@ -1591,7 +1537,7 @@ export default function AttendanceReport() {
                       >
                         {derivedCtx
                           ? `${derivedCtx.batch} · ${derivedCtx.subject || '—'} · ${derivedCtx.faculty || '—'}`
-                          : 'Persist for later review and finalization'}
+                          : 'Saved automatically after the ML run completes'}
                       </div>
                     </div>
                     <div
@@ -1607,20 +1553,26 @@ export default function AttendanceReport() {
                           Saved
                         </span>
                       )}
-                      <button
-                        onClick={saveReport}
-                        disabled={saving || !!savedReport}
-                        style={{
-                          ...styles.btnPrimary,
-                          opacity: saving || !!savedReport ? 0.5 : 1,
-                        }}
-                      >
-                        {saving
-                          ? 'Saving...'
-                          : savedReport
-                            ? 'Saved'
-                            : 'Save Report'}
-                      </button>
+                      {saveError && (
+                        <span
+                          style={{
+                            ...styles.badge('danger'),
+                            fontSize: '12px',
+                          }}
+                        >
+                          Save failed
+                        </span>
+                      )}
+                      {!savedReport && !saveError && (
+                        <span
+                          style={{
+                            ...styles.badge('warning'),
+                            fontSize: '12px',
+                          }}
+                        >
+                          Save pending
+                        </span>
+                      )}
                       {savedReport && (
                         <button
                           onClick={() => openDetail(savedReport.reportId)}
@@ -2074,7 +2026,7 @@ export default function AttendanceReport() {
                 !proxyInfoLoading && proxyInfo.length > 0 && (
                   <div style={{marginBottom: 16, cursor: "pointer"}}>
                     <span onClick={() => setshowProxyModal(true)} style={{...styles.badge('warning'), fontSize: 14, width: "fit-content", display: "flex", alignItems: "center", justifyContent: "center", gap: 4, fontWeight: 600}}>
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-triangle-alert-icon lucide-triangle-alert"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-triangle-alert-icon lucide-triangle-alert"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
                       {proxyInfo.length} Possible { proxyInfo.length > 1 ? "Proxies" : "Proxy"}
                     </span>
                   </div>
