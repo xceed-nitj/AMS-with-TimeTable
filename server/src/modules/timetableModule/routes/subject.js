@@ -3,6 +3,8 @@ const subjectRouter = express.Router();
 const SubjectController = require("../controllers/subjectprofile");
 const subjectController = new SubjectController();
 const protectRoute =require("../../usermanagement/privateroute")
+const { checkRole } = require("../../checkRole.middleware");
+const deleteAccess = checkRole(['ITTC', 'DTTI']);
 
 
 
@@ -63,7 +65,7 @@ subjectRouter.post("/",protectRoute, async (req, res) => {
     }
   });
   
-  subjectRouter.delete("/:id", async (req, res) => {
+  subjectRouter.delete("/:id", deleteAccess, async (req, res) => {
     try {
       const subjectId = req.params.id;
       await subjectController.deleteId(subjectId );
@@ -111,7 +113,7 @@ subjectRouter.post("/",protectRoute, async (req, res) => {
   });
   
 
-  subjectRouter.delete("/deletebycode/:code", async (req, res) => {
+  subjectRouter.delete("/deletebycode/:code", deleteAccess, async (req, res) => {
     try {
       const code = req.params.code;
       await subjectController.deleteSubjectsByCode(code);

@@ -3,6 +3,8 @@ const addSemRouter = express.Router();
 const AddSemController = require("../controllers/addsemprofile");
 const addSemController = new AddSemController();
 const protectRoute =require("../../usermanagement/privateroute")
+const { checkRole } = require("../../checkRole.middleware");
+const deleteAccess = checkRole(['ITTC', 'DTTI']);
 
 addSemRouter.post("/",protectRoute, async (req, res) => {
     try {
@@ -63,7 +65,7 @@ addSemRouter.post("/",protectRoute, async (req, res) => {
       }
     });
 
-    addSemRouter.delete("/:id",protectRoute, async (req, res) => {
+    addSemRouter.delete("/:id",deleteAccess, async (req, res) => {
       try {
         const semID = req.params.id;
         await addSemController.deleteId(semID);
@@ -75,7 +77,7 @@ addSemRouter.post("/",protectRoute, async (req, res) => {
       }
     });
 
-    addSemRouter.delete("/deletebycode/:code",protectRoute, async (req, res) => {
+    addSemRouter.delete("/deletebycode/:code",deleteAccess, async (req, res) => {
       try {
         const code = req.params.code;
         await addSemController.deleteSemByCode(code);

@@ -4,6 +4,8 @@ const MasterroomController = require("../controllers/masterroomprofile");
 const masterroomController = new MasterroomController();
 
 const ttadminRoute=require("../../usermanagement/ttadminroute")
+const { checkRole } = require("../../checkRole.middleware");
+const deleteAccess = checkRole(['ITTC', 'DTTI']);
 
 
 masterroomRouter.post("/",ttadminRoute, async (req, res) => {
@@ -80,7 +82,7 @@ masterroomRouter.post("/",ttadminRoute, async (req, res) => {
       }
     });
 
-    masterroomRouter.delete("/:id",ttadminRoute, async (req, res) => {
+    masterroomRouter.delete("/:id",deleteAccess, async (req, res) => {
       try {
         const roomId = req.params.id;
         await masterroomController.deleteId(roomId);

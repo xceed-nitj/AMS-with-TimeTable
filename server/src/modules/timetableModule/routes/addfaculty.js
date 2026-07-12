@@ -3,6 +3,8 @@ const addFacultyRouter = express.Router();
 const AddFacultyController = require("../controllers/addfacultyprofile");
 const addFacultyController = new AddFacultyController();
 const protectRoute =require("../../usermanagement/privateroute")
+const { checkRole } = require("../../checkRole.middleware");
+const deleteAccess = checkRole(['ITTC', 'DTTI']);
 
 addFacultyRouter.post("/",protectRoute, async (req, res) => {
     try {
@@ -67,7 +69,7 @@ addFacultyRouter.post("/",protectRoute, async (req, res) => {
       }
     });
 
-    addFacultyRouter.delete("/:id",protectRoute, async (req, res) => {
+    addFacultyRouter.delete("/:id",deleteAccess, async (req, res) => {
       try {
         const facultyId = req.params.id;
         await addFacultyController.deleteId(facultyId);
@@ -92,7 +94,7 @@ addFacultyRouter.post("/",protectRoute, async (req, res) => {
       }
     });
   
-    addFacultyRouter.delete("/deletebycode/:code",protectRoute, async (req, res) => {
+    addFacultyRouter.delete("/deletebycode/:code",deleteAccess, async (req, res) => {
       try {
         const code = req.params.code;
         await addFacultyController.deleteFacultyByCode(code);

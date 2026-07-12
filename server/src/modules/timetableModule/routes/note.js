@@ -3,6 +3,8 @@ const noteRouter = express.Router();
 const NoteController = require("../controllers/noteprofile");
 const noteController = new NoteController();
 const protectRoute =require("../../usermanagement/privateroute")
+const { checkRole } = require("../../checkRole.middleware");
+const deleteAccess = checkRole(['ITTC', 'DTTI']);
 
 
 noteRouter.post("/",protectRoute, async (req, res) => {
@@ -61,7 +63,7 @@ noteRouter.put('/:id',protectRoute, async (req, res) => {
   }
 });
 
-noteRouter.delete("/:id",protectRoute, async (req, res) => {
+noteRouter.delete("/:id",deleteAccess, async (req, res) => {
   try {
     const noteId = req.params.id;
     await noteController.deleteNote(noteId);

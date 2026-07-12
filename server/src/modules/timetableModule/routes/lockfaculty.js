@@ -2,6 +2,8 @@ const express = require("express");
 const LockFacultyRouter = express.Router();
 const LockFacultyController = require("../controllers/lockfaculty");
 const lockFacultyController = new LockFacultyController();
+const { checkRole } = require("../../checkRole.middleware");
+const deleteAccess = checkRole(['ITTC', 'DTTI']);
 
 
 LockFacultyRouter.post("/", async (req, res) => {
@@ -39,7 +41,7 @@ LockFacultyRouter.post("/", async (req, res) => {
       }
     });
 
-    LockFacultyRouter.delete("/:id", async (req, res) => {
+    LockFacultyRouter.delete("/:id", deleteAccess, async (req, res) => {
       try {
         const lockfacultyId = req.params.id;
         await lockFacultyController.deleteId(lockfacultyId);

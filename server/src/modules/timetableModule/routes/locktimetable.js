@@ -3,6 +3,8 @@ const LockTimeTableRouter = express.Router();
 const LockTimeTableController = require("../controllers/locktimetable");
 const locktimetableController = new LockTimeTableController();
 const protectRoute = require("../../usermanagement/privateroute");
+const { checkRole } = require("../../checkRole.middleware");
+const deleteAccess = checkRole(['ITTC', 'DTTI']);
 const LockSem = require('../../../models/locksem');
 const TimeTable = require('../../../models/timetable');
 
@@ -49,7 +51,7 @@ LockTimeTableRouter.get("/viewsem/:code", async (req, res) => {
     } catch (e) { res.status(e?.status || 500).json({ error: e?.message || "Internal Server Error" }); }
 });
 
-LockTimeTableRouter.delete("/deletebycode/:code", protectRoute, async (req, res) => {
+LockTimeTableRouter.delete("/deletebycode/:code", deleteAccess, async (req, res) => {
     try {
         const code = req.params.code;
         await locktimetableController.deleteLockedTableByCode(code);
