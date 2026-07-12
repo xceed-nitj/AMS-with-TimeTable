@@ -80,6 +80,8 @@ export default function Navbar() {
     '/nirf',
     '/ams-manual',
     '/tt-manual',
+    '/certificate-manual',
+    '/conference-manual',
     '/login',
     '/classrooms',
     '/timetable',

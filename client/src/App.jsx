@@ -232,6 +232,8 @@ import NodeConsole from './attendancemodule/NodeConsole';
 import ReactConsole from './attendancemodule/ReactConsole';
 import AMSManual from './attendancemodule/manual';
 import TTManual from './timetableadmin/TTManual';
+import CertManual from './certificatemodule/CertManual';
+import ConfManual from './conferencemodule/ConfManual';
 
 
 // ─── Department Admin Module Imports ────────────────────────────
@@ -664,6 +666,12 @@ function App() {
 
         {/* ─── TT Manual — public, no auth required ──────────────── */}
         <Route path="/tt-manual" element={<TTManual standalone />} />
+
+        {/* ─── Certificate Manual — public, no auth required ─────── */}
+        <Route path="/certificate-manual" element={<CertManual standalone />} />
+
+        {/* ─── Conference Manual — public, no auth required ──────── */}
+        <Route path="/conference-manual" element={<ConfManual standalone />} />
 
         {/* ─── Attendance Module Routes ──────────────────────────── */}
         <Route
