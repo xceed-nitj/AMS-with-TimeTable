@@ -15,6 +15,9 @@ if os.path.exists(_env_file):
                 _k, _, _v = _line.partition('=')
                 os.environ.setdefault(_k.strip(), _v.strip())
 
+import extract_models
+extract_models.extract_models_if_missing()
+
 import pickle
 import logging
 import subprocess
