@@ -5,6 +5,7 @@ const multer = require('multer');
 const fs = require('fs');
 const { findDuplicateSubjects } = require('../timetableModule/helper/findduplicates');
 const { checkRole } = require('../checkRole.middleware');
+const protectRoute = require('../usermanagement/privateroute');
 
 const modelPaths = {
   faculty: "../../models/faculty",
@@ -27,6 +28,24 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
+// Mirrors the role required by each objectType's own single-record CRUD route:
+// faculty.js/subject.js only require a valid login (protectRoute), masterroom.js/
+// mastersem.js require ITTC (ttadminRoute), and certificateModule/participant.js
+// requires CM.
+const bulkUploadRoles = {
+  masterroom: ['admin', 'ITTC'],
+  mastersem: ['admin', 'ITTC'],
+  participant: ['admin', 'CM'],
+};
+
+function bulkUploadAccess(req, res, next) {
+  const roles = bulkUploadRoles[req.params.objectType];
+  if (roles) {
+    return checkRole(roles)(req, res, next);
+  }
+  return protectRoute(req, res, next);
+}
+
 async function findDuplicatesByType(objectType, code) {
   if (objectType === 'subject') {
     return await findDuplicateSubjects(code);
@@ -37,7 +56,7 @@ async function findDuplicatesByType(objectType, code) {
   return [];
 }
 
-router.post('/:objectType', checkRole(['admin']), upload.single('csvFile'), async (req, res) => {
+router.post('/:objectType', bulkUploadAccess, upload.single('csvFile'), async (req, res) => {
   
   const filePath = req.file.path;
   const file = reader.readFile(filePath);
