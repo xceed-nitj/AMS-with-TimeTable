@@ -5,6 +5,7 @@ const AnnouncementController = require("../crud/announcement");
 
 const announcementController = new AnnouncementController();
 const router = express.Router();
+const { checkRole } = require("../../checkRole.middleware");
 
 router.get("/", async (req, res) => {
   try {
@@ -41,7 +42,7 @@ router.get("/conf/:id", async (req, res) => {
   }
 });
 
-router.post("/", async (req, res) => {
+router.post("/", checkRole(['EO']), async (req, res) => {
   try {
     const newAnnouncement = req.body;
     await announcementController.addAnnouncement(newAnnouncement);
@@ -53,7 +54,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-router.put("/:id", async (req, res) => {
+router.put("/:id", checkRole(['EO']), async (req, res) => {
   try {
     const announcementId = req.params.id;
     const updatedAnnouncement = req.body;
@@ -70,7 +71,7 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", checkRole(['EO']), async (req, res) => {
   try {
     const announcementId = req.params.id;
     await announcementController.deleteAnnouncement(announcementId);
