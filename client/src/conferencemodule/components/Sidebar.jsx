@@ -157,14 +157,23 @@ const Sidebar = () => {
     </div>
   )}
 
-  {/* Make Payment Button */}
-  <button
-    type="button"
-    className="tw-bg-blue-600 hover:tw-bg-blue-700 tw-text-white tw-px-4 tw-py-1.5 tw-rounded-md tw-font-semibold tw-shadow-sm tw-transition-all tw-duration-300"
-    onClick={() => navigate("/payment-portal")}
-  >
-    Make Payment
-  </button>
+  {/* Make Payment / Help Buttons */}
+  <div className="tw-flex tw-gap-2">
+    <button
+      type="button"
+      className="tw-bg-blue-600 hover:tw-bg-blue-700 tw-text-white tw-px-4 tw-py-1.5 tw-rounded-md tw-font-semibold tw-shadow-sm tw-transition-all tw-duration-300"
+      onClick={() => navigate("/payment-portal")}
+    >
+      Make Payment
+    </button>
+    <button
+      type="button"
+      className="tw-bg-gray-100 hover:tw-bg-gray-200 tw-text-gray-800 tw-px-4 tw-py-1.5 tw-rounded-md tw-font-semibold tw-shadow-sm tw-transition-all tw-duration-300 tw-border tw-border-gray-300"
+      onClick={() => window.open('/conference-manual', '_blank', 'noopener,noreferrer')}
+    >
+      Help &amp; Manual
+    </button>
+  </div>
 
 </div>
 
