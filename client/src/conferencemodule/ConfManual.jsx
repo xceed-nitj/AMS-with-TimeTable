@@ -182,6 +182,12 @@ function TabOverview({ setTab }) {
                 See the <strong>Tips &amp; Gotchas</strong> tab for the direct URLs to sections that aren't
                 shown as clickable tabs in the admin sidebar.
             </Note>
+            <Note type="key">
+                The <strong>Home</strong> tab's About text and the <strong>Navbar</strong> tab's data are
+                editable from the admin panel, but the Home page's actual layout and the live navigation
+                menu's link structure are <strong>not fully self-service</strong> — contact a developer for
+                those structural changes. See <strong>Content Sections</strong> for the full explanation.
+            </Note>
         </div>
     );
 }
@@ -234,9 +240,16 @@ function TabSetup() {
                 triggers <em>"You cannot Add multiple values of this for one conference"</em> — edit the
                 existing one instead.
             </Note>
+            <Note type="key">
+                The <strong>About</strong> section you write here is what renders on the conference's public
+                <strong> Home / landing page</strong> — it is not a separate page. If you need additional
+                standalone pages (Call for Papers, Travel Info, etc.), build those under
+                <strong> Common Template</strong> instead (see Content Sections).
+            </Note>
             <Note type="tip">
-                Running a recurring/annual conference? Use <strong>Import from Conference</strong> to copy
-                Home fields (dates, links, etc.) from a previous conference as a starting point.
+                Running a recurring/annual conference? Use <strong>Import from Conference</strong> to
+                pre-fill the Home form from a previous conference. See <strong>Content Sections</strong> →
+                "Importing Content from Another Conference" for exactly what does and doesn't get copied.
             </Note>
 
             <SectionTitle>Step 4 — Navbar</SectionTitle>
@@ -248,6 +261,52 @@ function TabSetup() {
                 Like Home, the Navbar is a <strong>singleton</strong> — only one record is allowed per
                 conference; a second Add attempt is blocked.
             </Note>
+            <Note type="key">
+                This form only stores the underlying Heading/Sub Heading/Name/Url values — it does
+                <strong> not</strong> let you add or rearrange multiple menu links yourself. To change what
+                appears in the live navigation menu, or to wire a new Common Template page into it, contact
+                a developer.
+            </Note>
+        </div>
+    );
+}
+
+function RefTag({ children, color }) {
+    return (
+        <span style={{
+            fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 99,
+            background: `${color}15`, color, border: `1px solid ${color}40`,
+        }}>{children}</span>
+    );
+}
+
+function RefLabel({ children }) {
+    return (
+        <div style={{
+            fontSize: 10, fontWeight: 800, textTransform: 'uppercase',
+            letterSpacing: '0.06em', color: T.textMuted, marginBottom: 3, marginTop: 10,
+        }}>{children}</div>
+    );
+}
+
+function TabRefCard({ title, route, tags = [], fields, children }) {
+    return (
+        <div style={{
+            background: '#fff', border: '1px solid #e4e8f5', borderRadius: 10,
+            padding: '14px 18px', marginBottom: 12,
+        }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <div style={{ fontWeight: 800, fontSize: 14, color: T.text }}>{title}</div>
+                {route && <code style={{ fontSize: 11 }}>{route}</code>}
+                {tags.map(t => <RefTag key={t.label} color={t.color}>{t.label}</RefTag>)}
+            </div>
+            {children}
+            {fields && (
+                <>
+                    <RefLabel>Fields</RefLabel>
+                    <div style={{ fontSize: 12, color: T.accent, fontFamily: 'monospace', lineHeight: 1.7 }}>{fields}</div>
+                </>
+            )}
         </div>
     );
 }
@@ -256,99 +315,239 @@ function TabContent() {
     return (
         <div>
             <Note type="warning">
-                The admin sidebar only shows clickable tabs for <strong>8</strong> of the 16 content
-                sections — <strong>Committees, Sponsors, Awards, Contacts, Locations, Participants,
-                Sponsorship Rates, Accommodation, Events, and Souvenir</strong> have no sidebar button and
-                must be opened by typing the URL directly:
-                <code> /cf/&lt;confid&gt;/&lt;section&gt;</code> (e.g. <code>/cf/&lt;confid&gt;/committee</code>,
-                <code> /cf/&lt;confid&gt;/sponsors</code>, <code>/cf/&lt;confid&gt;/awards</code>).
+                The admin sidebar only shows clickable tabs for <strong>8</strong> items — Home, Images,
+                Event Dates, Speakers, Navbar, File Upload, Common Template, and Announcements (File Upload
+                is a general utility, not a content section). The other <strong>10 sections</strong> —
+                Committees, Sponsors, Sponsorship Rates, Awards, Contacts, Locations, Participants,
+                Accommodation, Events, and Souvenir — have no sidebar button and must be opened by typing
+                the URL directly: <code>/cf/&lt;confid&gt;/&lt;section&gt;</code> (e.g.
+                <code> /cf/&lt;confid&gt;/committee</code>). Full list of these URLs is in
+                <strong> Tips &amp; Gotchas</strong>.
+            </Note>
+            <Note type="info">
+                Unless noted otherwise, every section below follows the same pattern: fill in the form and
+                click <strong>Add</strong> (or <strong>Save</strong>) to create a new entry; click
+                <strong> Edit</strong> on an existing row to load it back into the form, change it, and
+                click <strong>Update</strong>; click <strong>Delete</strong> to remove it. Home, Navbar,
+                Images, Announcements, and Common Template work differently — see their cards below.
             </Note>
 
-            <SectionTitle>Schedule & People</SectionTitle>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
-                {[
-                    { title: 'Event Dates', fields: 'Title, Date, Sequence, Is Date Extended (+ New Date), Completed, Featured', desc: 'Deadlines such as abstract submission, notification, and camera-ready — supports showing an extended/updated date.' },
-                    { title: 'Committees', fields: 'Type of Committee, Description (rich text), Sequence, Feature', desc: 'e.g. "Organizing Committee", "Technical Committee" — the description typically lists members.' },
-                    { title: 'Speakers', fields: 'Name, Designation, Institute, Image Link, Sequence, Profile Link, Talk Type, Talk Title, Bio, Abstract, Feature', desc: 'Keynote and invited speakers, with talk details and biography.' },
-                    { title: 'Contacts', fields: 'Title, Name, Designation, Institute, Profile Link, Image Link, Phone, E-mail, Fax, Sequence, Feature', desc: 'The "Contact Us" section — organizing committee contact points.' },
-                ].map(c => (
-                    <div key={c.title} style={{ background: '#fff', border: '1px solid #e4e8f5', borderRadius: 10, padding: '14px 16px' }}>
-                        <div style={{ fontWeight: 700, fontSize: 13, color: T.text, marginBottom: 5 }}>{c.title}</div>
-                        <div style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.6, marginBottom: 6 }}>{c.desc}</div>
-                        <div style={{ fontSize: 11.5, color: T.accent, fontFamily: 'monospace', lineHeight: 1.6 }}>{c.fields}</div>
-                    </div>
-                ))}
-            </div>
+            <SectionTitle>Home & Navbar — Core Site Settings</SectionTitle>
+            <TabRefCard title="Home (About Conference)" route="home tab · default landing tab" tags={[{ label: 'singleton', color: '#92400e' }]}>
+                <RefLabel>What it is</RefLabel>
+                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>
+                    The conference's core profile (dates, social links, logo, registration/abstract/flyer
+                    links) plus the <strong>About</strong> rich-text sections. This is the data that
+                    populates the conference's public <strong>Home / landing page</strong> — there is no
+                    separate "About page", the About sections render directly on Home.
+                </div>
+                <RefLabel>How to update</RefLabel>
+                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>
+                    Edit the fields and click <strong>Update Conference Info</strong>. For About sections,
+                    edit one inline and click <strong>Update About Section</strong>, or use
+                    <strong> Add New About</strong> / <strong>Delete This About</strong> to manage sections.
+                    See Getting Started, Step 3 for the full field list.
+                </div>
+                <RefLabel>Note</RefLabel>
+                <div style={{ fontSize: 13, color: '#92400e', lineHeight: 1.7 }}>
+                    The admin form only edits the <em>content</em> shown on Home — changing the page's
+                    actual layout/structure requires a developer.
+                </div>
+            </TabRefCard>
+            <TabRefCard title="Navbar" route="navbar tab" tags={[{ label: 'singleton', color: '#92400e' }, { label: 'dev required for menu changes', color: '#dc2626' }]}>
+                <RefLabel>What it is</RefLabel>
+                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>
+                    Stores one record of <strong>Heading</strong>, <strong>Sub Heading</strong>,
+                    <strong> Name</strong>, and <strong>Url</strong> — the underlying data referenced by the
+                    site's navigation bar.
+                </div>
+                <RefLabel>How to update</RefLabel>
+                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>
+                    Edit the four fields and click <strong>Update</strong>. Because only one record is
+                    allowed, this form cannot represent a full multi-link menu on its own.
+                </div>
+                <RefLabel>Note</RefLabel>
+                <div style={{ fontSize: 13, color: '#92400e', lineHeight: 1.7 }}>
+                    To add, remove, or reorder links in the <strong>live navigation menu</strong> —
+                    including wiring up a new Common Template page — <strong>contact a developer</strong>.
+                    This is not something you can do end-to-end from this tab alone.
+                </div>
+            </TabRefCard>
+
+            <SectionTitle>Schedule Items — Event Dates vs. Events</SectionTitle>
+            <Note type="key">
+                These are two different sections — use <strong>Event Dates</strong> for anything with a
+                date attached (deadlines, milestones). Use <strong>Events</strong> only for a general
+                named item/session that has no date field of its own.
+            </Note>
+            <TabRefCard title="Event Dates" route="eventdates tab" fields="Title, Date, Sequence, Is Date Extended (+ New Date), Completed, Featured">
+                <RefLabel>What it is</RefLabel>
+                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>
+                    The single place for every date-driven milestone — abstract submission, notification,
+                    camera-ready, registration close, the conference dates themselves, etc.
+                </div>
+                <RefLabel>How to update</RefLabel>
+                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>
+                    Add a new entry with Title/Date/Sequence. If a deadline changes, toggle
+                    <strong> Is Date Extended</strong> to Yes and fill in <strong>New Date</strong> instead
+                    of editing the original date — this lets the public site show the change as an
+                    extension. Mark <strong>Completed</strong> once it has passed, and use
+                    <strong> Featured</strong> to highlight it. Edit/Delete from the list as usual.
+                </div>
+            </TabRefCard>
+            <TabRefCard title="Events" route="events tab (hidden — type URL)" fields="Title of the Event, Description (rich text), Sequence, Feature">
+                <RefLabel>What it is</RefLabel>
+                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>
+                    A generic, undated list of named items — e.g. workshops, side sessions, or tracks that
+                    don't need their own deadline/date tracking. It has no date field at all, unlike Event Dates.
+                </div>
+                <RefLabel>How to update</RefLabel>
+                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>
+                    Fill in Title, Description, and Sequence, click <strong>Add</strong>. Edit/Delete from
+                    the table below the form.
+                </div>
+            </TabRefCard>
+
+            <SectionTitle>People</SectionTitle>
+            <TabRefCard title="Speakers" route="speakers tab" fields="Name, Designation, Institute, Image Link, Sequence, Profile Link, Talk Type, Talk Title, Bio, Abstract, Feature">
+                <RefLabel>What it is</RefLabel>
+                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>Keynote and invited speaker profiles, with their talk details and biography.</div>
+                <RefLabel>How to update</RefLabel>
+                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>Standard Add/Edit/Delete form — fill the fields, click Add; click Edit on a row to modify it.</div>
+            </TabRefCard>
+            <TabRefCard title="Committees" route="committee (hidden — type URL)" fields="Type of Committee, Description (rich text), Sequence, Feature">
+                <RefLabel>What it is</RefLabel>
+                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>Committee listings, e.g. "Organizing Committee" or "Technical Committee" — the rich-text Description typically lists the members.</div>
+                <RefLabel>How to update</RefLabel>
+                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>Add a committee type with its member list in Description; Edit/Delete existing ones from the list.</div>
+            </TabRefCard>
+            <TabRefCard title="Contacts" route="contact (hidden — type URL)" fields="Title, Name, Designation, Institute, Profile Link, Image Link, Phone, E-mail, Fax, Sequence, Feature">
+                <RefLabel>What it is</RefLabel>
+                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>The "Contact Us" entries — organizing committee contact points shown to the public.</div>
+                <RefLabel>How to update</RefLabel>
+                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>Standard Add/Edit/Delete form.</div>
+            </TabRefCard>
+            <TabRefCard title="Participants" route="participants (hidden — type URL)" fields="Author Name, Designation of Author, Institute of Author, Title of Paper, Paper Id">
+                <RefLabel>What it is</RefLabel>
+                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>The roster of accepted papers/authors, maintained by the organizer after paper acceptance — not a self-service registration form. See Participants &amp; Payment for more.</div>
+                <RefLabel>How to update</RefLabel>
+                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>Standard Add/Edit/Delete form, one record per author.</div>
+            </TabRefCard>
 
             <SectionTitle>Venue & Logistics</SectionTitle>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
-                {[
-                    { title: 'Location', fields: 'Description (rich text), Address, Latitude, Longitude, Sequence, Feature', desc: 'Venue details — this is a singleton, only one Location record per conference.', warn: true },
-                    { title: 'Accommodation', fields: 'Title, Description (rich text), Sequence, Feature', desc: 'Nearby hotels or on-campus stay options — repeatable entries.' },
-                ].map(c => (
-                    <div key={c.title} style={{ background: '#fff', border: '1px solid #e4e8f5', borderRadius: 10, padding: '14px 16px' }}>
-                        <div style={{ fontWeight: 700, fontSize: 13, color: T.text, marginBottom: 5 }}>
-                            {c.title} {c.warn && <span style={{ fontSize: 10, color: '#92400e', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 6, padding: '1px 6px', marginLeft: 6 }}>singleton</span>}
-                        </div>
-                        <div style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.6, marginBottom: 6 }}>{c.desc}</div>
-                        <div style={{ fontSize: 11.5, color: T.accent, fontFamily: 'monospace', lineHeight: 1.6 }}>{c.fields}</div>
-                    </div>
-                ))}
-            </div>
+            <TabRefCard title="Location" route="locations (hidden — type URL)" tags={[{ label: 'singleton', color: '#92400e' }]} fields="Description (rich text), Address, Latitude, Longitude, Sequence, Feature">
+                <RefLabel>What it is</RefLabel>
+                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>Venue details — address and map coordinates.</div>
+                <RefLabel>How to update</RefLabel>
+                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>Only one record is allowed per conference — fill it in once and use Update for any changes thereafter.</div>
+            </TabRefCard>
+            <TabRefCard title="Accommodation" route="accommodation (hidden — type URL)" fields="Title, Description (rich text), Sequence, Feature">
+                <RefLabel>What it is</RefLabel>
+                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>Nearby hotel or on-campus stay options — repeatable, one entry per option.</div>
+                <RefLabel>How to update</RefLabel>
+                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>Standard Add/Edit/Delete form.</div>
+            </TabRefCard>
+            <TabRefCard title="Souvenir" route="souvenir (hidden — type URL)" fields="Location, Price, Description, Sequence, Feature">
+                <RefLabel>What it is</RefLabel>
+                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>Conference souvenir/memento details — pickup point and price.</div>
+                <RefLabel>How to update</RefLabel>
+                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>Fill the form and submit. Unlike Home/Navbar/Location, this form does not block a second submission — avoid clicking Add more than once unless you intend to create a duplicate entry.</div>
+            </TabRefCard>
 
             <SectionTitle>Sponsorship</SectionTitle>
             <Note type="info">
                 <strong>Sponsorship Rates</strong> and <strong>Sponsors</strong> are two distinct sections —
                 don't confuse them.
             </Note>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
-                {[
-                    { title: 'Sponsorship Rates', fields: 'Category, Price, Description, Sequence, Featured', desc: 'The rate card / pricing tiers offered to prospective sponsors (e.g. "Platinum Sponsor – $5000").' },
-                    { title: 'Sponsors', fields: 'Name of the Sponsor, Type, Logo, Sequence, Feature', desc: 'The actual roster/logo wall of sponsors who have signed on.' },
-                ].map(c => (
-                    <div key={c.title} style={{ background: '#fff', border: '1px solid #e4e8f5', borderRadius: 10, padding: '14px 16px' }}>
-                        <div style={{ fontWeight: 700, fontSize: 13, color: T.text, marginBottom: 5 }}>{c.title}</div>
-                        <div style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.6, marginBottom: 6 }}>{c.desc}</div>
-                        <div style={{ fontSize: 11.5, color: T.accent, fontFamily: 'monospace', lineHeight: 1.6 }}>{c.fields}</div>
-                    </div>
-                ))}
-            </div>
+            <TabRefCard title="Sponsorship Rates" route="sponsorship-rates (hidden — type URL)" fields="Category, Price, Description, Sequence, Featured">
+                <RefLabel>What it is</RefLabel>
+                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>The rate card / pricing tiers offered to prospective sponsors (e.g. "Platinum Sponsor – $5000").</div>
+                <RefLabel>How to update</RefLabel>
+                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>Standard Add/Edit/Delete form, one row per tier.</div>
+            </TabRefCard>
+            <TabRefCard title="Sponsors" route="sponsors (hidden — type URL)" fields="Name of the Sponsor, Type, Logo, Sequence, Feature">
+                <RefLabel>What it is</RefLabel>
+                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>The actual roster/logo wall of sponsors who have signed on — separate from the rate card above.</div>
+                <RefLabel>How to update</RefLabel>
+                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>Standard Add/Edit/Delete form, one row per sponsor.</div>
+            </TabRefCard>
 
             <SectionTitle>Media & Announcements</SectionTitle>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
-                {[
-                    { title: 'Awards', fields: 'Title-1, Title-2, Description (rich text), Link, Sequence, Featured, Hidden, New', desc: 'Best paper / best presentation awards, or similar recognitions.' },
-                    { title: 'Images', fields: 'Name, Image Link, Sequence, Featured', desc: 'A photo gallery. Click "Add New Image" — each row is saved and deleted independently, with a live thumbnail preview.' },
-                    { title: 'Souvenir', fields: 'Location, Price, Description, Sequence, Feature', desc: 'Conference souvenir/memento details — pickup point and price.' },
-                    { title: 'Announcements', fields: 'Title, Meta Description, Description (rich text), Link, Sequence, Featured, Hidden, New', desc: 'A two-pane list + editor: pick an announcement on the left to edit it, or click "Add Announcement"/"New Announcement" to start one.' },
-                ].map(c => (
-                    <div key={c.title} style={{ background: '#fff', border: '1px solid #e4e8f5', borderRadius: 10, padding: '14px 16px' }}>
-                        <div style={{ fontWeight: 700, fontSize: 13, color: T.text, marginBottom: 5 }}>{c.title}</div>
-                        <div style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.6, marginBottom: 6 }}>{c.desc}</div>
-                        <div style={{ fontSize: 11.5, color: T.accent, fontFamily: 'monospace', lineHeight: 1.6 }}>{c.fields}</div>
-                    </div>
-                ))}
-            </div>
+            <TabRefCard title="Images" route="images tab" fields="Name, Image Link, Sequence, Featured">
+                <RefLabel>What it is</RefLabel>
+                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>The photo gallery.</div>
+                <RefLabel>How to update</RefLabel>
+                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>Click <strong>Add New Image</strong> (or "Add Your First Image") to add an inline row with a live thumbnail preview — each row has its own <strong>Save</strong>/<strong>Update</strong> and <strong>Delete</strong>, they don't share one form.</div>
+            </TabRefCard>
+            <TabRefCard title="Awards" route="awards (hidden — type URL)" fields="Title-1, Title-2, Description (rich text), Link, Sequence, Featured, Hidden, New">
+                <RefLabel>What it is</RefLabel>
+                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>Best paper / best presentation awards or similar recognitions.</div>
+                <RefLabel>How to update</RefLabel>
+                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>Standard Add/Edit/Delete form; use Hidden to temporarily suppress an entry without deleting it.</div>
+            </TabRefCard>
+            <TabRefCard title="Announcements" route="announcement tab" fields="Title, Meta Description, Description (rich text), Link, Sequence, Featured, Hidden, New">
+                <RefLabel>What it is</RefLabel>
+                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>News/announcement posts (e.g. "Registration Now Open").</div>
+                <RefLabel>How to update</RefLabel>
+                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>Two-pane layout: pick an existing announcement from the left list to edit it, or click <strong>Add Announcement</strong>/<strong>New Announcement</strong> to start one. Use <strong>Show/Hide HTML</strong> with Apply Changes if you need to edit the raw markup. Save with Update, or remove with Delete.</div>
+            </TabRefCard>
 
-            <SectionTitle>Extra Pages (Common Template)</SectionTitle>
-            <div style={{
-                background: '#f8f9ff', border: '1px solid #e4e8f5',
-                borderRadius: 10, padding: '16px 20px', marginBottom: 16,
-            }}>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7, marginBottom: 10 }}>
-                    Use the <strong>Common Template</strong> tab to build arbitrary extra pages that don't
-                    fit the fixed sections above — e.g. "Call for Papers" or "Travel Info".
+            <SectionTitle>Extra Pages — Common Template</SectionTitle>
+            <TabRefCard title="Common Template" route="commontemplate tab" tags={[{ label: 'used for all other navbar pages', color: '#6366f1' }]}>
+                <RefLabel>What it is</RefLabel>
+                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>
+                    The page builder for <strong>every public page other than Home</strong> — Call for
+                    Papers, Travel Info, or any custom page you want linked from the navigation menu.
+                    If you want a new page to be reachable from the navbar, build its content here first,
+                    then have a developer wire the Navbar link to it (see the Navbar card above).
                 </div>
-                <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: '#374151', lineHeight: 1.9 }}>
-                    <li>Click <strong>Add New Page</strong>, enter a <strong>Page Title</strong>, and write
-                    the body in the rich-text editor.</li>
-                    <li>Toggle <strong>Featured</strong>, and use <strong>Show/Hide Preview</strong> or
-                    <strong> Show/Hide HTML</strong> (with Apply Changes / Copy HTML) as needed.</li>
-                    <li>Use <strong>Import data</strong> to copy an existing page from another conference.</li>
-                    <li>Save with <strong>Add Page</strong> / <strong>Update Page</strong>, or remove it with
-                    <strong> Delete Page</strong>.</li>
-                </ul>
-            </div>
+                <RefLabel>How to update</RefLabel>
+                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>
+                    Click <strong>Add New Page</strong>, enter a <strong>Page Title</strong>, and write the
+                    body in the rich-text editor. Toggle <strong>Featured</strong>, and use
+                    <strong> Show/Hide Preview</strong> or <strong>Show/Hide HTML</strong> (with Apply
+                    Changes / Copy HTML) as needed. Save with <strong>Add Page</strong> /
+                    <strong> Update Page</strong>, or remove with <strong>Delete Page</strong>.
+                </div>
+            </TabRefCard>
+
+            <SectionTitle>Importing Content from Another Conference</SectionTitle>
+            <Note type="key">
+                Two sections support copying content from an <strong>existing</strong> conference into the
+                one you're currently editing — useful for recurring/annual conferences so you don't start
+                from a blank form every year. The behavior is different in each place — read carefully.
+            </Note>
+            <TabRefCard title="Import from Conference — on the Home tab" tags={[{ label: 'fills the form only', color: '#f59e0b' }]}>
+                <RefLabel>How it works</RefLabel>
+                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>
+                    Click <strong>Import from Conference</strong>, choose a source conference from the
+                    dropdown. A preview shows its Name, Start Date, End Date, and Short Name. Click
+                    <strong> Apply Import</strong> to copy its Home fields (dates, links, logo, short name,
+                    etc.) into your current form.
+                </div>
+                <RefLabel>Important</RefLabel>
+                <div style={{ fontSize: 13, color: '#92400e', lineHeight: 1.7 }}>
+                    This only <strong>pre-fills the form</strong> — nothing is saved until you review the
+                    imported values and click <strong>Update Conference Info</strong> yourself. It also only
+                    copies the core Home fields, <strong>not</strong> the About rich-text sections — those
+                    must still be written (or re-added) separately.
+                </div>
+            </TabRefCard>
+            <TabRefCard title="Import Data — on the Common Template tab" tags={[{ label: 'saves immediately', color: '#10b981' }]}>
+                <RefLabel>How it works</RefLabel>
+                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>
+                    Click <strong>Import data</strong>, choose a source conference, then browse the list of
+                    <strong> its</strong> pages. Click <strong>Import</strong> next to the specific page you
+                    want — that page's full content is copied and added as a brand-new page in your
+                    conference right away.
+                </div>
+                <RefLabel>Important</RefLabel>
+                <div style={{ fontSize: 13, color: '#92400e', lineHeight: 1.7 }}>
+                    Unlike Home's import, this one <strong>saves immediately</strong> — there's no
+                    review-then-save step. It's per-page: importing a "Travel Info" page doesn't bring in
+                    any of that conference's other pages, so repeat the action for each page you want to reuse.
+                </div>
+            </TabRefCard>
         </div>
     );
 }
