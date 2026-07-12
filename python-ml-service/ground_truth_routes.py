@@ -757,12 +757,32 @@ def _preview_reader(rtsp_url: str, stop_event: threading.Event, first_frame_even
     """Background thread — continuously reads latest frame from RTSP."""
     global _preview_frame, _preview_cap, _preview_last_error
 
+    # Low-latency capture options for the LIVE PREVIEW only. Stays on TCP so the
+    # stream remains lossless (no decode artifacts / no quality loss) — we only
+    # strip FFmpeg's jitter/reorder buffering so preview frames arrive fresh
+    # instead of drifting further behind real time the longer you watch.
+    #
+    # This env var is process-global and the attendance/acquisition path
+    # (rtsp_routes._open_capture) reads it via os.environ.setdefault(), so we
+    # set it ONLY around this capture's open and restore the previous value
+    # immediately after — the attendance workflow's capture options are never
+    # affected by the preview.
+    _prev_opts = os.environ.get("OPENCV_FFMPEG_CAPTURE_OPTIONS")
     os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = (
-        "rtsp_transport;tcp|buffer_size;1048576|max_delay;500000"
+        "rtsp_transport;tcp|max_delay;0|fflags;nobuffer|flags;low_delay|reorder_queue_size;0"
     )
     cap = None
     try:
         cap = cv2.VideoCapture(rtsp_url, cv2.CAP_FFMPEG)
+        # FFmpeg reads OPENCV_FFMPEG_CAPTURE_OPTIONS at open time, so it's safe
+        # to restore the global now that the capture is constructed.
+        if _prev_opts is None:
+            os.environ.pop("OPENCV_FFMPEG_CAPTURE_OPTIONS", None)
+        else:
+            os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = _prev_opts
+        # Keep only the newest decoded frame — drop any backlog so the preview
+        # never lags behind real time.
+        cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
         _preview_cap = cap
 
         if not cap.isOpened():
@@ -882,7 +902,7 @@ def rtsp_preview(quality: int = 92, scale: float = 1.0):
                 + b"\r\n"
             )
 
-            time.sleep(1 / 15)  # 15 fps preview
+            time.sleep(1 / 25)  # 25 fps preview (smoother live view)
 
     return StreamingResponse(
         frame_generator(),

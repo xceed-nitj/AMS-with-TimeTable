@@ -22,8 +22,14 @@ const studentAttendanceSchema = new Schema({
     genderMismatch:  { type: Boolean, default: false },  // true if detectedGender != Student.gender
     // logic merge: if multiple time slots
     finalStatus:     { type: String, enum: ['P', 'A', 'R'], default: 'A' },
-    // ERP override: set to true when ERP system changes a student's finalStatus
+    // ERP override: set to true when the ERP system records an override for
+    // this student. The override itself lives in erpOverriddenStatus below —
+    // finalStatus is NEVER mutated by an ERP override.
     isOverridden:    { type: Boolean, default: false },
+    // ERP's corrected status, kept separate from finalStatus so our own
+    // attendance data is never overwritten. null = no ERP override recorded.
+    erpOverriddenStatus: { type: String, enum: ['P', 'A', 'R', null], default: null },
+    erpOverriddenAt:     { type: Date, default: null },
     // Model's original P/A/R decision at merge time — never modified by
     // updateStudentStatus(). Preserved so accuracy metrics can compare the
     // model's call against any later human correction without ambiguity.
@@ -138,6 +144,28 @@ const attendanceReportSchema = new Schema({
     timeSlot:    { type: String, default: '' },      // "8:30-9:30"
     locksemId:   { type: Schema.Types.ObjectId, ref: 'LockSem', default: null },
 
+    // Structured, deterministic id (batch+room+date+timeSlot, sanitized) —
+    // NOT a random uuid, so it's stable if the report doc is ever resaved.
+    // Set once on first save (see pre-save hook below) and included on every
+    // ERP push payload; ERP echoes it back on override-sync callbacks and
+    // status lookups (XCEED–ERP Attendance Integration spec §4, §17).
+    periodId:        { type: String, default: null },
+    // Moment the recognition result was captured/finalised on our side —
+    // set once on first save, reused verbatim on every retry (spec §11).
+    // Distinct from erpPush.lastAttemptAt / sentAt, which track OUR delivery
+    // attempts, not when recognition itself happened.
+    xceedTimestamp:  { type: Date, default: null },
+    // Set when ERP's faculty-override-sync callback reports the period as
+    // faculty-finalised (spec §13.1) — echoes ERP's facultyLockedAt as-is.
+    facultyLockedAt: { type: Date, default: null },
+    // One-way lock state per spec §7: whichever side reaches finality first
+    // closes the other side's write path for that period.
+    //   none              — no push acked yet, no faculty lock yet
+    //   posted_acked      — ERP accepted our post (2xx); further posts blocked
+    //   faculty_finalized — ERP reported (via 409 or override-sync) that
+    //                       faculty already finalised this period
+    erpLockState: { type: String, enum: ['none', 'posted_acked', 'faculty_finalized'], default: 'none' },
+
      // Subject metadata for ERP push — resolved from Subject model at save-time
     // (free-text `subject` above is timetable text; ERP needs the real code/abbrev)
     subjectMeta: {
@@ -182,9 +210,8 @@ const attendanceReportSchema = new Schema({
 
     // Outbound push of finalReport (roll no + finalStatus) to the external
     // ERP's attendance-posting endpoint — see erpAttendancePushController.js.
-    // Re-pushed (new attempt, same idempotencyKey unless finalReport content
-    // changed) every time finalReport is recomputed, so a later manual
-    // override also propagates as a correction.
+    // Per spec §7, a period gets at most one accepted/finalised outcome:
+    // once erpLockState leaves 'none', no further pushes are attempted.
     erpPush: {
         status:        { type: String, enum: ['pending', 'sent', 'failed'], default: 'pending' },
         attempts:      { type: Number, default: 0 },
@@ -192,8 +219,36 @@ const attendanceReportSchema = new Schema({
         sentAt:        { type: Date, default: null },   // set once ERP acks success
         lastError:     { type: String, default: null },
         lastResponse:  { type: Schema.Types.Mixed, default: null },
+        // HTTP status code of the most recent push attempt (e.g. 200, 500);
+        // null when the request never reached ERP (timeout / network error).
+        // Surfaced in the ERP sync table on the frontend.
+        lastResponseCode: { type: Number, default: null },
+        // Business-level response code from the spec's envelope (e.g.
+        // "ATTENDANCE_ACCEPTED", "PERIOD_ALREADY_FINALIZED") — distinct from
+        // lastResponseCode, which is just the raw HTTP status.
+        responseCode:  { type: String, default: null },
+        // Roll numbers ERP discarded (not in its roster) or otherwise
+        // flagged on an ATTENDANCE_ACCEPTED_WITH_FLAGS response (spec §6,
+        // §12.1) — stored as-is for review; no XCEED-side workflow built on
+        // top of these yet.
+        flags:         { type: [Schema.Types.Mixed], default: [] },
         idempotencyKey:{ type: String, default: null }, // hash of reportId + finalReport content
     },
+});
+
+// periodId / xceedTimestamp are set once, on first save, and never
+// regenerated — both must stay stable across retries (spec §4, §11).
+attendanceReportSchema.pre('save', function setErpIdentity(next) {
+    if (!this.periodId) {
+        const clean = (v) => String(v || '').trim().toUpperCase().replace(/[^A-Z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+        this.periodId = [clean(this.batch), clean(this.room), clean(this.date), clean(this.timeSlot)]
+            .filter(Boolean)
+            .join('-');
+    }
+    if (!this.xceedTimestamp) {
+        this.xceedTimestamp = new Date();
+    }
+    next();
 });
 
 attendanceReportSchema.add(commonFields);
@@ -202,6 +257,8 @@ attendanceReportSchema.pre('save', updateTimestamps);
 // Unique index: exactly ONE report per batch + date + timeSlot
 attendanceReportSchema.index({ batch: 1, date: 1, timeSlot: 1 }, { unique: true });
 attendanceReportSchema.index({ faculty: 1, date: -1 });
+// ERP override-sync callbacks and status lookups address a report by periodId
+attendanceReportSchema.index({ periodId: 1 }, { sparse: true });
 
 const AttendanceReport = mongoose.model('AttendanceReport', attendanceReportSchema);
 module.exports = AttendanceReport;

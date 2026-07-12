@@ -143,7 +143,15 @@ app.use((req, res, next) => {
 });
 
 // app.use(express.json());
-app.use(express.json({ limit: '50mb' }));
+// `verify` stashes the exact raw bytes on req.rawBody before JSON parsing —
+// needed by inbound webhook-style endpoints (e.g. the ERP faculty-override
+// sync callback) that must HMAC-verify the body exactly as sent, since a
+// re-serialised JSON.stringify(req.body) can differ in key order/whitespace
+// and would produce a false signature mismatch.
+app.use(express.json({
+  limit: '50mb',
+  verify: (req, res, buf) => { req.rawBody = buf; },
+}));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -226,13 +234,17 @@ mongoose
       const { startErpAutoSyncScheduler } = require('./modules/attendanceModule/controllers/erpAutoSyncScheduler');
       startErpAutoSyncScheduler();
 
-      // ── ERP Attendance Push Retry Scheduler ───────────────────
-      // Sweeps every 5 min for reports whose push to ERP's attendance-posting
-      // endpoint is pending/failed and due for a backoff retry (no-op until
-      // ERP_ATTENDANCE_PUSH_URL/ERP_PUSH_SECRET are configured; toggle on/off
-      // from the ERP Push settings tab — see ErpPushSettings).
-      const { startErpPushRetryScheduler } = require('./modules/attendanceModule/controllers/erpAttendancePushController');
+      // ── ERP Attendance Push Retry Schedulers ───────────────────
+      // Fast sweep: ticks every minute for reports whose push to ERP's
+      // attendance-posting endpoint is pending/failed and due (attempt cap +
+      // retry interval are both admin-editable — see the ERP Controls page's
+      // Retry Policy card / ErpPushSettings). Nightly: a second, independent
+      // evening pass that retries every still-failed period bypassing the
+      // attempt cap — toggled separately via ErpPushSettings.nightlyRetryEnabled.
+      // Both no-op until ERP_ATTENDANCE_PUSH_URL/ERP_PUSH_SECRET are configured.
+      const { startErpPushRetryScheduler, startErpNightlyRetryScheduler } = require('./modules/attendanceModule/controllers/erpAttendancePushController');
       startErpPushRetryScheduler();
+      startErpNightlyRetryScheduler();
 
     });
     server.setTimeout(600000); // 10 min — prevents Node killing long SSE connections
