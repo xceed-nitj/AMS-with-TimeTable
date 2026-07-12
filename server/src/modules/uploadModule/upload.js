@@ -4,6 +4,7 @@ const reader = require('xlsx');
 const multer = require('multer');
 const fs = require('fs');
 const { findDuplicateSubjects } = require('../timetableModule/helper/findduplicates');
+const { checkRole } = require('../checkRole.middleware');
 
 const modelPaths = {
   faculty: "../../models/faculty",
@@ -36,7 +37,7 @@ async function findDuplicatesByType(objectType, code) {
   return [];
 }
 
-router.post('/:objectType', upload.single('csvFile'), async (req, res) => {
+router.post('/:objectType', checkRole(['admin']), upload.single('csvFile'), async (req, res) => {
   
   const filePath = req.file.path;
   const file = reader.readFile(filePath);

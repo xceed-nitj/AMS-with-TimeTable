@@ -6,7 +6,7 @@ const contactUsController = new ContactUsController();
 const { checkRole } = require("../../checkRole.middleware");
 
 // GET /contact-us/conference/:id
-contactUsRouter.get("/conference/:id", async (req, res) => {
+contactUsRouter.get("/conference/:id", checkRole(['EO']), async (req, res) => {
   try {
     await contactUsController.getContactUsByConferenceId(req, res);
   } catch (error) {
@@ -16,7 +16,7 @@ contactUsRouter.get("/conference/:id", async (req, res) => {
 });
 
 // GET /contact-us
-contactUsRouter.get("/", async (req, res) => {
+contactUsRouter.get("/", checkRole(['EO']), async (req, res) => {
   try {
     await contactUsController.getAllContactUs(req, res);
   } catch (error) {
@@ -26,7 +26,7 @@ contactUsRouter.get("/", async (req, res) => {
 });
 
 // GET /contact-us/:id
-contactUsRouter.get("/:id", async (req, res) => {
+contactUsRouter.get("/:id", checkRole(['EO']), async (req, res) => {
   try {
     await contactUsController.getContactUsById(req, res);
   } catch (error) {
@@ -46,7 +46,7 @@ contactUsRouter.post("/", async (req, res) => {
 });
 
 // PUT /contact-us/:id
-contactUsRouter.put("/:id", async (req, res) => {
+contactUsRouter.put("/:id", checkRole(['EO']), async (req, res) => {
   try {
     await contactUsController.updateContactUs(req, res);
   } catch (error) {
@@ -56,7 +56,7 @@ contactUsRouter.put("/:id", async (req, res) => {
 });
 
 // DELETE /contact-us/:id
-contactUsRouter.delete("/:id", async (req, res) => {
+contactUsRouter.delete("/:id", checkRole(['EO']), async (req, res) => {
   try {
     await contactUsController.deleteContactUs(req, res);
   } catch (error) {
