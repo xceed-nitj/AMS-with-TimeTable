@@ -67,6 +67,11 @@ router.use(
 // /reports: attendanceReportRoutes.js applies route-specific guards because
 // browser reads are role-based while attendance writes are service-key based.
 router.use('/reports',      require("./attendanceReportRoutes"));
+
+// INTENTIONALLY LEFT OFF the cookie-based role check: these are called by
+// ERP itself, not a logged-in browser session. Protected instead by HMAC
+// signature + optional IP allowlist + rate limiting — see erpInboundRoutes.js.
+router.use('/erp',          require("./erpInboundRoutes"));
 router.use('/firstyearsubjectmapping', require("./firstYearSubjectMappingRoutes"));
 router.use(
     '/cameras',

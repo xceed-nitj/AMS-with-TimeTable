@@ -4,7 +4,6 @@ const AttendanceReport = require("../../../models/attendanceReport");
 const LockSem = require("../../../models/locksem");
 const Student = require("../../../models/student");
 const Subject = require("../../../models/subject");
-const { pushAttendanceToErp } = require("./erpAttendancePushController");
 
 function mergeStudentStatus(slotResults) {
   const rollMap = {};
@@ -103,6 +102,43 @@ function buildSummary(finalReport) {
     attendancePct: total > 0 ? Math.round((present / total) * 100) : 0,
   };
 }
+
+// Shared body of the two ERP-override endpoints (by report id / by periodId).
+// Writes the override into the separate erpOverriddenStatus/erpOverriddenAt
+// fields — finalStatus and summary stay exactly as the model computed them.
+async function applyErpOverride(report, req, res) {
+  const { rollNo } = req.params;
+  const { finalStatus, isOverridden, remark } = req.body;
+
+  if (!["P", "A", "R"].includes(finalStatus)) {
+    return res.status(400).json({ error: "finalStatus must be P, A, or R" });
+  }
+
+  const student = report.finalReport.find((s) => s.rollNo === rollNo);
+  if (!student)
+    return res.status(404).json({ error: "Student not found in report" });
+
+  student.erpOverriddenStatus = finalStatus;
+  student.erpOverriddenAt = new Date();
+  if (isOverridden !== undefined) {
+    student.isOverridden = Boolean(isOverridden);
+  } else {
+    student.isOverridden = true;
+  }
+  // The faculty's reason for the override is entered on the ERP side and
+  // forwarded here as part of the same call — just store it if present.
+  if (remark !== undefined) student.facultyRemark = String(remark).trim();
+  await report.save();
+
+  res.json({
+    message: `Recorded ERP override ${rollNo} → ${finalStatus} (attendance data unchanged)`,
+    rollNo,
+    finalStatus: student.finalStatus,
+    erpOverriddenStatus: student.erpOverriddenStatus,
+    summary: report.summary,
+  });
+}
+
 // Helper function: while saving attendance detects proxies
 async function detectAndUpdateProxies(date, timeSlot) {
   // Get every report running during this slot
@@ -482,47 +518,35 @@ class AttendanceReportController {
     }
   }
 
-  // Update final status of a student (called by a trusted service only)
+  // Record an ERP override for a student (called by a trusted service only).
+  // The override is stored in SEPARATE fields (erpOverriddenStatus /
+  // erpOverriddenAt) — our own attendance data (finalStatus, summary) is
+  // never modified, so the model's decision and the ERP correction coexist.
   // PATCH /attendancemodule/reports/:id/student/:rollNo
-  // Body: { finalStatus: 'P' | 'A' | 'R', isOverridden?: boolean }
+  // Body: { finalStatus: 'P' | 'A' | 'R', isOverridden?: boolean, remark? }
   async updateStudentStatus(req, res) {
     try {
-      const { id, rollNo } = req.params;
-      const { finalStatus, isOverridden, remark } = req.body;
-
-      if (!["P", "A", "R"].includes(finalStatus)) {
-        return res
-          .status(400)
-          .json({ error: "finalStatus must be P, A, or R" });
-      }
-
-      const report = await AttendanceReport.findById(id);
+      const report = await AttendanceReport.findById(req.params.id);
       if (!report) return res.status(404).json({ error: "Report not found" });
+      return applyErpOverride(report, req, res);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  }
 
-      const student = report.finalReport.find((s) => s.rollNo === rollNo);
-      if (!student)
-        return res.status(404).json({ error: "Student not found in report" });
-
-      student.finalStatus = finalStatus;
-      if (isOverridden !== undefined) {
-        student.isOverridden = Boolean(isOverridden);
-      } else {
-        student.isOverridden = true;
-      }
-      // The faculty's reason for the override is entered on the ERP side and
-      // forwarded here as part of the same call — just store it if present.
-      if (remark !== undefined) student.facultyRemark = String(remark).trim();
-      report.summary = buildSummary(report.finalReport);
-      await report.save();
-
-      // Correction — finalReport content changed, so this gets a new
-      // idempotency key and re-pushes to ERP automatically.
-      await pushAttendanceToErp(report);
-
-      res.json({
-        message: `Updated ${rollNo} → ${finalStatus}`,
-        summary: report.summary,
+  // Same as updateStudentStatus, but the report is addressed by the
+  // structured periodId (batch+room+date+timeSlot, minted once on first
+  // save — see models/attendanceReport.js) that's sent to ERP in every push
+  // payload — ERP calls back with that id instead of our internal Mongo _id.
+  // PATCH /attendancemodule/reports/period/:periodId/student/:rollNo
+  async updateStudentStatusByPeriod(req, res) {
+    try {
+      const report = await AttendanceReport.findOne({
+        periodId: req.params.periodId,
       });
+      if (!report)
+        return res.status(404).json({ error: "No report found for this periodId" });
+      return applyErpOverride(report, req, res);
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
@@ -626,8 +650,10 @@ class AttendanceReportController {
           .filter((s) => s.isOverridden)
           .map((s) => ({
             rollNo: s.rollNo,
-            from: s.autoFinalStatus,
-            to: s.finalStatus,
+            from: s.autoFinalStatus || s.finalStatus,
+            // ERP's correction lives in its own field; legacy rows (written
+            // before the split) had finalStatus itself mutated, so fall back.
+            to: s.erpOverriddenStatus || s.finalStatus,
             facultyRemark: s.facultyRemark || "",
             coordinatorRemark: s.coordinatorRemark || "",
             coordinatorVerified: Boolean(s.coordinatorVerified),

@@ -68,10 +68,21 @@ router.post("/:id/finalize", ...attendanceRoleAccess, async (req, res) => {
 });
 
 // External attendance status writes must carry the service key; JWT cookies
-// alone are deliberately ignored for this endpoint.
+// alone are deliberately ignored for this endpoint. The override is stored in
+// separate erpOverriddenStatus fields — finalStatus is never touched.
 router.patch("/:id/student/:rollNo", requireAttendanceWriteAccess, async (req, res) => {
   try {
     await ctrl.updateStudentStatus(req, res);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Same write, but addressed by the unique periodId sent to ERP in the push
+// payload — ERP uses this to record an override without knowing our _id.
+router.patch("/period/:periodId/student/:rollNo", requireAttendanceWriteAccess, async (req, res) => {
+  try {
+    await ctrl.updateStudentStatusByPeriod(req, res);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
