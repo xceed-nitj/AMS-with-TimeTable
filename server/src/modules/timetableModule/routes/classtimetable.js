@@ -2,6 +2,8 @@ const express = require("express");
 const ClassTimeTableRouter = express.Router();
 const ClassTimeTableController = require("../controllers/classtimetable");
 const classtimetableController = new ClassTimeTableController();
+const { checkRole } = require("../../checkRole.middleware");
+const deleteAccess = checkRole(['ITTC', 'DTTI']);
 
 
 ClassTimeTableRouter.post("/savett", async (req, res) => {
@@ -64,7 +66,7 @@ ClassTimeTableRouter.post("/savett", async (req, res) => {
     }
   });
 
-  ClassTimeTableRouter.delete("/deletebycode/:code", async (req, res) => {
+  ClassTimeTableRouter.delete("/deletebycode/:code", deleteAccess, async (req, res) => {
     try {
       const code = req.params.code;
       await classtimetableController.deleteClassTableByCode(code);
@@ -98,7 +100,7 @@ ClassTimeTableRouter.post("/savett", async (req, res) => {
     }
   });
 
-  ClassTimeTableRouter.delete("/deletelunchslot/:id", async (req, res) => {
+  ClassTimeTableRouter.delete("/deletelunchslot/:id", deleteAccess, async (req, res) => {
     try { 
       const record = await classtimetableController.deletelunchslot(req, res);
       res.status(200).json({message:"record deleted successfully"});

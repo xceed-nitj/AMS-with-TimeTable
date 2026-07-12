@@ -3,6 +3,8 @@ const router = express.Router();
 const LogsController = require("../controllers/logs");
 const logsController = new LogsController();
 const protectRoute = require("../../usermanagement/privateroute");
+const { checkRole } = require("../../checkRole.middleware");
+const deleteAccess = checkRole(['ITTC', 'DTTI']);
 
 router.get("/get", protectRoute, async (req, res) => {
   try {
@@ -24,7 +26,7 @@ router.get("/total", protectRoute, async (req, res) => {
   }
 });
 
-router.delete('/session/:session', protectRoute, async (req, res) => {
+router.delete('/session/:session', deleteAccess, async (req, res) => {
   try {
     await logsController.deleteBySession(req, res);
   } catch (e) {

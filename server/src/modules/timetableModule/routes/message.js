@@ -3,6 +3,8 @@ const messageRouter = express.Router();
 const MessageController = require("../controllers/message");
 const messageController = new MessageController();
 const protectRoute =require("../../usermanagement/privateroute")
+const { checkRole } = require("../../checkRole.middleware");
+const deleteAccess = checkRole(['ITTC', 'DTTI']);
 
 messageRouter.post("/create",protectRoute,
     async (req, res) => {
@@ -38,7 +40,7 @@ messageRouter.put("/readMessage/:messageId",protectRoute,
         }
       }
 );
-messageRouter.delete("/delete/:messageId",protectRoute,async (req, res) => {
+messageRouter.delete("/delete/:messageId",deleteAccess,async (req, res) => {
     try {
         await messageController.deleteMessage(req, res);
       } catch (e) {
