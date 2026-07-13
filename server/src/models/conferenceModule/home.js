@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
 
-// Define your Mongoose schema based on the interface
 const homeSchema = new mongoose.Schema({
   confId: {
     type: String,
@@ -16,7 +15,6 @@ const homeSchema = new mongoose.Schema({
   confEndDate: {
     type: Date,
   },
-  
   about: [
     {
       title: {
@@ -27,18 +25,6 @@ const homeSchema = new mongoose.Schema({
       },
     },
   ],
-  youtubeLink: String,
-  instaLink: String,
-  facebookLink: String,
-  twitterLink: String,
-  logo: String,
-  shortName: String,
-  abstractLink : String,
-  paperLink : String,
-  regLink : String,
-  flyerLink : String,
-  brochureLink : String,
-  posterLink: String,
 });
 
 // Create the Mongoose model

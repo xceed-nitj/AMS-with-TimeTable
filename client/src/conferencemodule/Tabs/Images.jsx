@@ -112,14 +112,14 @@ const Images = () => {
 
   if (loading) {
     return (
-      <main className='py-10 min-h-screen flex justify-center items-center'>
+      <main className='tw-py-10 tw-min-h-screen tw-flex tw-justify-center tw-items-center'>
         <LoadingIcon />
       </main>
     );
   }
 
   return (
-    <Flex direction="column" py={10} minH="100vh">
+    <Flex direction="column" py={10} minH="100vh" className="tw-bg-slate-100">
       <Flex direction={{ base: "column", md: "row" }}>
         {/* Sidebar */}
         {!isMobile && (

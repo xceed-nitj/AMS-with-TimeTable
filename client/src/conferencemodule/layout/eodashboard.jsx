@@ -1,22 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import getEnvironment from "../../getenvironment";
-import { Container } from "@chakra-ui/react";
-import { FormControl, FormLabel, Heading, Input, Select, useToast } from '@chakra-ui/react';
-import {CustomTh, CustomLink,CustomTealButton} from '../../styles/customStyles'
 import {
-  Table,
-  TableContainer,
-  Tbody,
-  Td,
-  Th,
-  Thead,
-  Tr,
+  Container, Box, Flex, Heading, Text, Button, Badge, Center, Icon, SimpleGrid, useToast,
 } from "@chakra-ui/react";
-import { Button } from "@chakra-ui/react";
-import { Center, Square, Circle } from '@chakra-ui/react'
+import { FaCalendarAlt, FaArrowRight, FaPlus } from "react-icons/fa";
 import Header from "../../components/header";
-import { useDisclosure } from "@chakra-ui/react";
 
 function EODashboard() {
   const navigate = useNavigate();
@@ -24,7 +13,6 @@ function EODashboard() {
   const [table, setTable] = useState([]);
   const [loading, setLoading] = useState(false);
   const apiUrl = getEnvironment();
-
 
   const fetchEvents = async () => {
     try {
@@ -35,12 +23,9 @@ function EODashboard() {
         },
         credentials: "include",
       });
-  
-      // console.log("Response status:", response.status);
-  
+
       if (response.ok) {
         const data = await response.json();
-        // console.log(data)
         setTable(data);
       } else {
         console.error("Failed to fetch timetables");
@@ -53,40 +38,72 @@ function EODashboard() {
     console.log("Fetching events with apiUrl:", apiUrl);
     fetchEvents();
   }, [apiUrl]);
-  
+
   const currentUrl = window.location.href;
   const urlParts = currentUrl.split("/");
   const domainName = urlParts[2];
 
   return (
-    <Container maxW='5xl'>
-    <Header title="List of Events"></Header>
-    <TableContainer>
-      <Table variant='striped' size="md" mt="1">
-        <Thead>
-          <Tr>
-            <CustomTh>Event Name</CustomTh>
-            <CustomTh>Link</CustomTh>
-          </Tr>
-        </Thead>
-        <Tbody>
-          {table.map((event) => (
-            <Tr key={event._id}>
-              <Td><Center>{event.name}</Center></Td>
-              <Td>
-                <CustomLink
-                  href={`http://${domainName}/cf/${event._id}`}
-                  // Optional: If you want to open the link in a new tab
-                >Adminpanel</CustomLink>
-              </Td>
-            </Tr>
-          ))}
-        </Tbody>
-      </Table>
-    </TableContainer>
-    {loading && <p>Loading...</p>}
-  </Container>
-  
+    <main className="tw-min-h-screen tw-bg-slate-100 tw-pb-10">
+      <Container maxW='6xl'>
+        <Header title="List of Events"></Header>
+
+        <Flex justify="space-between" align="center" mb={6} wrap="wrap" gap={3}>
+          <Text color="gray.600">Select a conference to open its admin panel.</Text>
+          <Button
+            colorScheme="blue"
+            leftIcon={<FaPlus />}
+            onClick={() => navigate("/cf/addconf")}
+          >
+            New Conference
+          </Button>
+        </Flex>
+
+        {table.length > 0 ? (
+          <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={5}>
+            {table.map((event) => (
+              <Box
+                key={event._id}
+                bg="white"
+                borderRadius="2xl"
+                boxShadow="md"
+                overflow="hidden"
+                transition="all 0.2s"
+                _hover={{ transform: "translateY(-4px)", boxShadow: "xl" }}
+              >
+                <Box h="6px" bgGradient="linear(to-r, blue.500, purple.500)" />
+                <Box p={5}>
+                  <Flex align="center" gap={3} mb={3}>
+                    <Center bg="blue.50" color="blue.600" borderRadius="lg" boxSize="40px">
+                      <Icon as={FaCalendarAlt} />
+                    </Center>
+                    <Heading as="h3" size="sm" noOfLines={2}>{event.name}</Heading>
+                  </Flex>
+                  <Button
+                    as="a"
+                    href={`http://${domainName}/cf/${event._id}`}
+                    size="sm"
+                    colorScheme="blue"
+                    variant="outline"
+                    width="100%"
+                    rightIcon={<FaArrowRight />}
+                  >
+                    Open Admin Panel
+                  </Button>
+                </Box>
+              </Box>
+            ))}
+          </SimpleGrid>
+        ) : (
+          <Center py={16} flexDirection="column" color="gray.400" gap={3} bg="white" borderRadius="2xl" boxShadow="md">
+            <Icon as={FaCalendarAlt} fontSize="36px" />
+            <Text>No conferences assigned to you yet.</Text>
+          </Center>
+        )}
+
+        {loading && <p>Loading...</p>}
+      </Container>
+    </main>
   );
 }
 

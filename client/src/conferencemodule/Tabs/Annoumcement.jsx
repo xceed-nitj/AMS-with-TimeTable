@@ -741,7 +741,7 @@ const Announcement = () => {
 
 
     return (
-        <main className="tw-p-5 tw-min-h-screen">
+        <main className="tw-p-5 tw-min-h-screen tw-bg-slate-100">
             <Flex direction="column">
                 {/* Mobile top section */}
                 {isMobile && (

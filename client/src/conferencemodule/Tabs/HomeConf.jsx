@@ -40,18 +40,6 @@ const HomeConf = () => {
         "confName": "",
         "confStartDate": "",
         "confEndDate": "",
-        "youtubeLink": "",
-        "instaLink": "",
-        "facebookLink": "",
-        "twitterLink": "",
-        "logo": "",
-        "shortName": "",
-        "abstractLink" : "",
-        "paperLink" : "",
-        "regLink" : "",
-        "flyerLink" : "",
-        "brochureLink" : "",
-        "posterLink": "",
     }
     const [formData, setFormData] = useState(initialData);
     const [about, setAbout] = useState([{ title: "", description: "" }]);
@@ -73,8 +61,7 @@ const HomeConf = () => {
     const [loadingImport, setLoadingImport] = useState(false);
     const [importConferenceNames, setImportConferenceNames] = useState({});
 
-    const { confName, youtubeLink, instaLink, facebookLink, twitterLink, logo, shortName,abstractLink,paperLink,
-     regLink,flyerLink,brochureLink,posterLink } = formData;
+    const { confName } = formData;
     
      const confStartDate = formData.confStartDate ? new Date(formData.confStartDate).toLocaleDateString('en-CA') : null;
      const confEndDate = formData.confEndDate ? new Date(formData.confEndDate).toLocaleDateString('en-CA') : null;
@@ -914,133 +901,7 @@ const HomeConf = () => {
                                                 </Box>
                                             )}
 
-                                            
-                                        <FormControl isRequired={false} mb='3' >
-                                                <FormLabel >You Tube Link :</FormLabel>
-                                                <Input
-                                                    type="text"
-                                                    name="youtubeLink"
-                                                    value={youtubeLink}
-                                                    onChange={handleChange}
-                                                    placeholder="YouTube Link"
-                                                    mb='2.5'
-                                                />
-                                            </FormControl>
-                                            
-                                            
-                                            <FormControl isRequired={false} mb='3' >
-                                                <FormLabel >Instagram Link :</FormLabel>
-                                                <Input
-                                                    type="text"
-                                                    name="instaLink"
-                                                    value={instaLink}
-                                                    onChange={handleChange}
-                                                    placeholder="Instagram Link"
-                                                    mb='2.5'
-                                                />
-                                            </FormControl>
-                                            <FormControl isRequired={false} mb='3' >
-                                                <FormLabel >FaceBook Link:</FormLabel>
-                                                <Input
-                                                    type="text"
-                                                    name="facebookLink"
-                                                    value={facebookLink}
-                                                    onChange={handleChange}
-                                                    placeholder="FaceBook Link"
-                                                    mb='2.5'
-                                                />
-                                            </FormControl>
 
-                                            <FormControl isRequired={false} mb='3' >
-                                                <FormLabel >Twitter Link:</FormLabel>
-                                                <Input
-                                                    type="text"
-                                                    name="twitterLink"
-                                                    value={twitterLink}
-                                                    onChange={handleChange}
-                                                    placeholder="Twitter Link"
-                                                    mb='2.5'
-                                                />
-                                            </FormControl>
-                                            <FormControl isRequired={false} mb='3' >
-                                                <FormLabel >Logo:</FormLabel>
-                                                <Input
-                                                    type="text"
-                                                    name="logo"
-                                                    value={logo}
-                                                    onChange={handleChange}
-                                                    placeholder="Logo"
-                                                    mb='2.5'
-                                                />
-                                            </FormControl>
-                                            <FormControl isRequired={false} mb='3' >
-                                                <FormLabel >Short Name of Conference :</FormLabel>
-                                                <Input
-                                                    type="text"
-                                                    name="shortName"
-                                                    value={shortName}
-                                                    onChange={handleChange}
-                                                    placeholder="Short Name"
-                                                    mb='2.5'
-                                                />
-                                            </FormControl>
-                                            <FormControl isRequired={false} mb='3' >
-                                                <FormLabel >Abstract Link :</FormLabel>
-                                                <Input
-                                                    type="text"
-                                                    name="abstractLink"
-                                                    value={abstractLink}
-                                                    onChange={handleChange}
-                                                    placeholder="Abstract Link"
-                                                    mb='2.5'
-                                                />
-                                            </FormControl>
-                                            <FormControl isRequired={false} mb='3' >
-                                                <FormLabel >Registration Link :</FormLabel>
-                                                <Input
-                                                    type="text"
-                                                    name="regLink"
-                                                    value={regLink}
-                                                    onChange={handleChange}
-                                                    placeholder="Registration Link"
-                                                    mb='2.5'
-                                                />
-                                            </FormControl>
-                                            <FormControl isRequired={false} mb='3' >
-                                                <FormLabel >Flyer Link of Conference :</FormLabel>
-                                                <Input
-                                                    type="text"
-                                                    name="flyerLink"
-                                                    value={flyerLink}
-                                                    onChange={handleChange}
-                                                    placeholder="Flyer Link"
-                                                    mb='2.5'
-                                                />
-                                            </FormControl>
-                                            <FormControl isRequired={false} mb='3' >
-                                                <FormLabel >Brochure Link of Conference :</FormLabel>
-                                                <Input
-                                                    type="text"
-                                                    name="brochureLink"
-                                                    value={brochureLink}
-                                                    onChange={handleChange}
-                                                    placeholder="Brochure Link"
-                                                    mb='2.5'
-                                                />
-                                            </FormControl>
-                                            <FormControl isRequired={false} mb='3' >
-                                                <FormLabel >Poster Link :</FormLabel>
-                                                <Input
-                                                    type="text"
-                                                    name="posterLink"
-                                                    value={posterLink}
-                                                    onChange={handleChange}
-                                                    placeholder="Poster Link"
-                                                    mb='2.5'
-                                                />
-                                            </FormControl>
-                                        
-                                   
                                             <Center>
                                                 <Button colorScheme="blue" type="submit">
                                                     {editID ? 'Update Conference Info' : 'Add Conference Info'}
@@ -1260,10 +1121,9 @@ const HomeConf = () => {
                                         <Text fontSize="sm"><b>Name:</b> {importHomeData.confName}</Text>
                                         <Text fontSize="sm"><b>Start Date:</b> {importHomeData.confStartDate ? new Date(importHomeData.confStartDate).toLocaleDateString() : '-'}</Text>
                                         <Text fontSize="sm"><b>End Date:</b> {importHomeData.confEndDate ? new Date(importHomeData.confEndDate).toLocaleDateString() : '-'}</Text>
-                                        <Text fontSize="sm"><b>Short Name:</b> {importHomeData.shortName || '-'}</Text>
                                     </VStack>
                                     <Text fontSize="xs" color="gray.500" mt={3}>
-                                        All conference details (name, dates, links, etc.) will be filled in. You can review and edit before saving.
+                                        The conference name and dates will be filled in. You can review and edit before saving.
                                     </Text>
                                 </Box>
                             )}

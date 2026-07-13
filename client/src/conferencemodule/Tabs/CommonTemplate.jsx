@@ -607,7 +607,7 @@ const CommonTemplate = () => {
   );
 
   return (
-    <main className="tw-p-5 tw-min-h-screen">
+    <main className="tw-p-5 tw-min-h-screen tw-bg-slate-100">
       <Flex direction="column">
         {/* Top bar: Import + Preview toggle */}
         <Box mb={4}>
