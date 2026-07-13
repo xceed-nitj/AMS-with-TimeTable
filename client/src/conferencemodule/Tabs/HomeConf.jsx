@@ -13,6 +13,8 @@ import { Container } from "@chakra-ui/react";
 import formatDate from "../utils/formatDate";
 import { Flex, Box, FormControl, FormErrorMessage, FormLabel, Center, Heading, Input, Button, useBreakpointValue, Textarea, Select, VStack, HStack, Text, useToast, Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody, ModalCloseButton, useDisclosure } from '@chakra-ui/react';
 import { CustomTh, CustomLink, CustomBlueButton } from '../utils/customStyles'
+import { FaHome, FaPlus, FaFileImport } from "react-icons/fa";
+import { PageHeader, DeleteModal } from "../components/ui";
 
 const HomeConf = () => {
     const navigate = useNavigate();
@@ -106,14 +108,48 @@ const HomeConf = () => {
         }
     };
 
-    const handleApplyImport = () => {
+    const handleApplyImport = async () => {
         if (!importHomeData) return;
-        const { _id, confId, __v, ...rest } = importHomeData;
+        const { _id, confId, __v, about: importedAboutRaw, ...rest } = importHomeData;
         setFormData(prev => ({ ...prev, ...rest, confId: IdConf }));
+
+        // Also import the About sections from the source conference.
+        let aboutImported = false;
+        try {
+            let importedAbout = importedAboutRaw;
+            if (!importedAbout || importedAbout.length === 0) {
+                const res = await axios.get(`${apiUrl}/conferencemodule/home/about/${selectedImportConf}`, { withCredentials: true });
+                importedAbout = res.data;
+            }
+            const cleaned = (importedAbout || [])
+                .map(({ title, description }) => ({ title: title || "", description: description || "" }))
+                .filter(s => s.title || s.description);
+            if (cleaned.length > 0) {
+                setAbout(cleaned);
+                initializedTabs.current = new Set();
+                setShowAboutSection(false);
+                setActiveAboutTab(null);
+                aboutImported = true;
+                // Persist right away when this conference already has a home record;
+                // otherwise the sections stay in the editor until saved.
+                if (editID) {
+                    await axios.put(`${apiUrl}/conferencemodule/home/about/${IdConf}`, { about: cleaned }, { withCredentials: true });
+                }
+            }
+        } catch (err) {
+            console.error('Error importing about sections:', err);
+        }
+
         onImportClose();
         setSelectedImportConf("");
         setImportHomeData(null);
-        toast({ title: 'Imported!', description: 'Conference details have been filled from the selected conference. Review and save.', status: 'success', duration: 3000, isClosable: true });
+        toast({
+            title: 'Imported!',
+            description: aboutImported
+                ? 'Conference details and About sections have been imported. Review and save.'
+                : 'Conference details have been filled from the selected conference. Review and save.',
+            status: 'success', duration: 3000, isClosable: true,
+        });
     };
 
     const handleOpenImport = () => {
@@ -637,11 +673,9 @@ const HomeConf = () => {
             mb={6}
         >
             <Container maxW='full'>
-                <Center>
-                    <Heading as="h1" size="xl" mt="2" mb="6" color="#3B82F6" textDecoration="underline">
-                        Live Preview
-                    </Heading>
-                </Center>
+                <Heading as="h2" size="md" mt="2" mb="6" color="blue.800" pb={2} borderBottom="3px solid" borderBottomColor="blue.400" display="inline-block">
+                    Live Preview
+                </Heading>
                 
                 <Box bg="white" p={4} borderRadius="md" boxShadow="sm">
                     <Heading as="h2" size="lg" mb={4} color="gray.700">
@@ -712,19 +746,35 @@ const HomeConf = () => {
     }
 
     return (
-        <main className="tw-p-5 tw-min-h-screen">
+        <main className="tw-p-5 tw-min-h-screen tw-bg-slate-100">
+            <PageHeader
+                icon={FaHome}
+                title="Conference Home"
+                subtitle="Conference name, dates and the About sections shown on the site."
+                accent="blue"
+                variant="outline"
+            >
+                <HStack spacing={2}>
+                    <Button colorScheme="blue" variant="outline" size="sm" leftIcon={<FaPlus />} onClick={addNewAbout}>
+                        Add New About
+                    </Button>
+                    <Button colorScheme="green" size="sm" leftIcon={<FaFileImport />} onClick={handleOpenImport}>
+                        Import from Conference
+                    </Button>
+                </HStack>
+            </PageHeader>
             <Flex direction="column">
-                <Flex direction={{ base: "column", md: "row" }}>
+                <Flex direction={{ base: "column", md: "row" }} gap={4} align="stretch">
                     {!isMobile && (
                         <Box
-                            width="15%" 
+                            width="15%"
                             minWidth="180px"
                             maxWidth="250px"
-                            bg="gray.100"
+                            bg="white"
                             p={4}
-                            borderRadius="none"
+                            borderRadius="2xl"
                             boxShadow="md"
-                            height="100vh" 
+                            height="100vh"
                             position="sticky"
                             top={0}
                             display="flex"
@@ -732,7 +782,7 @@ const HomeConf = () => {
                             alignItems="flex-start"
                             overflowY="auto"
                         >
-                            <Heading as="h2" size="md" mb={4}>
+                            <Heading as="h2" size="md" mb={4} color="blue.800">
                                 Add Items
                             </Heading>
                             <Button colorScheme="blue" onClick={addNewAbout} mb="2" width="100%" size="sm">
@@ -799,7 +849,7 @@ const HomeConf = () => {
                     {/* Main Content */}
                     <Flex flex="1" width={{ base: "100%", md: "85%" }} direction={{ base: "column", lg: "row" }}>
                         {/* Form Section */}
-                        <Box width={{ base: "100%", lg: "50%" }} p={4} overflowY="auto">
+                        <Box width={{ base: "100%", lg: "50%" }} p={4} overflowY="auto" bg="white" borderRadius="2xl" boxShadow="md">
                             <Container maxW='full'>
                                 <HStack justify="space-between" align="center" mb={4}>
                                     <Box>
@@ -812,11 +862,9 @@ const HomeConf = () => {
                                         Import from Conference
                                     </Button>
                                 </HStack>
-                                <Center>
-                                    <Heading as="h1" size="xl" mt="2" mb="6" color="#3B82F6" textDecoration="underline">
-                                        About Conference
-                                    </Heading>
-                                </Center>
+                                <Heading as="h2" size="md" mt="2" mb="6" color="blue.800" pb={2} borderBottom="3px solid" borderBottomColor="blue.400" display="inline-block">
+                                    About Conference
+                                </Heading>
 
                                 <form onSubmit={handleSubmit}>
                                     
@@ -1051,13 +1099,15 @@ const HomeConf = () => {
                         </Box>
 
                         {/* Desktop Live Preview Section*/}
-                        <Box 
-                            width={{ base: "100%", lg: "50%" }} 
-                            p={4} 
-                            bg="gray.50" 
-                            overflowY="auto" 
-                            height={{ lg: "100vh" }} 
-                            position={{ lg: "sticky" }} 
+                        <Box
+                            width={{ base: "100%", lg: "50%" }}
+                            p={4}
+                            bg="white"
+                            borderRadius="2xl"
+                            boxShadow="md"
+                            overflowY="auto"
+                            height={{ lg: "100vh" }}
+                            position={{ lg: "sticky" }}
                             top={0}
                             display={{ base: "none", lg: "block" }}
                         >
@@ -1068,35 +1118,17 @@ const HomeConf = () => {
             </Flex>
 
             {/* Delete Confirmation Modal */}
-            {showDeleteConfirmation && (
-                <div className="tw-fixed tw-inset-0 tw-bg-black tw-bg-opacity-50 tw-flex tw-items-center tw-justify-center">
-                    <div className="tw-bg-white tw-rounded tw-p-8 tw-w-96">
-                        <p className="tw-text-lg tw-font-semibold tw-text-center tw-mb-4">
-                            Are you sure you want to delete?
-                        </p>
-                        <div className="tw-flex tw-justify-center">
-                            <Button
-                                colorScheme="red"
-                                onClick={confirmDelete}
-                                mr={4}
-                            >
-                                Yes, Delete
-                            </Button>
-                            <Button
-                                colorScheme="blue"
-                                onClick={() => setShowDeleteConfirmation(false)}
-                            >
-                                Cancel
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <DeleteModal
+                isOpen={showDeleteConfirmation}
+                onCancel={() => setShowDeleteConfirmation(false)}
+                onConfirm={confirmDelete}
+                label="this entry"
+            />
 
             {/* Import from Conference Modal */}
             <Modal isOpen={isImportOpen} onClose={onImportClose} size="xl">
                 <ModalOverlay />
-                <ModalContent>
+                <ModalContent mt="90px" mb="6">
                     <ModalHeader>Import Conference Details from Another Conference</ModalHeader>
                     <ModalCloseButton />
                     <ModalBody>
@@ -1121,9 +1153,10 @@ const HomeConf = () => {
                                         <Text fontSize="sm"><b>Name:</b> {importHomeData.confName}</Text>
                                         <Text fontSize="sm"><b>Start Date:</b> {importHomeData.confStartDate ? new Date(importHomeData.confStartDate).toLocaleDateString() : '-'}</Text>
                                         <Text fontSize="sm"><b>End Date:</b> {importHomeData.confEndDate ? new Date(importHomeData.confEndDate).toLocaleDateString() : '-'}</Text>
+                                        <Text fontSize="sm"><b>About sections:</b> {importHomeData.about?.length || 0}</Text>
                                     </VStack>
                                     <Text fontSize="xs" color="gray.500" mt={3}>
-                                        The conference name and dates will be filled in. You can review and edit before saving.
+                                        The conference name, dates and About sections will be imported. You can review and edit before saving.
                                     </Text>
                                 </Box>
                             )}
@@ -1139,33 +1172,15 @@ const HomeConf = () => {
             </Modal>
 
             {/* About Delete Confirmation Modal */}
-            {showAboutDeleteConfirmation && (
-                <div className="tw-fixed tw-inset-0 tw-bg-black tw-bg-opacity-50 tw-flex tw-items-center tw-justify-center">
-                    <div className="tw-bg-white tw-rounded tw-p-8 tw-w-96">
-                        <p className="tw-text-lg tw-font-semibold tw-text-center tw-mb-4">
-                            Are you sure you want to delete this about section?
-                        </p>
-                        <div className="tw-flex tw-justify-center">
-                            <Button
-                                colorScheme="red"
-                                onClick={confirmDeleteAbout}
-                                mr={4}
-                            >
-                                Yes, Delete
-                            </Button>
-                            <Button
-                                colorScheme="blue"
-                                onClick={() => {
-                                    setShowAboutDeleteConfirmation(false);
-                                    setDeleteAboutIndex(null);
-                                }}
-                            >
-                                Cancel
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            )}     
+            <DeleteModal
+                isOpen={showAboutDeleteConfirmation}
+                onCancel={() => {
+                    setShowAboutDeleteConfirmation(false);
+                    setDeleteAboutIndex(null);
+                }}
+                onConfirm={confirmDeleteAbout}
+                label="this about section"
+            />
         </main>
     );
 };

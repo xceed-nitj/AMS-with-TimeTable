@@ -1,27 +1,27 @@
 import React from 'react';
 
-export default function LoadingIcon() {
+// Shared loader for the conference module — a soft white card with a
+// dual-ring spinner and pulsing label, matching the admin panel design.
+export default function LoadingIcon({ label = "Loading…" }) {
   return (
-   
-<div aria-label="Loading..." role="status" className="tw-flex tw-flex-col tw-items-center tw-justify-center tw-min-w-full tw-min-h-[250px] tw-border-2 tw-shadow-md">
-    <svg className="tw-h-20 tw-w-20 tw-animate-spin tw-stroke-blue-500" viewBox="0 0 256 256">
-        <line x1="128" y1="32" x2="128" y2="64" strokeLinecap="round" strokeLinejoin="round" strokeWidth="24"></line>
-        <line x1="195.9" y1="60.1" x2="173.3" y2="82.7" strokeLinecap="round" strokeLinejoin="round"
-            strokeWidth="24"></line>
-        <line x1="224" y1="128" x2="192" y2="128" strokeLinecap="round" strokeLinejoin="round" strokeWidth="24">
-        </line>
-        <line x1="195.9" y1="195.9" x2="173.3" y2="173.3" strokeLinecap="round" strokeLinejoin="round"
-            strokeWidth="24"></line>
-        <line x1="128" y1="224" x2="128" y2="192" strokeLinecap="round" strokeLinejoin="round" strokeWidth="24">
-        </line>
-        <line x1="60.1" y1="195.9" x2="82.7" y2="173.3" strokeLinecap="round" strokeLinejoin="round"
-            strokeWidth="24"></line>
-        <line x1="32" y1="128" x2="64" y2="128" strokeLinecap="round" strokeLinejoin="round" strokeWidth="24"></line>
-        <line x1="60.1" y1="60.1" x2="82.7" y2="82.7" strokeLinecap="round" strokeLinejoin="round" strokeWidth="24">
-        </line>
-    </svg>
-   <span className="tw-text-[20px] tw-font-medium tw-text-blue-500">Loading...</span>
-</div>
-
+    <div
+      aria-label="Loading..."
+      role="status"
+      className="tw-flex tw-flex-col tw-items-center tw-justify-center tw-gap-4 tw-min-w-full tw-min-h-[250px] tw-bg-white tw-rounded-2xl tw-shadow-md"
+    >
+      <div className="tw-relative tw-h-14 tw-w-14">
+        {/* Track ring */}
+        <div className="tw-absolute tw-inset-0 tw-rounded-full tw-border-4 tw-border-indigo-100" />
+        {/* Spinning arc */}
+        <div className="tw-absolute tw-inset-0 tw-rounded-full tw-border-4 tw-border-transparent tw-border-t-indigo-500 tw-border-r-blue-400 tw-animate-spin" />
+        {/* Inner pulse dot */}
+        <div className="tw-absolute tw-inset-0 tw-flex tw-items-center tw-justify-center">
+          <div className="tw-h-3 tw-w-3 tw-rounded-full tw-bg-indigo-400 tw-animate-pulse" />
+        </div>
+      </div>
+      <span className="tw-text-sm tw-font-semibold tw-tracking-wide tw-text-slate-500 tw-animate-pulse">
+        {label}
+      </span>
+    </div>
   );
 }

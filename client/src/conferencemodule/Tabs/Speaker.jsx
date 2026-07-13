@@ -8,13 +8,13 @@ import {
     Box, Flex, Text, SimpleGrid, HStack, Icon, Tooltip, Image, Link, useToast,
     Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, ModalCloseButton,
 } from '@chakra-ui/react';
-import JoditEditor from 'jodit-react';
+import JoditEditor from "../components/RichTextEditor";
 import {
     FaMicrophone, FaPlus, FaSave, FaEdit, FaTrashAlt, FaStar, FaHashtag,
     FaUniversity, FaUserTie, FaExternalLinkAlt, FaUser, FaUpload,
 } from "react-icons/fa";
 import {
-    PageShell, PageHeader, FieldGrid, Span2, DeleteModal,
+    PageShell, PageHeader, FieldGrid, Span2, DeleteModal, CardGridSkeleton,
 } from "../components/ui";
 
 const ACCENT = "green";
@@ -65,6 +65,14 @@ const Speaker = () => {
     }, [isFormOpen]);
 
     const { ConfId, Name, Designation, Institute, ProfileLink, ImgLink, TalkType, TalkTitle, Abstract, Bio, sequence, feature } = formData;
+
+    // Older records may store a server-relative path (e.g. /uploads/...):
+    // resolve those against the API server, not the frontend origin.
+    const resolveImgSrc = (link) => {
+        if (!link) return "";
+        if (/^https?:\/\//i.test(link)) return link;
+        return `${apiUrl}${link.startsWith("/") ? "" : "/"}${link}`;
+    };
 
     // Uploads the chosen image via the shared file-upload backend and stores
     // the returned link in the existing ImgLink field — no new backend fields.
@@ -254,25 +262,30 @@ const Speaker = () => {
                                 <Box p={4}>
                                     <Flex gap={3} mb={3} align="flex-start">
                                         {/* Photo preview when available */}
-                                        {item.ImgLink ? (
-                                            <Image
-                                                src={item.ImgLink}
-                                                alt={item.Name}
+                                        <Box position="relative" boxSize="64px" flexShrink={0}>
+                                            {item.ImgLink && (
+                                                <img
+                                                    src={resolveImgSrc(item.ImgLink)}
+                                                    alt={item.Name}
+                                                    style={{
+                                                        width: "64px", height: "64px",
+                                                        objectFit: "cover", borderRadius: "12px",
+                                                        position: "relative", zIndex: 1,
+                                                    }}
+                                                    onError={(e) => { e.target.style.display = "none"; }}
+                                                />
+                                            )}
+                                            <Center
                                                 boxSize="64px"
                                                 borderRadius="xl"
-                                                objectFit="cover"
-                                                flexShrink={0}
-                                                fallback={
-                                                    <Center boxSize="64px" borderRadius="xl" bg={`${ACCENT}.50`} color={`${ACCENT}.400`} flexShrink={0}>
-                                                        <Icon as={FaUser} fontSize="24px" />
-                                                    </Center>
-                                                }
-                                            />
-                                        ) : (
-                                            <Center boxSize="64px" borderRadius="xl" bg={`${ACCENT}.50`} color={`${ACCENT}.400`} flexShrink={0}>
+                                                bg={`${ACCENT}.50`}
+                                                color={`${ACCENT}.400`}
+                                                position="absolute"
+                                                top={0} left={0}
+                                            >
                                                 <Icon as={FaUser} fontSize="24px" />
                                             </Center>
-                                        )}
+                                        </Box>
 
                                         <Box flex="1" minW={0}>
                                             <Flex justify="space-between" align="flex-start" gap={2}>
@@ -362,7 +375,7 @@ const Speaker = () => {
                         </Button>
                     </Center>
                 )
-            ) : <Center py={10}><LoadingIcon /></Center>}
+            ) : <CardGridSkeleton />}
 
             {/* Add / Edit modal */}
             {/* trapFocus must stay off — Chakra's focus trap fights the Jodit editors. */}
@@ -370,13 +383,12 @@ const Speaker = () => {
                 isOpen={isFormOpen}
                 onClose={closeFormModal}
                 size="3xl"
-                isCentered
                 scrollBehavior="inside"
                 trapFocus={false}
                 returnFocusOnClose={false}
             >
                 <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(3px)" />
-                <ModalContent borderRadius="2xl" overflow="hidden">
+                <ModalContent borderRadius="2xl" overflow="hidden" mt="90px" mb="6" maxH="calc(100vh - 120px)">
                     <ModalHeader
                         color={`${ACCENT}.700`}
                         bg="white"
@@ -458,7 +470,7 @@ const Speaker = () => {
                                         </Box>
                                         {ImgLink && (
                                             <Image
-                                                src={ImgLink}
+                                                src={resolveImgSrc(ImgLink)}
                                                 alt="Speaker preview"
                                                 boxSize="84px"
                                                 borderRadius="xl"

@@ -5,6 +5,7 @@ import {
     Box, Flex, Heading, Text, Button, Badge, SimpleGrid, Icon, HStack,
     Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter,
     Table, TableContainer, Thead, Tr, Th, Td, Center, Tooltip,
+    Skeleton, SkeletonText, SkeletonCircle,
 } from "@chakra-ui/react";
 import { FaEdit, FaTrashAlt, FaExclamationTriangle, FaInbox } from "react-icons/fa";
 
@@ -203,8 +204,35 @@ export const DeleteModal = ({ isOpen, onCancel, onConfirm, label = "this entry" 
 // Sidebar's Outlet wrapper (it changes when the sidebar is collapsed).
 export const PageShell = ({ children }) => (
     <main className="tw-py-8 tw-min-h-screen tw-bg-slate-100">
-        <Box px={{ base: 4, md: 8 }} maxW="1100px" mx="auto">
+        <Box px={{ base: 3, md: 5 }} maxW="1600px" mx="auto">
             {children}
         </Box>
     </main>
+);
+
+// ── Loading skeletons ────────────────────────────────────────────────────────
+// Placeholder cards shown while a card-grid page (Speakers, Images, Event
+// Dates, …) is fetching. `withImage` adds a banner block like the Images tab.
+export const CardGridSkeleton = ({ count = 6, withImage = false }) => (
+    <SimpleGrid columns={{ base: 1, md: 2, xl: 3 }} spacing={5}>
+        {Array.from({ length: count }).map((_, i) => (
+            <Box key={i} bg="white" borderRadius="2xl" boxShadow="md" overflow="hidden">
+                {withImage && <Skeleton h="170px" />}
+                <Box p={4}>
+                    <Flex align="center" gap={3} mb={3}>
+                        {!withImage && <SkeletonCircle size="12" flexShrink={0} />}
+                        <Box flex="1">
+                            <Skeleton h="14px" mb={2} borderRadius="md" />
+                            <Skeleton h="10px" w="60%" borderRadius="md" />
+                        </Box>
+                    </Flex>
+                    <SkeletonText noOfLines={2} spacing={2} skeletonHeight="8px" mb={4} />
+                    <Flex gap={2}>
+                        <Skeleton h="32px" flex="1" borderRadius="md" />
+                        <Skeleton h="32px" flex="1" borderRadius="md" />
+                    </Flex>
+                </Box>
+            </Box>
+        ))}
+    </SimpleGrid>
 );
