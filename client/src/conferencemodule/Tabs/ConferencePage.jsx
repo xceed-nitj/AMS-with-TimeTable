@@ -109,7 +109,7 @@ const ConferencePage = () => {
 
     return (
         <main className="tw-min-h-screen tw-bg-slate-100 tw-py-8">
-            <Box px={{ base: 4, md: 8 }} maxW="1100px" mx="auto">
+            <Box px={{ base: 3, md: 5 }} maxW="1600px" mx="auto">
                 <PageHeader
                     icon={FaCalendarAlt}
                     title="Conferences"

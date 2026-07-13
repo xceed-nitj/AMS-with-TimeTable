@@ -15,23 +15,18 @@ import {
     FormControl, FormLabel, Center, Heading,
     Input, Button, Select, Box, VStack, HStack, Text, useToast, useBreakpointValue, Flex, Textarea
 } from '@chakra-ui/react';
+import { FaBullhorn, FaPlus } from "react-icons/fa";
+import { PageHeader, DeleteModal } from "../components/ui";
 
 const LivePreviewSection = ({ title, html }) => {
   return (
     <Box p={4}>
-      <Heading
-        as="h1"
-        size="xl"
-        textAlign="center"
-        mb={6}
-        color="#8b5cf6"
-        textDecoration="underline"
-      >
+      <Heading as="h2" size="md" mb={6} color="purple.800" pb={2} borderBottom="3px solid" borderBottomColor="purple.400" display="inline-block">
         Live Preview
       </Heading>
 
       {/* About Section Preview */}
-      <Heading as="h3" size="lg" mb={4} color="gray.800">
+      <Heading as="h3" size="sm" mb={4} color="gray.600" textTransform="uppercase" letterSpacing="wider">
         Announcement Preview
       </Heading>
 
@@ -742,23 +737,34 @@ const Announcement = () => {
 
     return (
         <main className="tw-p-5 tw-min-h-screen tw-bg-slate-100">
+            <PageHeader
+                icon={FaBullhorn}
+                title="Announcements"
+                subtitle="News and notices shown on the conference site."
+                accent="purple"
+                variant="outline"
+            >
+                <Button colorScheme="purple" size="sm" leftIcon={<FaPlus />} onClick={handleCreateNew}>
+                    New Announcement
+                </Button>
+            </PageHeader>
             <Flex direction="column">
                 {/* Mobile top section */}
                 {isMobile && (
                     <AnnouncementTabs />
-                    
+
                 )}
 
-                <Flex direction={{ base: "column", md: "row" }}>
+                <Flex direction={{ base: "column", md: "row" }} gap={4} align="stretch">
                     {/* Desktop Sidebar */}
                     {!isMobile && (
                         <Box
                             width="15%"
                             minWidth="180px"
                             maxWidth="250px"
-                            bg="gray.100"
+                            bg="white"
                             p={4}
-                            borderRadius="none"
+                            borderRadius="2xl"
                             boxShadow="md"
                             height="100vh"
                             position="sticky"
@@ -768,11 +774,11 @@ const Announcement = () => {
                             alignItems="flex-start"
                             overflowY="auto"
                         >
-                            <Heading as="h2" size="md" mb={4}>
+                            <Heading as="h2" size="md" mb={4} color="purple.800">
                                 Add Items
                             </Heading>
                             <Button
-                                colorScheme="blue"
+                                colorScheme="purple"
                                 size="sm"
                                 mb={4}
                                 onClick={handleCreateNew}
@@ -787,13 +793,11 @@ const Announcement = () => {
 
                     <Flex flex="1" width={{ base: "100%", md: "85%" }} direction={{ base: "column", lg: "row" }}>
                         {/* Form Section */}
-                        <Box width={{ base: "100%", lg: "50%" }} p={4} overflowY="auto">
+                        <Box width={{ base: "100%", lg: "50%" }} p={4} overflowY="auto" bg="white" borderRadius="2xl" boxShadow="md">
                             <Container maxW="full">
-                                <Center>
-                                    <Heading as="h1" size="xl" mt="2" mb="6" color="#8b5cf6" textDecoration="underline">
-                                        {editID ? 'Edit Announcement' : 'Create New Announcement'}
-                                    </Heading>
-                                </Center>
+                                <Heading as="h2" size="md" mt="2" mb="6" color="purple.800" pb={2} borderBottom="3px solid" borderBottomColor="purple.400" display="inline-block">
+                                    {editID ? 'Edit Announcement' : 'Create New Announcement'}
+                                </Heading>
 
                                 <form onSubmit={handleSubmit}>
                                     <VStack spacing={4} align="stretch">
@@ -972,7 +976,9 @@ const Announcement = () => {
                             <Box
                                 width={{ base: "100%", lg: "50%" }}
                                 p={4}
-                                bg="gray.50"
+                                bg="white"
+                                borderRadius="2xl"
+                                boxShadow="md"
                                 overflowY="auto"
                                 height={{ lg: "100vh" }}
                                 position={{ lg: "sticky" }}
@@ -990,23 +996,12 @@ const Announcement = () => {
             </Flex>
 
             {/* Delete Confirmation Modal */}
-            {showDeleteConfirmation && (
-                <div className="tw-fixed tw-inset-0 tw-bg-black tw-bg-opacity-50 tw-flex tw-items-center tw-justify-center tw-z-50">
-                    <div className="tw-bg-white tw-rounded tw-p-8 tw-w-96">
-                        <p className="tw-text-lg tw-font-semibold tw-text-center tw-mb-4">
-                            Are you sure you want to delete this announcement?
-                        </p>
-                        <div className="tw-flex tw-justify-center tw-gap-4">
-                            <Button colorScheme="red" onClick={confirmDelete} isLoading={loading}>
-                                Yes, Delete
-                            </Button>
-                            <Button colorScheme="blue" onClick={() => setShowDeleteConfirmation(false)}>
-                                Cancel
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <DeleteModal
+                isOpen={showDeleteConfirmation}
+                onCancel={() => setShowDeleteConfirmation(false)}
+                onConfirm={confirmDelete}
+                label="this announcement"
+            />
         </main>
     );
 };

@@ -6,15 +6,170 @@ import getEnvironment from "../../getenvironment";
 import {
     FormControl, FormLabel, Input, Button,
     Select, Checkbox, Switch, Text, Box, HStack, VStack,
-    Table, Tbody, Td, Thead, Tr, Badge, Center, Tooltip,
+    Table, Tbody, Td, Thead, Tr, Badge, Center, Tooltip, Flex, Icon, useToast,
+    Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, ModalCloseButton,
 } from "@chakra-ui/react";
-import { FaBars, FaPlus, FaSave, FaArrowUp, FaArrowDown } from "react-icons/fa";
+import {
+    FaBars, FaPlus, FaSave, FaArrowUp, FaArrowDown,
+    FaMobileAlt, FaChevronDown, FaExternalLinkAlt, FaTimes,
+} from "react-icons/fa";
 import {
     PageShell, PageHeader, FormCard, FieldGrid, Span2,
     TableCard, ThemedTh, WrapTd, RowActions, EmptyRow, DeleteModal,
 } from "../components/ui";
 
 const ACCENT = "purple";
+
+// Mimics the public conference site's mobile navbar drawer so admins can see
+// exactly how the configured menu will be arranged (left section first, then
+// right, dropdowns expandable, button items as highlighted pills).
+const MobileNavPreview = ({ items, templates, confName }) => {
+    const [collapsed, setCollapsed] = useState({});
+
+    const ordered = [
+        ...items.filter((i) => i.section === "left").sort((a, b) => a.order - b.order),
+        ...items.filter((i) => i.section === "right").sort((a, b) => a.order - b.order),
+    ];
+    const menuItems = ordered.filter((i) => !i.isButton);
+    const buttonItems = ordered.filter((i) => i.isButton);
+
+    const linkHint = (it) => {
+        if (it.linkType === "template") {
+            const t = templates.find((tpl) => tpl._id === it.templateId);
+            return t ? `page: ${t.pageTitle}` : "page: (not selected)";
+        }
+        return it.url || "—";
+    };
+
+    const toggle = (id) => setCollapsed((prev) => ({ ...prev, [id]: !prev[id] }));
+
+    return (
+        <Box bg="white" borderRadius="2xl" boxShadow="md" overflow="hidden">
+            <Flex px={5} py={3} align="center" gap={2} borderBottom="1px solid" borderColor="gray.100">
+                <Icon as={FaMobileAlt} color={`${ACCENT}.500`} />
+                <Text fontWeight="bold" color={`${ACCENT}.800`}>Mobile Preview</Text>
+            </Flex>
+            <Center px={4} py={5} bg="gray.50">
+                {/* Phone frame */}
+                <Box
+                    w="300px"
+                    borderRadius="28px"
+                    border="10px solid"
+                    borderColor="gray.800"
+                    overflow="hidden"
+                    boxShadow="xl"
+                    bg="#0f172a"
+                >
+                    {/* Fake navbar top bar */}
+                    <Flex
+                        px={3} py={2.5}
+                        align="center"
+                        justify="space-between"
+                        style={{ background: "linear-gradient(90deg, #0a0f1e 0%, #0f172a 30%, #1e3a8a 70%, #1d4ed8 100%)" }}
+                    >
+                        <Icon as={FaTimes} color="whiteAlpha.800" boxSize="12px" />
+                        <Text color="white" fontWeight="bold" fontSize="xs" letterSpacing="widest" noOfLines={1}>
+                            {confName || "CONFERENCE"}
+                        </Text>
+                        <Box w="12px" />
+                    </Flex>
+
+                    {/* Open mobile menu */}
+                    <Box
+                        px={2.5} py={3}
+                        maxH="430px"
+                        overflowY="auto"
+                        style={{ background: "linear-gradient(180deg, #0f172a 0%, #1e3a8a 100%)" }}
+                    >
+                        {menuItems.length === 0 && buttonItems.length === 0 && (
+                            <Text color="whiteAlpha.600" fontSize="xs" textAlign="center" py={8}>
+                                No menu items yet — add some above to see them here.
+                            </Text>
+                        )}
+
+                        {menuItems.map((item) => {
+                            const hasSubs = (item.subItems || []).length > 0;
+                            const isOpen = !collapsed[item._id];
+                            const subs = (item.subItems || []).slice().sort((a, b) => a.order - b.order);
+                            return (
+                                <Box key={item._id} mb={0.5} opacity={item.isActive === false ? 0.4 : 1}>
+                                    <Flex
+                                        align="center"
+                                        justify="space-between"
+                                        px={3} py={2}
+                                        borderRadius="lg"
+                                        color="whiteAlpha.900"
+                                        cursor={hasSubs ? "pointer" : "default"}
+                                        _hover={{ bg: "whiteAlpha.200" }}
+                                        onClick={hasSubs ? () => toggle(item._id) : undefined}
+                                    >
+                                        <Box minW={0}>
+                                            <Text fontSize="sm" fontWeight="semibold" noOfLines={1}>
+                                                {item.label}
+                                                {item.linkType === "external" && (
+                                                    <Icon as={FaExternalLinkAlt} boxSize="9px" ml={1.5} color="sky.300" />
+                                                )}
+                                            </Text>
+                                            {!hasSubs && (
+                                                <Text fontSize="10px" color="whiteAlpha.500" noOfLines={1}>{linkHint(item)}</Text>
+                                            )}
+                                        </Box>
+                                        {hasSubs && (
+                                            <Icon
+                                                as={FaChevronDown}
+                                                boxSize="10px"
+                                                color="whiteAlpha.700"
+                                                transform={isOpen ? "rotate(180deg)" : "none"}
+                                                transition="transform 0.2s"
+                                            />
+                                        )}
+                                    </Flex>
+                                    {hasSubs && isOpen && (
+                                        <Box ml={4} pl={3} borderLeft="2px solid" borderColor="whiteAlpha.300" mb={1.5}>
+                                            {subs.map((sub, i) => (
+                                                <Box key={sub._id || i} px={2} py={1.5} borderRadius="md" _hover={{ bg: "whiteAlpha.100" }}>
+                                                    <Text fontSize="xs" color="whiteAlpha.800" noOfLines={1}>{sub.label}</Text>
+                                                    <Text fontSize="9px" color="whiteAlpha.400" noOfLines={1}>{linkHint(sub)}</Text>
+                                                </Box>
+                                            ))}
+                                        </Box>
+                                    )}
+                                </Box>
+                            );
+                        })}
+
+                        {/* Highlighted button items (e.g. Register) */}
+                        {buttonItems.map((item) => (
+                            <Box key={item._id} pt={3} pb={1} opacity={item.isActive === false ? 0.4 : 1}>
+                                <Center>
+                                    <Box
+                                        bg="white"
+                                        color="blue.900"
+                                        textAlign="center"
+                                        fontWeight="bold"
+                                        fontSize="sm"
+                                        px={7} py={2}
+                                        borderRadius="full"
+                                    >
+                                        {item.label}
+                                    </Box>
+                                </Center>
+                                <Text fontSize="9px" color="whiteAlpha.500" textAlign="center" mt={1} noOfLines={1}>
+                                    {linkHint(item)}
+                                </Text>
+                            </Box>
+                        ))}
+                    </Box>
+                </Box>
+            </Center>
+            <Box px={5} py={3} borderTop="1px solid" borderColor="gray.100">
+                <Text fontSize="xs" color="gray.500">
+                    Items appear in this order on the site: <b>Left</b> section first, then <b>Right</b> — each sorted by its order value. Tap a menu with sub-items to collapse/expand it.
+                </Text>
+            </Box>
+        </Box>
+    );
+};
 
 const emptyLink = { label: "", linkType: "custom", templateId: "", url: "", order: 0 };
 const initialForm = {
@@ -35,12 +190,18 @@ const NavMenu = () => {
     const [items, setItems] = useState([]);
     const [templates, setTemplates] = useState([]);
     const [navbarMode, setNavbarMode] = useState("static");
+    const [confName, setConfName] = useState("");
+    // Split navbar = separate left & right menu groups. Remembered per
+    // conference; defaults to on only when right-section items already exist.
+    const [splitNavbar, setSplitNavbar] = useState(false);
     const [loading, setLoading] = useState(false);
     const [refresh, setRefresh] = useState(0);
     const [formData, setFormData] = useState(initialForm);
     const [editId, setEditId] = useState(null);
     const [deleteId, setDeleteId] = useState(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [isFormOpen, setIsFormOpen] = useState(false);
+    const toast = useToast();
 
     useEffect(() => {
         if (!confId) return;
@@ -52,13 +213,28 @@ const NavMenu = () => {
             axios.get(`${apiUrl}/conferencemodule/conf/${confId}`, { withCredentials: true }),
         ])
             .then(([navRes, tplRes, confRes]) => {
-                setItems(navRes.data || []);
+                const navItems = navRes.data || [];
+                setItems(navItems);
                 setTemplates(tplRes.data || []);
                 setNavbarMode(confRes.data?.navbarMode || "static");
+                setConfName(confRes.data?.name || "");
+                const stored = localStorage.getItem(`confNavSplit-${confId}`);
+                if (stored !== null) {
+                    setSplitNavbar(stored === "true");
+                } else {
+                    setSplitNavbar(navItems.some((i) => i.section === "right"));
+                }
             })
             .catch((err) => console.log(err))
             .finally(() => setLoading(false));
     }, [confId, refresh, apiUrl]);
+
+    const handleSplitToggle = () => {
+        const next = !splitNavbar;
+        setSplitNavbar(next);
+        localStorage.setItem(`confNavSplit-${confId}`, String(next));
+        if (!next) setFormData((prev) => ({ ...prev, section: "left" }));
+    };
 
     const handleModeToggle = () => {
         const nextMode = navbarMode === "dynamic" ? "static" : "dynamic";
@@ -71,6 +247,36 @@ const NavMenu = () => {
         setFormData(initialForm);
         setEditId(null);
     };
+
+    const openAddModal = () => {
+        resetForm();
+        setIsFormOpen(true);
+    };
+
+    const closeFormModal = () => {
+        setIsFormOpen(false);
+        resetForm();
+    };
+
+    // Two items are duplicates when every meaningful field matches
+    // (label, section, link target, button flag and all sub-items).
+    const normalizeItem = (it) => JSON.stringify({
+        section: splitNavbar ? (it.section || "left") : "left",
+        label: (it.label || "").trim().toLowerCase(),
+        linkType: it.linkType || "custom",
+        templateId: it.linkType === "template" ? (it.templateId || "") : "",
+        url: it.linkType !== "template" ? (it.url || "").trim() : "",
+        isButton: !!it.isButton,
+        subItems: (it.subItems || []).map((s) => ({
+            label: (s.label || "").trim().toLowerCase(),
+            linkType: s.linkType || "custom",
+            templateId: s.linkType === "template" ? (s.templateId || "") : "",
+            url: s.linkType !== "template" ? (s.url || "").trim() : "",
+        })),
+    });
+
+    const isDuplicate = (candidate, excludeId = null) =>
+        items.some((i) => i._id !== excludeId && normalizeItem(i) === normalizeItem(candidate));
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -97,26 +303,58 @@ const NavMenu = () => {
     };
 
     const handleSubmit = () => {
-        const payload = { ...formData, confId };
+        if (!formData.label.trim()) {
+            toast({ title: "Label is required", status: "warning", duration: 2500, isClosable: true });
+            return;
+        }
+        if (isDuplicate(formData)) {
+            toast({ title: "Duplicate entry", description: "An identical menu item already exists.", status: "error", duration: 3000, isClosable: true });
+            return;
+        }
+        const payload = { ...formData, section: splitNavbar ? formData.section : "left", confId };
         axios.post(`${apiUrl}/conferencemodule/navitem`, payload, { withCredentials: true })
             .then(() => {
-                resetForm();
+                closeFormModal();
                 setRefresh((r) => r + 1);
+                toast({ title: "Menu item added", status: "success", duration: 2000, isClosable: true });
             })
-            .catch((err) => console.log(err));
+            .catch((err) => {
+                console.log(err);
+                toast({
+                    title: "Failed to add menu item",
+                    description: err?.response?.data?.error || err?.response?.data?.message || err.message,
+                    status: "error", duration: 4000, isClosable: true,
+                });
+            });
     };
 
     const handleUpdate = () => {
-        axios.put(`${apiUrl}/conferencemodule/navitem/${editId}`, formData, { withCredentials: true })
+        if (!formData.label.trim()) {
+            toast({ title: "Label is required", status: "warning", duration: 2500, isClosable: true });
+            return;
+        }
+        if (isDuplicate(formData, editId)) {
+            toast({ title: "Duplicate entry", description: "An identical menu item already exists.", status: "error", duration: 3000, isClosable: true });
+            return;
+        }
+        const payload = { ...formData, section: splitNavbar ? formData.section : "left" };
+        axios.put(`${apiUrl}/conferencemodule/navitem/${editId}`, payload, { withCredentials: true })
             .then(() => {
-                resetForm();
+                closeFormModal();
                 setRefresh((r) => r + 1);
+                toast({ title: "Menu item updated", status: "success", duration: 2000, isClosable: true });
             })
-            .catch((err) => console.log(err));
+            .catch((err) => {
+                console.log(err);
+                toast({
+                    title: "Failed to update menu item",
+                    description: err?.response?.data?.error || err?.response?.data?.message || err.message,
+                    status: "error", duration: 4000, isClosable: true,
+                });
+            });
     };
 
     const handleEdit = (item) => {
-        window.scrollTo(0, 0);
         setFormData({
             section: item.section || "left",
             label: item.label || "",
@@ -134,6 +372,7 @@ const NavMenu = () => {
             })),
         });
         setEditId(item._id);
+        setIsFormOpen(true);
     };
 
     const confirmDelete = () => {
@@ -205,7 +444,7 @@ const NavMenu = () => {
     const renderRow = (item) => (
         <Tr key={item._id}>
             <WrapTd>{item.label}</WrapTd>
-            <Td><Badge colorScheme={ACCENT}>{item.section}</Badge></Td>
+            {splitNavbar && <Td><Badge colorScheme={ACCENT}>{item.section}</Badge></Td>}
             <WrapTd>{item.linkType === "template"
                 ? (templates.find((t) => t._id === item.templateId)?.pageTitle || "(page)")
                 : item.url}</WrapTd>
@@ -233,7 +472,7 @@ const NavMenu = () => {
         <Thead>
             <Tr>
                 <ThemedTh accent={ACCENT}>Label</ThemedTh>
-                <ThemedTh accent={ACCENT}>Section</ThemedTh>
+                {splitNavbar && <ThemedTh accent={ACCENT}>Section</ThemedTh>}
                 <ThemedTh accent={ACCENT}>Link</ThemedTh>
                 <ThemedTh accent={ACCENT}>Sub-items</ThemedTh>
                 <ThemedTh accent={ACCENT}>Button</ThemedTh>
@@ -250,8 +489,15 @@ const NavMenu = () => {
                 title="Navigation Menu"
                 subtitle="Control the public site's menu items, dropdowns and links from here."
                 accent={ACCENT}
-            />
+                variant="outline"
+            >
+                <Button colorScheme={ACCENT} leftIcon={<FaPlus />} onClick={openAddModal}>
+                    Add Menu Item
+                </Button>
+            </PageHeader>
 
+            <Flex gap={6} align="flex-start" direction={{ base: "column", xl: "row" }}>
+            <Box flex="1" minW={0} w="100%">
             <Box
                 bg="white"
                 borderRadius="2xl"
@@ -273,40 +519,49 @@ const NavMenu = () => {
                 <Text fontSize="sm" mt="2">
                     Current mode: <Badge colorScheme={navbarMode === "dynamic" ? "green" : "gray"}>{navbarMode}</Badge>
                 </Text>
+                <HStack justify="space-between" mt={4} pt={4} borderTop="1px solid" borderColor="gray.100">
+                    <VStack align="start" spacing={0}>
+                        <Text fontWeight="bold">Is your navbar split into left &amp; right groups?</Text>
+                        <Text fontSize="sm" color="gray.600">
+                            Turn this on only if the site places some menus on the left of the bar and others on the right. Otherwise all items go into one menu.
+                        </Text>
+                    </VStack>
+                    <Switch size="lg" isChecked={splitNavbar} onChange={handleSplitToggle} colorScheme={ACCENT} />
+                </HStack>
             </Box>
 
-            <FormCard
-                title={editId ? "Edit Menu Item" : "Add Menu Item"}
-                accent={ACCENT}
-                isEditing={!!editId}
-                actions={
-                    <>
-                        <Button
-                            colorScheme={ACCENT}
-                            size="lg"
-                            px={10}
-                            leftIcon={editId ? <FaSave /> : <FaPlus />}
-                            onClick={editId ? handleUpdate : handleSubmit}
-                        >
-                            {editId ? "Update" : "Add"}
-                        </Button>
-                        {editId && <Button size="lg" onClick={resetForm}>Cancel</Button>}
-                    </>
-                }
-            >
+            <Modal isOpen={isFormOpen} onClose={closeFormModal} size="2xl" scrollBehavior="inside">
+                <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(3px)" />
+                <ModalContent borderRadius="2xl" overflow="hidden" mt="90px" mb="6" maxH="calc(100vh - 120px)">
+                    <ModalHeader
+                        color={`${ACCENT}.700`}
+                        bg="white"
+                        borderBottom="3px solid"
+                        borderBottomColor={`${ACCENT}.400`}
+                        display="flex"
+                        alignItems="center"
+                        gap={3}
+                    >
+                        <Icon as={FaBars} color={`${ACCENT}.500`} />
+                        {editId ? "Edit Menu Item" : "Add a New Menu Item"}
+                    </ModalHeader>
+                    <ModalCloseButton />
+                    <ModalBody py={5}>
                 <FieldGrid>
                     <FormControl isRequired mb="2">
                         <FormLabel>Label</FormLabel>
                         <Input name="label" value={formData.label} onChange={handleChange} placeholder="e.g. Tracks" />
                     </FormControl>
 
-                    <FormControl mb="2">
-                        <FormLabel>Section</FormLabel>
-                        <Select name="section" value={formData.section} onChange={handleChange}>
-                            <option value="left">Left</option>
-                            <option value="right">Right</option>
-                        </Select>
-                    </FormControl>
+                    {splitNavbar && (
+                        <FormControl mb="2">
+                            <FormLabel>Section</FormLabel>
+                            <Select name="section" value={formData.section} onChange={handleChange}>
+                                <option value="left">Left</option>
+                                <option value="right">Right</option>
+                            </Select>
+                        </FormControl>
+                    )}
 
                     {renderLinkFields(formData, (field, value) => setFormData((prev) => ({ ...prev, [field]: value })))}
 
@@ -349,31 +604,68 @@ const NavMenu = () => {
                         </Box>
                     </Span2>
                 </FieldGrid>
-            </FormCard>
+                    </ModalBody>
+                    <ModalFooter bg="gray.50" gap={3}>
+                        <Button variant="ghost" onClick={closeFormModal}>Cancel</Button>
+                        <Button
+                            colorScheme={ACCENT}
+                            px={8}
+                            leftIcon={editId ? <FaSave /> : <FaPlus />}
+                            onClick={editId ? handleUpdate : handleSubmit}
+                        >
+                            {editId ? "Update" : "Add"}
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
 
             {!loading ? (
-                <>
-                    <TableCard title="Left Menu" count={sortedLeft.length} accent={ACCENT}>
-                        <Table variant="striped" size="sm">
-                            {tableHead}
-                            <Tbody>
-                                {sortedLeft.length ? sortedLeft.map(renderRow) :
-                                    <EmptyRow colSpan={7} message="No items in the left menu yet." />}
-                            </Tbody>
-                        </Table>
-                    </TableCard>
+                splitNavbar ? (
+                    <>
+                        <TableCard title="Left Menu" count={sortedLeft.length} accent={ACCENT}>
+                            <Table variant="striped" size="sm">
+                                {tableHead}
+                                <Tbody>
+                                    {sortedLeft.length ? sortedLeft.map(renderRow) :
+                                        <EmptyRow colSpan={7} message="No items in the left menu yet." />}
+                                </Tbody>
+                            </Table>
+                        </TableCard>
 
-                    <TableCard title="Right Menu" count={sortedRight.length} accent={ACCENT}>
+                        <TableCard title="Right Menu" count={sortedRight.length} accent={ACCENT}>
+                            <Table variant="striped" size="sm">
+                                {tableHead}
+                                <Tbody>
+                                    {sortedRight.length ? sortedRight.map(renderRow) :
+                                        <EmptyRow colSpan={7} message="No items in the right menu yet." />}
+                                </Tbody>
+                            </Table>
+                        </TableCard>
+                    </>
+                ) : (
+                    <TableCard title="Menu Items" count={sortedLeft.length + sortedRight.length} accent={ACCENT}>
                         <Table variant="striped" size="sm">
                             {tableHead}
                             <Tbody>
-                                {sortedRight.length ? sortedRight.map(renderRow) :
-                                    <EmptyRow colSpan={7} message="No items in the right menu yet." />}
+                                {(sortedLeft.length + sortedRight.length) ? [...sortedLeft, ...sortedRight].map(renderRow) :
+                                    <EmptyRow colSpan={6} message="No menu items yet." />}
                             </Tbody>
                         </Table>
                     </TableCard>
-                </>
+                )
             ) : <Center py={10}><LoadingIcon /></Center>}
+            </Box>
+
+            {/* Live mobile preview in the side panel */}
+            <Box
+                w={{ base: "100%", xl: "360px" }}
+                flexShrink={0}
+                position={{ xl: "sticky" }}
+                top={{ xl: "90px" }}
+            >
+                <MobileNavPreview items={items} templates={templates} confName={confName} />
+            </Box>
+            </Flex>
 
             <DeleteModal
                 isOpen={showDeleteConfirm}

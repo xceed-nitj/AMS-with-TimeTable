@@ -10,7 +10,7 @@ import {
 } from '@chakra-ui/react';
 import { FaCalendarAlt, FaPlus, FaSave, FaEdit, FaTrashAlt, FaCheckCircle, FaStar, FaHashtag } from "react-icons/fa";
 import {
-    PageShell, PageHeader, FieldGrid, DeleteModal, accentGradient,
+    PageShell, PageHeader, FieldGrid, DeleteModal, accentGradient, CardGridSkeleton,
 } from "../components/ui";
 
 const ACCENT = "orange";
@@ -299,12 +299,12 @@ const EventDates = () => {
                         </Button>
                     </Center>
                 )
-            ) : <Center py={10}><LoadingIcon /></Center>}
+            ) : <CardGridSkeleton />}
 
             {/* Add / Edit modal */}
-            <Modal isOpen={isFormOpen} onClose={closeFormModal} size="2xl" isCentered scrollBehavior="inside">
+            <Modal isOpen={isFormOpen} onClose={closeFormModal} size="2xl" scrollBehavior="inside">
                 <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(3px)" />
-                <ModalContent borderRadius="2xl" overflow="hidden">
+                <ModalContent borderRadius="2xl" overflow="hidden" mt="90px" mb="6" maxH="calc(100vh - 120px)">
                     <ModalHeader
                         color={`${ACCENT}.700`}
                         bg="white"
