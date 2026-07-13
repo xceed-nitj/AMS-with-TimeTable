@@ -3,27 +3,24 @@ import axios from 'axios';
 import { useParams } from "react-router-dom";
 import LoadingIcon from "../components/LoadingIcon";
 import getEnvironment from "../../getenvironment";
-import { Container } from "@chakra-ui/react";
 import {
-    FormControl, FormErrorMessage, FormLabel, Center, Heading,
-    Input, Button, Select
+    FormControl, FormLabel, Input, Button, Select,
+    Table, Tbody, Td, Thead, Tr, Badge, Center,
 } from '@chakra-ui/react';
-import { CustomTh, CustomLink, CustomBlueButton } from '../utils/customStyles'
+import { FaHandshake, FaPlus, FaSave } from "react-icons/fa";
 import {
-    Table,
-    TableContainer,
-    Tbody,
-    Td,
-    Th,
-    Thead,
-    Tr,
-} from "@chakra-ui/react";
+    PageShell, PageHeader, FormCard, FieldGrid,
+    TableCard, ThemedTh, WrapTd, RowActions, EmptyRow, DeleteModal,
+} from "../components/ui";
+
+const ACCENT = "green";
+
 const Sponsors = () => {
     const params = useParams();
     const IdConf = params.confid;
-  const apiUrl = getEnvironment();
+    const apiUrl = getEnvironment();
 
-    const initialData={
+    const initialData = {
         confId: IdConf,
         name: "",
         type: "",
@@ -37,10 +34,11 @@ const Sponsors = () => {
     const [data, setData] = useState([]);
     const [refresh, setRefresh] = useState(0);
     const [loading, setLoading] = useState(false);
+    const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+    const [deleteItemId, setDeleteItemId] = useState(null);
 
-    const { name, type, logo,sequence } = formData;
+    const { name, type, logo, sequence } = formData;
 
-    
     const handleChange = (e) => {
         const { name, value } = e.target;
         if (name === "sequence") {
@@ -55,22 +53,17 @@ const Sponsors = () => {
                 [name]: value === "true",
             });
         }
-
         else {
             setFormData({
                 ...formData,
                 [name]: value,
             });
         }
-
     };
 
     const handleSubmit = (e) => {
-        // e.preventDefault();
-
         axios.post(`${apiUrl}/conferencemodule/sponsor`, formData, {
             withCredentials: true
-
         })
             .then((res) => {
                 setData([...data, res.data]);
@@ -86,7 +79,6 @@ const Sponsors = () => {
     const handleUpdate = () => {
         axios.put(`${apiUrl}/conferencemodule/sponsor/${editID}`, formData, {
             withCredentials: true
-
         })
             .then((res) => {
                 setFormData(initialData);
@@ -100,14 +92,18 @@ const Sponsors = () => {
     };
 
     const handleDelete = (deleteID) => {
-        axios.delete(`${apiUrl}/conferencemodule/sponsor/${deleteID}`, {
-            withCredentials: true
+        setDeleteItemId(deleteID);
+        setShowDeleteConfirmation(true);
+    };
 
+    const confirmDelete = () => {
+        axios.delete(`${apiUrl}/conferencemodule/sponsor/${deleteItemId}`, {
+            withCredentials: true
         })
             .then((res) => {
                 console.log('DELETED RECORD::::', res);
+                setShowDeleteConfirmation(false);
                 setRefresh(refresh + 1);
-                
             })
             .catch((err) => console.log(err));
     };
@@ -116,7 +112,6 @@ const Sponsors = () => {
         window.scrollTo(0, 0);
         axios.get(`${apiUrl}/conferencemodule/sponsor/${editIDNotState}`, {
             withCredentials: true
-
         })
             .then((res) => {
                 setFormData(res.data);
@@ -128,7 +123,6 @@ const Sponsors = () => {
         setLoading(true);
         axios.get(`${apiUrl}/conferencemodule/sponsor/conference/${IdConf}`, {
             withCredentials: true
-
         })
             .then((res) => {
                 setData(res.data);
@@ -138,137 +132,134 @@ const Sponsors = () => {
     }, [refresh]);
 
     return (
-        <main className='tw-py-10  lg:tw-pl-72 tw-min-h-screen'>
-            
-            <Container maxW='5xl'>
-                <Heading as="h1" size="xl" mt="6" mb="6">
-                    Create a New Sponsor
-                </Heading>
+        <PageShell>
+            <PageHeader
+                icon={FaHandshake}
+                title="Sponsors"
+                subtitle="Manage sponsor names, logos and display order for the conference site."
+                accent={ACCENT}
+            />
 
-
-                <FormControl isRequired={true} mb='3' >
-                    <FormLabel >Name of the Sponsor :</FormLabel>
-                    <Input
-                        type="text"
-                        name="name"
-                        value={name}
-                        onChange={handleChange}
-                        placeholder="Name"
-                        mb='2.5'
-                    />
-                </FormControl>
-                <FormControl isRequired>
-
-                    <FormLabel>Type:</FormLabel>
-                    <Input
-
-                        type="text"
-                        name="type"
-                        value={type}
-                        onChange={handleChange}
-                        placeholder="Type"
-                        mb='2.5'
-                    />
-
-                </FormControl>
-                <FormControl isRequired={true} mb='3' >
-                    <FormLabel >Logo:</FormLabel>
-                    <Input
-                        type="text"
-                        name="logo"
-                        value={logo}
-                        onChange={handleChange}
-                        placeholder="Logo"
-                        mb='2.5'
-                    />
-                </FormControl>
-                  
-                <FormControl isRequired={true}  >
-
-                    <FormLabel >Sequence :</FormLabel>
-                    <Input
-
-                        type="number"
-                        name="sequence"
-                        value={sequence}
-                        onChange={handleChange}
-                        placeholder="sequence"
-                        mb='2.5'
-                   />
-                   </FormControl>
-                <FormControl isRequired={true} mb='3' >
-                    <FormLabel >Feature:</FormLabel>
-                    <Select
-                        name="featured"
-                        value={formData.featured}
-                        onChange={handleChange}
+            <FormCard
+                title={editID ? 'Update Sponsor' : 'Add a New Sponsor'}
+                accent={ACCENT}
+                isEditing={!!editID}
+                actions={
+                    <Button
+                        colorScheme={ACCENT}
+                        size="lg"
+                        px={10}
+                        leftIcon={editID ? <FaSave /> : <FaPlus />}
+                        type={editID ? "button" : "submit"}
+                        onClick={() => { editID ? handleUpdate() : handleSubmit() }}
                     >
-                        <option value={true}>Yes</option>
-                        <option value={false}>No</option>
-                    </Select>
-                </FormControl>
-
-                <Center>
-              
-                    <Button colorScheme="blue" type={editID ? "button" : "submit"} onClick={() => { editID ? handleUpdate() : handleSubmit() }}>
                         {editID ? 'Update' : 'Add'}
                     </Button>
-
-            </Center>
-                <Heading as="h1" size="xl" mt="6" mb="6">
-                    Existing Sponsors </Heading>
-                {!loading ? (
-
-                    <TableContainer>
-                        <Table
-                            variant='striped'
-                            size="md"
-                            mt="1"
+                }
+            >
+                <FieldGrid>
+                    <FormControl isRequired={true} mb='3'>
+                        <FormLabel>Name of the Sponsor :</FormLabel>
+                        <Input
+                            type="text"
+                            name="name"
+                            value={name}
+                            onChange={handleChange}
+                            placeholder="Name"
+                            mb='2.5'
+                        />
+                    </FormControl>
+                    <FormControl isRequired>
+                        <FormLabel>Type:</FormLabel>
+                        <Input
+                            type="text"
+                            name="type"
+                            value={type}
+                            onChange={handleChange}
+                            placeholder="Type"
+                            mb='2.5'
+                        />
+                    </FormControl>
+                    <FormControl isRequired={true} mb='3'>
+                        <FormLabel>Logo:</FormLabel>
+                        <Input
+                            type="text"
+                            name="logo"
+                            value={logo}
+                            onChange={handleChange}
+                            placeholder="Logo"
+                            mb='2.5'
+                        />
+                    </FormControl>
+                    <FormControl isRequired={true}>
+                        <FormLabel>Sequence :</FormLabel>
+                        <Input
+                            type="number"
+                            name="sequence"
+                            value={sequence}
+                            onChange={handleChange}
+                            placeholder="sequence"
+                            mb='2.5'
+                        />
+                    </FormControl>
+                    <FormControl isRequired={true} mb='3'>
+                        <FormLabel>Feature:</FormLabel>
+                        <Select
+                            name="featured"
+                            value={formData.featured}
+                            onChange={handleChange}
                         >
-                            <Thead>
-                                <Tr>
-                                    <CustomTh> Name</CustomTh>
-                                    <CustomTh>Type</CustomTh>
-                                    <CustomTh>Logo</CustomTh>
-                                    <CustomTh>Sequence</CustomTh>
-                                    <CustomTh>Featured</CustomTh>
+                            <option value={true}>Yes</option>
+                            <option value={false}>No</option>
+                        </Select>
+                    </FormControl>
+                </FieldGrid>
+            </FormCard>
 
-                                    <CustomTh position={'sticky'} right={'0'}>Action</CustomTh>
-                                </Tr>
-                            </Thead>
-                            <Tbody>
-                                {data.length > 0 ? (data.map((item) => (
-                                    <Tr key={item._id}>
-                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.name}</Td>
-                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.type}</Td>
-                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.logo}</Td>
-                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.sequence}</Td>
-                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.featured?"Yes":"No"}</Td>
+            {!loading ? (
+                <TableCard title="Existing Sponsors" count={data.length} accent={ACCENT}>
+                    <Table variant='striped' size="md">
+                        <Thead>
+                            <Tr>
+                                <ThemedTh accent={ACCENT}>Name</ThemedTh>
+                                <ThemedTh accent={ACCENT}>Type</ThemedTh>
+                                <ThemedTh accent={ACCENT}>Logo</ThemedTh>
+                                <ThemedTh accent={ACCENT}>Sequence</ThemedTh>
+                                <ThemedTh accent={ACCENT}>Featured</ThemedTh>
+                                <ThemedTh accent={ACCENT} position={'sticky'} right={'0'}>Action</ThemedTh>
+                            </Tr>
+                        </Thead>
+                        <Tbody>
+                            {data.length > 0 ? (data.map((item) => (
+                                <Tr key={item._id}>
+                                    <WrapTd>{item.name}</WrapTd>
+                                    <WrapTd>{item.type}</WrapTd>
+                                    <WrapTd>{item.logo}</WrapTd>
+                                    <WrapTd>{item.sequence}</WrapTd>
+                                    <WrapTd>
+                                        <Badge colorScheme={item.featured ? "green" : "gray"}>{item.featured ? "Yes" : "No"}</Badge>
+                                    </WrapTd>
+                                    <Td position={'sticky'} right={'0'} bg="white">
+                                        <RowActions
+                                            onEdit={() => { handleEdit(item._id); setEditID(item._id); }}
+                                            onDelete={() => handleDelete(item._id)}
+                                        />
+                                    </Td>
+                                </Tr>))) :
+                                <EmptyRow colSpan={6} message="No sponsors yet — add your first sponsor above." />
+                            }
+                        </Tbody>
+                    </Table>
+                </TableCard>
+            ) : <Center py={10}><LoadingIcon /></Center>}
 
-                                        <Td position={'sticky'} right={'0'}><Center>
-                                            <Button colorScheme="red" onClick={() => handleDelete(item._id)}>Delete </Button>
-                                            <Button colorScheme="teal" onClick={() => {
-                                                handleEdit(item._id);
-                                                setEditID(item._id);
-                                            }}>Edit </Button>
-                                        </Center></Td>
-
-                                    </Tr>))) :
-                                    (
-                                        <Tr>
-                                            <Td colSpan="5" className="tw-p-1 tw-text-center">
-                                                <Center>No data available</Center></Td>
-                                        </Tr>
-                                    )
-                                }
-                            </Tbody>
-                        </Table>
-                    </TableContainer>
-                )
-
-                    : <LoadingIcon />
-                } </Container>
-        </main>
+            <DeleteModal
+                isOpen={showDeleteConfirmation}
+                onCancel={() => setShowDeleteConfirmation(false)}
+                onConfirm={confirmDelete}
+                label="this sponsor"
+            />
+        </PageShell>
     );
 };
 
