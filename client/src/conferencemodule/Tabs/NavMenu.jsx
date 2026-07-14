@@ -171,11 +171,11 @@ const MobileNavPreview = ({ items, templates, confName }) => {
     );
 };
 
-const emptyLink = { label: "", linkType: "custom", templateId: "", url: "", order: 0 };
+const emptyLink = { label: "", linkType: "template", templateId: "", url: "", order: 0 };
 const initialForm = {
     section: "left",
     label: "",
-    linkType: "custom",
+    linkType: "template",
     templateId: "",
     url: "",
     isButton: false,
@@ -491,44 +491,38 @@ const NavMenu = () => {
                 accent={ACCENT}
                 variant="outline"
             >
-                <Button colorScheme={ACCENT} leftIcon={<FaPlus />} onClick={openAddModal}>
-                    Add Menu Item
-                </Button>
+                <HStack spacing={6} wrap="wrap" justify="flex-end">
+                    <Tooltip
+                        hasArrow
+                        label="When enabled, the public conference site fetches its navbar from this admin panel instead of using its hardcoded menu."
+                    >
+                        <HStack spacing={3}>
+                            <VStack align="end" spacing={0.5}>
+                                <Text fontSize="md" fontWeight="bold" color="gray.700">Backend-driven</Text>
+                                <Badge colorScheme={navbarMode === "dynamic" ? "green" : "gray"} fontSize="0.75em" px={2}>
+                                    {navbarMode}
+                                </Badge>
+                            </VStack>
+                            <Switch size="lg" isChecked={navbarMode === "dynamic"} onChange={handleModeToggle} colorScheme="green" />
+                        </HStack>
+                    </Tooltip>
+                    <Tooltip
+                        hasArrow
+                        label="Turn on only if the site places some menus on the left of the bar and others on the right. Otherwise all items go into one menu."
+                    >
+                        <HStack spacing={3}>
+                            <Text fontSize="md" fontWeight="bold" color="gray.700">Split left/right</Text>
+                            <Switch size="lg" isChecked={splitNavbar} onChange={handleSplitToggle} colorScheme={ACCENT} />
+                        </HStack>
+                    </Tooltip>
+                    <Button size="lg" colorScheme={ACCENT} leftIcon={<FaPlus />} onClick={openAddModal}>
+                        Add Menu Item
+                    </Button>
+                </HStack>
             </PageHeader>
 
             <Flex gap={6} align="flex-start" direction={{ base: "column", xl: "row" }}>
             <Box flex="1" minW={0} w="100%">
-            <Box
-                bg="white"
-                borderRadius="2xl"
-                boxShadow="md"
-                borderLeft="5px solid"
-                borderLeftColor={navbarMode === "dynamic" ? "green.400" : "gray.300"}
-                p={5}
-                mb={6}
-            >
-                <HStack justify="space-between">
-                    <VStack align="start" spacing={0}>
-                        <Text fontWeight="bold">Use backend-driven navbar on the public site</Text>
-                        <Text fontSize="sm" color="gray.600">
-                            When enabled, the public conference site fetches its navbar from this admin panel instead of using its hardcoded menu.
-                        </Text>
-                    </VStack>
-                    <Switch size="lg" isChecked={navbarMode === "dynamic"} onChange={handleModeToggle} colorScheme="green" />
-                </HStack>
-                <Text fontSize="sm" mt="2">
-                    Current mode: <Badge colorScheme={navbarMode === "dynamic" ? "green" : "gray"}>{navbarMode}</Badge>
-                </Text>
-                <HStack justify="space-between" mt={4} pt={4} borderTop="1px solid" borderColor="gray.100">
-                    <VStack align="start" spacing={0}>
-                        <Text fontWeight="bold">Is your navbar split into left &amp; right groups?</Text>
-                        <Text fontSize="sm" color="gray.600">
-                            Turn this on only if the site places some menus on the left of the bar and others on the right. Otherwise all items go into one menu.
-                        </Text>
-                    </VStack>
-                    <Switch size="lg" isChecked={splitNavbar} onChange={handleSplitToggle} colorScheme={ACCENT} />
-                </HStack>
-            </Box>
 
             <Modal isOpen={isFormOpen} onClose={closeFormModal} size="2xl" scrollBehavior="inside">
                 <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(3px)" />

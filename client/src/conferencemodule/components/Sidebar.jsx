@@ -6,7 +6,7 @@ import getEnvironment from "../../getenvironment";
 import {
   FaHome, FaBars, FaFileAlt, FaBullhorn, FaImages,
   FaCalendarAlt, FaMicrophone, FaUpload, FaTimes, FaCreditCard, FaQuestionCircle,
-  FaChevronLeft, FaChevronRight,
+  FaChevronLeft, FaChevronRight, FaThLarge,
 } from 'react-icons/fa';
 
 // Height of the global app navbar (sticky, z-index 9999) rendered above all routes.
@@ -24,6 +24,7 @@ const navGroups = [
     title: 'Site & Content',
     items: [
       { name: 'Nav Menu', href: 'navmenu', icon: FaBars, iconColor: 'tw-text-indigo-400' },
+      { name: 'Home Layout', href: 'homelayout', icon: FaThLarge, iconColor: 'tw-text-pink-400' },
       { name: 'Common Template', href: 'commontemplate', icon: FaFileAlt, iconColor: 'tw-text-cyan-400' },
       { name: 'Announcements', href: 'announcement', icon: FaBullhorn, iconColor: 'tw-text-violet-400' },
       { name: 'Images', href: 'images', icon: FaImages, iconColor: 'tw-text-teal-400' },
