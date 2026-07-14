@@ -461,6 +461,15 @@ const QuillEditor = forwardRef(
       Quill.register("modules/imageResizeLite", ImageResizeLite); // inline module
       registerImageBlot();                                        // custom image blot (persist w/h)
 
+      // Quill's default align format writes ql-align-* classes, which only
+      // render correctly inside elements wearing quill's own .ql-editor CSS.
+      // Previews and the public conference site render the saved HTML outside
+      // that scope, so center/right/justify silently had no visual effect
+      // there. The style-based attributor writes inline `text-align` instead,
+      // which works anywhere.
+      const AlignStyle = Quill.import("attributors/style/align");
+      Quill.register(AlignStyle, true);
+
       // Sanitize links
       const Link = Quill.import("formats/link");
       Link.sanitize = (url) => {
@@ -666,6 +675,7 @@ const QuillEditor = forwardRef(
             bullets shows numbers alongside the bullets. */
          .ql-editor ol,.ql-editor ul{list-style-type:none;padding-left:1.5em;counter-reset:list-0;}
          .ql-editor li[data-list]{list-style-type:none;}
+         .ql-editor li[data-list]::marker{content:none;} /* beats list-style overrides from other stylesheets */
          /* Fallback markers for previews where the .ql-ui marker spans were
             stripped by sanitizing — same visuals, drawn on the li itself. */
          .ql-editor li[data-list=bullet]:not(:has(> .ql-ui))::before{content:'\\2022  ';}

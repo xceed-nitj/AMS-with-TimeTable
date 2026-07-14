@@ -22,10 +22,6 @@ const LivePreviewSection = ({ title, html }) => {
         Live Preview
       </Heading>
 
-      <Heading as="h3" size="sm" mb={4} color="gray.600" textTransform="uppercase" letterSpacing="wider">
-        Page Preview
-      </Heading>
-
       <Box
         border="1px solid"
         borderColor="gray.200"

@@ -23,7 +23,7 @@ const ACCENT = "purple";
 // Mimics the public conference site's mobile navbar drawer so admins can see
 // exactly how the configured menu will be arranged (left section first, then
 // right, dropdowns expandable, button items as highlighted pills).
-const MobileNavPreview = ({ items, templates, confName }) => {
+const MobileNavPreview = ({ items, templates, confName, speakersDesign }) => {
     const [collapsed, setCollapsed] = useState({});
 
     const ordered = [
@@ -37,6 +37,9 @@ const MobileNavPreview = ({ items, templates, confName }) => {
         if (it.linkType === "template") {
             const t = templates.find((tpl) => tpl._id === it.templateId);
             return t ? `page: ${t.pageTitle}` : "page: (not selected)";
+        }
+        if (it.linkType === "speakers") {
+            return `/speakers${speakersDesign} (follows Speaker Layout)`;
         }
         return it.url || "—";
     };
@@ -191,6 +194,10 @@ const NavMenu = () => {
     const [templates, setTemplates] = useState([]);
     const [navbarMode, setNavbarMode] = useState("static");
     const [confName, setConfName] = useState("");
+    // Current Speaker Layout design (1-5) — nav items of type "speakers"
+    // always resolve to /speakers{speakersDesign}; kept here just to preview
+    // that resolved link, the actual resolution happens server-side.
+    const [speakersDesign, setSpeakersDesign] = useState(1);
     // Split navbar = separate left & right menu groups. Remembered per
     // conference; defaults to on only when right-section items already exist.
     const [splitNavbar, setSplitNavbar] = useState(false);
@@ -211,13 +218,16 @@ const NavMenu = () => {
             axios.get(`${apiUrl}/conferencemodule/navitem/conf/${confId}`, { withCredentials: true }),
             axios.get(`${apiUrl}/conferencemodule/commontemplate/conference/${confId}`, { withCredentials: true }),
             axios.get(`${apiUrl}/conferencemodule/conf/${confId}`, { withCredentials: true }),
+            axios.get(`${apiUrl}/conferencemodule/homecustomisation/${confId}`, { withCredentials: true }),
         ])
-            .then(([navRes, tplRes, confRes]) => {
+            .then(([navRes, tplRes, confRes, customRes]) => {
                 const navItems = navRes.data || [];
                 setItems(navItems);
                 setTemplates(tplRes.data || []);
                 setNavbarMode(confRes.data?.navbarMode || "static");
                 setConfName(confRes.data?.name || "");
+                const speakersComponent = customRes.data?.components?.find((c) => c.key === "speakers");
+                setSpeakersDesign(speakersComponent?.design || 1);
                 const stored = localStorage.getItem(`confNavSplit-${confId}`);
                 if (stored !== null) {
                     setSplitNavbar(stored === "true");
@@ -408,6 +418,7 @@ const NavMenu = () => {
                 <FormLabel fontSize="sm">Link Type</FormLabel>
                 <Select name="linkType" value={data.linkType} onChange={(e) => onFieldChange("linkType", e.target.value)}>
                     <option value="template">Existing page (Common Template)</option>
+                    <option value="speakers">Speakers Page</option>
                     <option value="custom">Custom internal path</option>
                     <option value="external">External URL</option>
                 </Select>
@@ -424,6 +435,14 @@ const NavMenu = () => {
                             <option key={t._id} value={t._id}>{t.pageTitle}</option>
                         ))}
                     </Select>
+                </FormControl>
+            ) : data.linkType === "speakers" ? (
+                <FormControl mb="2">
+                    <FormLabel fontSize="sm">Link</FormLabel>
+                    <Text fontSize="sm" color="gray.600" bg="gray.50" borderRadius="md" px={3} py={2}>
+                        Always points at <b>/speakers{speakersDesign}</b> — the design currently selected in the
+                        Speaker Layout tab. Changing that selection updates this link automatically, no edit needed here.
+                    </Text>
                 </FormControl>
             ) : (
                 <FormControl mb="2">
@@ -447,7 +466,9 @@ const NavMenu = () => {
             {splitNavbar && <Td><Badge colorScheme={ACCENT}>{item.section}</Badge></Td>}
             <WrapTd>{item.linkType === "template"
                 ? (templates.find((t) => t._id === item.templateId)?.pageTitle || "(page)")
-                : item.url}</WrapTd>
+                : item.linkType === "speakers"
+                    ? `/speakers${speakersDesign}`
+                    : item.url}</WrapTd>
             <Td>{item.subItems?.length || 0}</Td>
             <Td>{item.isButton ? <Badge colorScheme="green">Yes</Badge> : ""}</Td>
             <Td>{item.order}</Td>
@@ -657,7 +678,7 @@ const NavMenu = () => {
                 position={{ xl: "sticky" }}
                 top={{ xl: "90px" }}
             >
-                <MobileNavPreview items={items} templates={templates} confName={confName} />
+                <MobileNavPreview items={items} templates={templates} confName={confName} speakersDesign={speakersDesign} />
             </Box>
             </Flex>
 

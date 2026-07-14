@@ -1,6 +1,10 @@
 const mongoose = require("mongoose");
 
-const LINK_TYPES = ["template", "custom", "external"];
+// "speakers" is a self-updating link: its url is not stored, but resolved on
+// read from the current Speaker Layout design selection (see navItem crud's
+// resolveSpeakersUrl), so it always points at /speakers{N} for whichever
+// design is currently selected.
+const LINK_TYPES = ["template", "custom", "external", "speakers"];
 
 const subItemSchema = new mongoose.Schema(
   {

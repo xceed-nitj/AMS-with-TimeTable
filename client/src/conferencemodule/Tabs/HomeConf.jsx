@@ -1,9 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import DOMPurify from "dompurify";
-import Quill from "quill";
-import "quill/dist/quill.snow.css";
-import QuillBetterTable from "quill-better-table";
-import "quill-better-table/dist/quill-better-table.css";
+import QuillEditor from "../components/QuillEditor";
 import axios from 'axios';
 import { useParams } from "react-router-dom";
 import LoadingIcon from "../components/LoadingIcon";
@@ -18,11 +15,8 @@ import { PageHeader, DeleteModal } from "../components/ui";
 
 const HomeConf = () => {
     const navigate = useNavigate();
-    const editorRefs = useRef([]);
-    const quillInstances = useRef([]);
-    const isQuillRegistered = useRef(false);
-    const isUpdatingDescription = useRef(false);
-    const initializedTabs = useRef(new Set());
+    // Imperative API of the shared QuillEditor (setHTML/getHTML/insertTable).
+    const editorApiRef = useRef(null);
 
     const params = useParams();
     const apiUrl = getEnvironment();
@@ -126,7 +120,6 @@ const HomeConf = () => {
                 .filter(s => s.title || s.description);
             if (cleaned.length > 0) {
                 setAbout(cleaned);
-                initializedTabs.current = new Set();
                 setShowAboutSection(false);
                 setActiveAboutTab(null);
                 aboutImported = true;
@@ -283,11 +276,11 @@ const HomeConf = () => {
     };
 
     const handleShowHtml = () => {
-        if (activeAboutTab !== null && quillInstances.current[activeAboutTab]) {
-            const html = quillInstances.current[activeAboutTab].getHTML();
+        if (activeAboutTab !== null && editorApiRef.current) {
+            const html = editorApiRef.current.getHTML();
             setHtmlContent(html);
             setEditableHtmlContent(html);
-            setShowHtml(!showHtml);
+            setShowHtml(prev => !prev);
         }
     };
 
@@ -296,12 +289,12 @@ const HomeConf = () => {
     };
 
     const applyHtmlChanges = () => {
-        if (activeAboutTab !== null && quillInstances.current[activeAboutTab]) {
+        if (activeAboutTab !== null && editorApiRef.current) {
             try {
                 const parsedHtml = parseHtmlTables(editableHtmlContent);
-                
-                quillInstances.current[activeAboutTab].setHTML(parsedHtml);
-                
+
+                editorApiRef.current.setHTML(parsedHtml);
+
                 const newAbout = [...about];
                 newAbout[activeAboutTab].description = parsedHtml;
                 setAbout(newAbout);
@@ -354,14 +347,7 @@ const HomeConf = () => {
             
             const newAbout = about.filter((_, index) => index !== indexToRemove);
             setAbout(newAbout);
-            
-            if (quillInstances.current[indexToRemove]) {
-                quillInstances.current[indexToRemove] = null;
-            }
-            quillInstances.current = quillInstances.current.filter((_, index) => index !== indexToRemove);
-            editorRefs.current = editorRefs.current.filter((_, index) => index !== indexToRemove);
-            initializedTabs.current.delete(indexToRemove);
-            
+
             if (activeAboutTab >= newAbout.length) {
                 setActiveAboutTab(newAbout.length - 1);
             } else if (activeAboutTab > indexToRemove) {
@@ -377,22 +363,16 @@ const HomeConf = () => {
     };
 
     const handleDescriptionChange = (value, index) => {
-        if (isUpdatingDescription.current) return;
-        
-        isUpdatingDescription.current = true;
-        const newAboutIns = [...about];
-        newAboutIns[index].description = value;
-        console.log('Description updated for index:', index, 'Value:', value);
-        setAbout(newAboutIns);
-        
+        setAbout(prev => {
+            const next = [...prev];
+            next[index] = { ...next[index], description: value };
+            return next;
+        });
+
         if (showHtml && activeAboutTab === index) {
             setHtmlContent(value);
             setEditableHtmlContent(value);
         }
-        
-        setTimeout(() => {
-            isUpdatingDescription.current = false;
-        }, 100);
     };
 
     const fetchAboutSections = async () => {
@@ -447,122 +427,6 @@ const HomeConf = () => {
         }
     };
 
-    useEffect(() => {
-    if (!isQuillRegistered.current) {
-        try {
-            Quill.register(
-                {
-                    "modules/better-table": QuillBetterTable,
-                },
-                true
-            );
-            isQuillRegistered.current = true;
-        } catch (error) {
-            console.log("Quill modules already registered");
-        }
-    }
-
-    const initializeQuill = (index) => {
-        if (!editorRefs.current[index] || !about[index] || aboutLoading) {
-            return;
-        }
-
-        console.log("Initializing Quill for index:", index);
-        console.log("About data for index:", about[index]);
-        console.log("Description:", about[index]?.description);
-
-        editorRefs.current[index].innerHTML = "";
-
-        const modules = {
-            toolbar: [
-                [{ header: [1, 2, 3, false] }],
-                ["bold", "italic", "underline", "strike"],
-                [{ color: [] }, { background: [] }],
-                [{ script: "sub" }, { script: "super" }],
-                ["blockquote", "code-block"],
-                [{ list: "ordered" }, { list: "bullet" }],
-                [{ indent: "-1" }, { indent: "+1" }],
-                [{ align: [] }],
-                ["link", "image", "video"],
-                ["clean"],
-            ],
-            clipboard: { matchVisual: false },
-            "better-table": {
-                operationMenu: {
-                    items: {
-                        insertColumnRight: { text: "Insert Column Right" },
-                        insertColumnLeft: { text: "Insert Column Left" },
-                        insertRowUp: { text: "Insert Row Above" },
-                        insertRowDown: { text: "Insert Row Below" },
-                        mergeCells: { text: "Merge Cells" },
-                        unmergeCells: { text: "Unmerge Cells" },
-                        deleteColumn: { text: "Delete Column" },
-                        deleteRow: { text: "Delete Row" },
-                        deleteTable: { text: "Delete Table" },
-                    },
-                },
-            },
-            keyboard: { bindings: QuillBetterTable.keyboardBindings },
-        };
-
-        quillInstances.current[index] = new Quill(editorRefs.current[index], {
-            theme: "snow",
-            modules,
-            placeholder: "Start writing here...",
-        });
-
-        quillInstances.current[index].setHTML = (html) => {
-            quillInstances.current[index].root.innerHTML = html;
-        };
-
-        quillInstances.current[index].getHTML = () => {
-            return quillInstances.current[index].root.innerHTML;
-        };
-
-        const description = about[index]?.description || "";
-        console.log("Setting description:", description);
-        quillInstances.current[index].setHTML(description);
-
-        quillInstances.current[index].on("text-change", () => {
-            console.log("Current HTML content:", quillInstances.current[index].getHTML());
-            if (!isUpdatingDescription.current) {
-                handleDescriptionChange(quillInstances.current[index].getHTML(), index);
-            }
-        });
-
-        console.log("Quill initialized for index:", index);
-    };
-
-    const reinitializeQuillIfNeeded = (index) => {
-        if (!quillInstances.current[index]) {
-            console.log("Reinitializing Quill for index:", index);
-            initializeQuill(index);
-        }
-    };
-
-    const timeoutId = setTimeout(() => {
-        if (!aboutLoading && about && about[activeAboutTab] && showAboutSection) {
-            reinitializeQuillIfNeeded(activeAboutTab);
-        }
-    }, 300);
-
-    return () => {
-        clearTimeout(timeoutId);
-
-        if (quillInstances.current[activeAboutTab]) {
-            quillInstances.current[activeAboutTab].off("text-change");
-            quillInstances.current[activeAboutTab] = null;
-        }
-    };
-}, [activeAboutTab, aboutLoading, showAboutSection]);
-
-    const insertTable = (index) => {
-        if (quillInstances.current[index]) {
-            const tableModule = quillInstances.current[index].getModule("better-table");
-            tableModule.insertTable(3, 3);
-        }
-    };
-
     const updateConferenceAndAbout = async () => {
         try {
             const conferenceResponse = await axios.put(`${apiUrl}/conferencemodule/home/${editID}`, formData, {
@@ -603,13 +467,6 @@ const HomeConf = () => {
                     console.log(formData);
                 });
         }
-    };
-    
-    const handleEditorChange = (value, fieldName) => {
-        setFormData({
-            ...formData,
-            [fieldName]: value,
-        });
     };
     
     const handleUpdate = () => {
@@ -688,7 +545,7 @@ const HomeConf = () => {
                                 {about[activeAboutTab].title || `About Section ${activeAboutTab + 1}`}
                             </Heading>
                             <Box
-                                className="tw-prose tw-max-w-none tw-min-h-[100px] tw-p-2 tw-border tw-rounded tw-bg-gray-50"
+                                className="ql-editor tw-max-w-none tw-min-h-[100px] tw-p-2 tw-border tw-rounded tw-bg-gray-50"
                                 dangerouslySetInnerHTML={{
                                     __html: DOMPurify.sanitize(about[activeAboutTab].description || '<p class="tw-text-gray-400 tw-italic">Start typing in the description editor to see the live preview here...</p>')
                                 }}
@@ -782,16 +639,6 @@ const HomeConf = () => {
                             alignItems="flex-start"
                             overflowY="auto"
                         >
-                            <Heading as="h2" size="md" mb={4} color="blue.800">
-                                Add Items
-                            </Heading>
-                            <Button colorScheme="blue" onClick={addNewAbout} mb="2" width="100%" size="sm">
-                                Add New About
-                            </Button>
-                            <Button colorScheme="green" onClick={handleOpenImport} mb="4" width="100%" size="sm">
-                                Import from Conference
-                            </Button>
-                            
                             {/* Back to Form Button */}
                             {showAboutSection && (
                                 <Button colorScheme="gray" onClick={handleBackToForm} mb="4" width="100%" size="sm">
@@ -986,36 +833,21 @@ const HomeConf = () => {
                                             </FormControl>
                                             <FormControl mb='3'>
                                                 <p>Description:</p>
-                                                <div style={{ marginBottom: "10px" }}>
-                                                    <Button
-                                                        colorScheme="blue"
-                                                        size="sm"
-                                                        onClick={() => insertTable(activeAboutTab)}
-                                                        mr={2}
-                                                    >
-                                                        Insert Table
-                                                    </Button>
-                                                    <Button
-                                                        colorScheme="purple"
-                                                        size="sm"
-                                                        onClick={handleShowHtml}
-                                                        mr={2}
-                                                    >
-                                                        {showHtml ? 'Hide HTML' : 'Show HTML'}
-                                                    </Button>
-                                                </div>
-                                                <div
-                                                    ref={(el) => (editorRefs.current[activeAboutTab] = el)}
-                                                    style={{
-                                                        height: "200px",
-                                                        width: "100%",
-                                                        border: "1px solid #ccc",
-                                                        borderRadius: "5px",
-                                                        marginBottom: "20px",
-                                                        background: "#fff"
-                                                    }}
-                                                ></div>
-                                                
+                                                {/* Shared editor — its toolbar includes the
+                                                    insert-table and HTML-view buttons. Keyed by
+                                                    tab (parent div) so switching tabs remounts
+                                                    it with that tab's content. */}
+                                                <Box mb={4}>
+                                                    <QuillEditor
+                                                        ref={editorApiRef}
+                                                        value={about[activeAboutTab]?.description || ""}
+                                                        onChange={(html) => handleDescriptionChange(html, activeAboutTab)}
+                                                        onToggleHtml={handleShowHtml}
+                                                        placeholder="Start writing here..."
+                                                        height={300}
+                                                    />
+                                                </Box>
+
                                                 {/* HTML Display Area */}
                                                 {showHtml && (
                                                     <Box
