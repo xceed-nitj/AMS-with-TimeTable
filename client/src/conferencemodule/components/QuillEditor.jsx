@@ -5,6 +5,26 @@ import "quill/dist/quill.snow.css";
 import QuillBetterTable from "quill-better-table";
 import "quill-better-table/dist/quill-better-table.css";
 
+// One source of truth for the font/size formats: Quill's whitelists, the
+// toolbar dropdowns and the picker-label CSS are all generated from these.
+// Font names must be single-token families only — browsers quote multi-word
+// names (e.g. "Times New Roman") when reading style.fontFamily back, which
+// fails Quill's whitelist check and silently drops the format.
+const FONT_WHITELIST = [
+  // sans-serif
+  "Arial", "Helvetica", "Verdana", "Tahoma", "Calibri", "Candara", "Corbel",
+  // serif
+  "Georgia", "Cambria", "Garamond", "Palatino", "Times", "Baskerville", "Constantia",
+  // display
+  "Impact", "Rockwell", "Futura", "Optima",
+  // monospace + script
+  "Consolas", "Monaco", "Courier", "monospace", "cursive",
+];
+const SIZE_WHITELIST = [
+  "8px", "9px", "10px", "11px", "12px", "14px", "16px", "18px", "20px", "22px",
+  "24px", "26px", "28px", "32px", "36px", "40px", "48px", "56px", "64px", "72px",
+];
+
 const QuillEditor = forwardRef(
   (
     {
@@ -470,6 +490,14 @@ const QuillEditor = forwardRef(
       const AlignStyle = Quill.import("attributors/style/align");
       Quill.register(AlignStyle, true);
 
+      // Font size / family as inline styles too, for the same reason.
+      const SizeStyle = Quill.import("attributors/style/size");
+      SizeStyle.whitelist = SIZE_WHITELIST;
+      Quill.register(SizeStyle, true);
+      const FontStyle = Quill.import("attributors/style/font");
+      FontStyle.whitelist = FONT_WHITELIST;
+      Quill.register(FontStyle, true);
+
       // Sanitize links
       const Link = Quill.import("formats/link");
       Link.sanitize = (url) => {
@@ -670,21 +698,38 @@ const QuillEditor = forwardRef(
          .ql-container{position:relative;}
          .ql-editor{position:relative;} /* ensure resize overlay positions correctly */
          /* Quill 2 renders BOTH bullet and numbered lists as <ol>, with the
-            marker type in each <li>'s data-list attribute drawn via ::before
-            counters. Native list-style must stay OFF or switching numbering →
-            bullets shows numbers alongside the bullets. */
-         .ql-editor ol,.ql-editor ul{list-style-type:none;padding-left:1.5em;counter-reset:list-0;}
-         .ql-editor li[data-list]{list-style-type:none;}
+            marker type in each <li>'s data-list attribute. Deterministic
+            markers: kill the browser's native <ol> numbering AND Quill's own
+            .ql-ui marker spans, then draw exactly ONE marker per item via
+            ::before — no doubled bullet-over-number regardless of what other
+            stylesheets or sanitizers do. */
+         .ql-editor ol,.ql-editor ul{list-style:none;padding-left:1.5em;counter-reset:list-0;}
+         .ql-editor li[data-list]{list-style:none;position:relative;}
          .ql-editor li[data-list]::marker{content:none;} /* beats list-style overrides from other stylesheets */
-         /* Fallback markers for previews where the .ql-ui marker spans were
-            stripped by sanitizing — same visuals, drawn on the li itself. */
-         .ql-editor li[data-list=bullet]:not(:has(> .ql-ui))::before{content:'\\2022  ';}
+         .ql-editor li[data-list]:not([data-list=checked]):not([data-list=unchecked]) > .ql-ui{display:none;}
+         .ql-editor li[data-list]:not([data-list=checked]):not([data-list=unchecked])::before{display:inline-block;margin-left:-1.5em;margin-right:.3em;text-align:right;white-space:nowrap;width:1.2em;}
+         .ql-editor li[data-list=bullet]::before{content:'\\2022';}
+         .ql-editor li[data-list=tick]::before{content:'\\2713';}
+         .ql-editor li[data-list=star]::before{content:'\\2605';}
+         .ql-editor li[data-list=arrow]::before{content:'\\27A4';}
+         .ql-editor li[data-list=diamond]::before{content:'\\25C6';}
          .ql-editor li[data-list=ordered]{counter-increment:list-0;}
-         .ql-editor li[data-list=ordered]:not(:has(> .ql-ui))::before{content:counter(list-0) '. ';}
+         .ql-editor li[data-list=ordered]::before{content:counter(list-0) '. ';}
          /* Legacy content saved as plain lists (no data-list attributes)
             keeps native markers. */
          .ql-editor ul li:not([data-list]){list-style-type:disc;}
          .ql-editor ol li:not([data-list]){list-style-type:decimal;}
+         /* Font/size picker labels — Snow's CSS only labels its stock values,
+            so custom whitelists would render blank pickers. attr(data-value)
+            shows whatever value is configured; no data-value = the default. */
+         .ql-snow .ql-picker.ql-size .ql-picker-label::before,.ql-snow .ql-picker.ql-size .ql-picker-item::before{content:'Normal';}
+         .ql-snow .ql-picker.ql-size .ql-picker-label[data-value]::before,.ql-snow .ql-picker.ql-size .ql-picker-item[data-value]::before{content:attr(data-value);}
+         .ql-snow .ql-picker.ql-font .ql-picker-label::before,.ql-snow .ql-picker.ql-font .ql-picker-item::before{content:'Default';}
+         .ql-snow .ql-picker.ql-font .ql-picker-label[data-value]::before,.ql-snow .ql-picker.ql-font .ql-picker-item[data-value]::before{content:attr(data-value);}
+         /* preview each dropdown entry in its own typeface (generated) */
+         ${FONT_WHITELIST.map((f) => `.ql-snow .ql-picker.ql-font .ql-picker-item[data-value=${f}]::before{font-family:${f};}`).join("\n         ")}
+         /* long pickers scroll instead of running off-screen */
+         .ql-snow .ql-picker.ql-font .ql-picker-options,.ql-snow .ql-picker.ql-size .ql-picker-options{max-height:240px;overflow-y:auto;}
          /* Links must stay visible in previews — Chakra's global reset makes
             them inherit color with no underline. */
          .ql-editor a{color:#2563eb !important;text-decoration:underline !important;}
@@ -744,6 +789,19 @@ const QuillEditor = forwardRef(
             </select>
           </span>
           <span className="ql-formats">
+            {/* Options come from the whitelists so they always match. The
+                default <option> has no value attribute so the picker shows the
+                fallback label from the injected CSS. */}
+            <select className="ql-font" defaultValue="">
+              <option />
+              {FONT_WHITELIST.map((f) => <option key={f} value={f} />)}
+            </select>
+            <select className="ql-size" defaultValue="">
+              <option />
+              {SIZE_WHITELIST.map((s) => <option key={s} value={s} />)}
+            </select>
+          </span>
+          <span className="ql-formats">
             <button className="ql-bold" />
             <button className="ql-italic" />
             <button className="ql-underline" />
@@ -762,8 +820,33 @@ const QuillEditor = forwardRef(
             <button className="ql-code-block" />
           </span>
           <span className="ql-formats">
-            <button className="ql-list" value="ordered" />
             <button className="ql-list" value="bullet" />
+            {/* Custom symbol lists — Quill stores the value in data-list and the
+                injected stylesheet draws the matching marker. Snow only injects
+                icons for values it knows, so the SVG content below survives.
+                Glyphs are SVG <text> with ql-fill so Snow colors them like its
+                own icons (gray, blue on hover/active) — plain text stays
+                unpainted and invisible. */}
+            <button className="ql-list" value="tick" title="Tick list" type="button">
+              <svg viewBox="0 0 18 18" width="18" height="18">
+                <text x="9" y="14" textAnchor="middle" fontSize="14" className="ql-fill">✓</text>
+              </svg>
+            </button>
+            <button className="ql-list" value="star" title="Star list" type="button">
+              <svg viewBox="0 0 18 18" width="18" height="18">
+                <text x="9" y="14" textAnchor="middle" fontSize="13" className="ql-fill">★</text>
+              </svg>
+            </button>
+            <button className="ql-list" value="arrow" title="Arrow list" type="button">
+              <svg viewBox="0 0 18 18" width="18" height="18">
+                <text x="9" y="13" textAnchor="middle" fontSize="11" className="ql-fill">➤</text>
+              </svg>
+            </button>
+            <button className="ql-list" value="diamond" title="Diamond list" type="button">
+              <svg viewBox="0 0 18 18" width="18" height="18">
+                <text x="9" y="13" textAnchor="middle" fontSize="11" className="ql-fill">◆</text>
+              </svg>
+            </button>
             <button className="ql-indent" value="-1" />
             <button className="ql-indent" value="+1" />
           </span>
