@@ -66,14 +66,57 @@ function SectionTitle({ children }) {
     );
 }
 
+function RefTag({ children, color }) {
+    return (
+        <span style={{
+            fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 99,
+            background: `${color}15`, color, border: `1px solid ${color}40`,
+        }}>{children}</span>
+    );
+}
+
+function RefLabel({ children }) {
+    return (
+        <div style={{
+            fontSize: 10, fontWeight: 800, textTransform: 'uppercase',
+            letterSpacing: '0.06em', color: T.textMuted, marginBottom: 3, marginTop: 10,
+        }}>{children}</div>
+    );
+}
+
+function Body({ children, color = '#374151' }) {
+    return <div style={{ fontSize: 13, color, lineHeight: 1.7 }}>{children}</div>;
+}
+
+function TabRefCard({ title, tags = [], fields, children }) {
+    return (
+        <div style={{
+            background: '#fff', border: '1px solid #e4e8f5', borderRadius: 10,
+            padding: '14px 18px', marginBottom: 12,
+        }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <div style={{ fontWeight: 800, fontSize: 14, color: T.text }}>{title}</div>
+                {tags.map(t => <RefTag key={t.label} color={t.color}>{t.label}</RefTag>)}
+            </div>
+            {children}
+            {fields && (
+                <>
+                    <RefLabel>Details you enter</RefLabel>
+                    <div style={{ fontSize: 12, color: T.accent, fontFamily: 'monospace', lineHeight: 1.7 }}>{fields}</div>
+                </>
+            )}
+        </div>
+    );
+}
+
 // ── tabs ──────────────────────────────────────────────────────────────────────
 
 const TABS = [
-    { id: 'overview',     label: 'Overview',              icon: '🗂️' },
-    { id: 'setup',        label: 'Getting Started',       icon: '⚙️' },
-    { id: 'content',      label: 'Content Sections',      icon: '📄' },
-    { id: 'participants', label: 'Participants & Payment', icon: '👥' },
-    { id: 'other',        label: 'Tips & Gotchas',        icon: '🔧' },
+    { id: 'overview', label: 'Overview',        icon: '🗂️' },
+    { id: 'setup',    label: 'Getting Started', icon: '⚙️' },
+    { id: 'tabs',     label: 'Tab-by-Tab Guide', icon: '📄' },
+    { id: 'editor',   label: 'Editor Guide',    icon: '✏️' },
+    { id: 'tips',     label: 'Tips & FAQs',     icon: '🔧' },
 ];
 
 // ── tab content ───────────────────────────────────────────────────────────────
@@ -82,20 +125,19 @@ function TabOverview({ setTab }) {
     return (
         <div>
             <Note type="key">
-                The Conference Module is a self-service content manager for building and running an
-                academic conference's public microsite and back-office records — speakers, committees,
-                sponsors, schedule, venue, accommodation, and participants. It supports
-                <strong> multiple independent conferences</strong> side by side, each identified by its own
-                conference ID, each with its own admin panel.
+                The Conference Module lets you run your conference website yourself — the menu, the home
+                page layout, pages, speakers, images, announcements and important dates are all managed
+                from this admin panel. Whatever you save here appears on the public conference site;
+                no developer is needed for day-to-day content changes.
             </Note>
 
-            <SectionTitle>What This Module Does</SectionTitle>
+            <SectionTitle>The Admin Panel at a Glance</SectionTitle>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
                 {[
-                    { icon: '🏛️', title: 'Multi-Conference Support', desc: 'Every conference is a separate record with its own ID. All content — speakers, sponsors, schedule, etc. — is scoped to that one conference.' },
-                    { icon: '📝', title: 'Section-by-Section Content', desc: 'Sixteen content sections (tabs) cover everything from the About page to accommodation and sponsorship rates.' },
-                    { icon: '🌐', title: 'No Publish Step', desc: 'There is no master "Publish" button. Each item has its own Feature/Featured toggle and Sequence number controlling whether and where it shows.' },
-                    { icon: '👁️', title: 'Public Read Access', desc: 'All content is readable without logging in — only creating and deleting records requires an Event Organizer (EO) or admin login.' },
+                    { icon: '📚', title: 'Left Sidebar', desc: 'All tabs live in the dark sidebar, grouped as Overview, Site & Content, and Tools. Use the chevron button at its top to shrink it to icons; the arrow again expands it.' },
+                    { icon: '🪟', title: 'Add & Edit in Pop-ups', desc: 'Every tab has an "Add …" button in its title banner. Adding and editing happen in a pop-up form — fill it and press Add/Update. Nothing saves until you press the button.' },
+                    { icon: '🃏', title: 'Cards, Ordered by You', desc: 'Speakers, Images and Event Dates display as cards. Cards are arranged by the Order number you give each entry — smaller numbers come first.' },
+                    { icon: '✅', title: 'Instant Feedback', desc: 'Every save shows a green confirmation message; failures show a red one explaining why. Deleting always asks "Are you sure?" first.' },
                 ].map(c => (
                     <div key={c.title} style={{
                         background: '#fff', border: '1px solid #e4e8f5',
@@ -118,9 +160,9 @@ function TabOverview({ setTab }) {
             }}>
                 {[
                     { n: 1, icon: '⚙️', label: 'Create Conference', sub: 'Name · Email', tab: 'setup' },
-                    { n: 2, icon: '🏠', label: 'About & Navbar', sub: 'Core details', tab: 'setup' },
-                    { n: 3, icon: '📄', label: 'Fill Content Sections', sub: 'Speakers, sponsors, schedule…', tab: 'content' },
-                    { n: 4, icon: '👥', label: 'Participants & Payment', sub: 'Authors · registration link', tab: 'participants' },
+                    { n: 2, icon: '🏠', label: 'Home Details', sub: 'Name · Dates · About', tab: 'setup' },
+                    { n: 3, icon: '📄', label: 'Build Pages & Content', sub: 'Pages, speakers, images…', tab: 'tabs' },
+                    { n: 4, icon: '🧭', label: 'Set Up the Menu', sub: 'Nav Menu · Home Layout', tab: 'tabs' },
                 ].map((s, i) => (
                     <div key={s.n} style={{
                         flex: 1, padding: '16px 14px', textAlign: 'center',
@@ -134,59 +176,26 @@ function TabOverview({ setTab }) {
                 ))}
             </div>
 
-            <SectionTitle>Roles</SectionTitle>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 28 }}>
-                {[
-                    {
-                        icon: '🎓', title: 'Event Organizer (EO) / Admin', color: '#6366f1',
-                        items: [
-                            'Creates and deletes conferences and their content records',
-                            'Fills in every content section from the admin panel',
-                            'Updating existing records is generally not role-gated',
-                        ],
-                    },
-                    {
-                        icon: '🌐', title: 'Public Visitor', color: '#10b981',
-                        items: [
-                            'No account or login needed to read conference data',
-                            'Registers/pays via the external Payment Portal link',
-                            'Content visibility is controlled by Feature/Sequence, not by login',
-                        ],
-                    },
-                ].map(u => (
-                    <div key={u.title} style={{
-                        background: '#fff', border: `1px solid ${u.color}33`,
-                        borderLeft: `4px solid ${u.color}`,
-                        borderRadius: 10, padding: '14px 16px',
-                    }}>
-                        <div style={{ fontSize: 18, marginBottom: 6 }}>{u.icon}</div>
-                        <div style={{ fontWeight: 700, fontSize: 13, color: T.text, marginBottom: 8 }}>{u.title}</div>
-                        <ul style={{ margin: 0, paddingLeft: 16, fontSize: 12, color: '#6b7280', lineHeight: 1.75 }}>
-                            {u.items.map(i => <li key={i}>{i}</li>)}
-                        </ul>
-                    </div>
-                ))}
+            <SectionTitle>Sidebar Tabs</SectionTitle>
+            <div style={{
+                background: '#0f172a', color: '#e2e8f0', borderRadius: 8,
+                padding: '14px 18px', fontFamily: 'monospace', fontSize: 12, lineHeight: 2, marginBottom: 20,
+            }}>
+                Overview&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ Home<br />
+                Site &amp; Content → Nav Menu · Home Layout · Customisation · Common Template · Announcements · Images · Event Dates<br />
+                People&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ Speakers<br />
+                Tools&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ File Upload
             </div>
 
             <SectionTitle>Important Notes</SectionTitle>
-            <Note type="warning">
-                <strong>About, Navbar, and Location are one-per-conference.</strong> Trying to add a second
-                record for any of these three sections is blocked — use that section's Update action instead.
-            </Note>
             <Note type="info">
-                The <strong>Payment Portal</strong> currently opens a fixed external registration site and
-                is not specific to any one conference — treat it as a placeholder until a dedicated
-                in-app payment flow is added.
+                The sidebar's bottom holds <strong>Make Payment</strong> and this
+                <strong> Help &amp; Manual</strong>. The countdown at the top shows time remaining until
+                your conference start date (from the Home tab).
             </Note>
             <Note type="tip">
-                See the <strong>Tips &amp; Gotchas</strong> tab for the direct URLs to sections that aren't
-                shown as clickable tabs in the admin sidebar.
-            </Note>
-            <Note type="key">
-                The <strong>Home</strong> tab's About text and the <strong>Navbar</strong> tab's data are
-                editable from the admin panel, but the Home page's actual layout and the live navigation
-                menu's link structure are <strong>not fully self-service</strong> — contact a developer for
-                those structural changes. See <strong>Content Sections</strong> for the full explanation.
+                Start with <strong>Getting Started</strong> if this is your first conference, then use the
+                <strong> Tab-by-Tab Guide</strong> as a reference for exactly what to type in each screen.
             </Note>
         </div>
     );
@@ -197,417 +206,411 @@ function TabSetup() {
         <div>
             <SectionTitle>Step 1 — Create the Conference</SectionTitle>
             <Step n={1} title="Open Create Conference">
-                Navigate to <strong>Create a New Conference</strong> (route <code>/cf/addconf</code>).
+                Navigate to <strong>Conferences</strong> (route <code>/cf/addconf</code>).
             </Step>
             <Step n={2} title="Fill in Name and Email">
-                Enter the <strong>Name of the Conference</strong> and an <strong>Email</strong>, then click
-                <strong> Add</strong>. Each conference must use a unique email.
+                Enter the <strong>Name of the Conference</strong> (e.g. "MAC 2027") and the organiser's
+                <strong> Email</strong>, then click <strong>Add</strong>. Each conference needs a unique email.
             </Step>
-            <Note type="warning">
-                The <strong>Existing Conferences</strong> table on this same page lists <em>every</em>
-                conference in the system, not just yours — don't confuse it with your own conference list
-                (see Step 2 below).
+            <Step n={3} title="Open the Admin Panel">
+                Go to your <strong>Dashboard</strong> (<code>/cf/dashboard</code>), find your conference and
+                click through — the admin panel opens on the <strong>Home</strong> tab.
+            </Step>
+
+            <SectionTitle>Step 2 — Home Tab: Name, Dates &amp; About</SectionTitle>
+            <Step n={1} title="Enter the basics">
+                On <strong>Home</strong>, type the <strong>Name of the Conference</strong> and pick the
+                <strong> Starting Date</strong> and <strong>Ending Date</strong>. Click
+                <strong> Add Conference Info</strong> (later it reads <strong>Update Conference Info</strong>).
+                These dates also drive the countdown timer shown on the sidebar and the public site.
+            </Step>
+            <Step n={2} title="Write the About sections">
+                Click <strong>Add New About</strong> in the title banner. Each About section has a
+                <strong> Title</strong> (e.g. "About the Conference", "About the Institute") and a rich-text
+                <strong> Description</strong>. Pick a section from the left list to edit it, write in the
+                editor (the right panel shows a live preview), then press
+                <strong> Update About Section</strong>.
+            </Step>
+            <Step n={3} title="Reusing last year's content (optional)">
+                Click <strong>Import from Conference</strong>, choose the earlier conference, review the
+                preview (it shows the name, dates, and how many About sections come along), and press
+                <strong> Apply Import</strong>. Both the details <em>and</em> the About sections are
+                brought in — review everything and save.
+            </Step>
+
+            <SectionTitle>Step 3 — Build Your Pages</SectionTitle>
+            <Step n={1} title="Create pages in Common Template">
+                Every extra page of your site — Tracks, Committees, Registration Fee, Travel Info — is
+                created in <strong>Common Template</strong>. Click <strong>Add New Page</strong>, give it a
+                <strong> Page Title</strong>, write the content, press <strong>Add Page</strong>.
+            </Step>
+            <Step n={2} title="Add other content">
+                Fill in <strong>Speakers</strong>, <strong>Images</strong>, <strong>Event Dates</strong>,
+                and <strong>Announcements</strong> from their tabs — each is a simple "Add" pop-up form.
+                Details for every field are in the <strong>Tab-by-Tab Guide</strong>.
+            </Step>
+
+            <SectionTitle>Step 4 — Wire Up the Site Menu</SectionTitle>
+            <Step n={1} title="Add menu items">
+                In <strong>Nav Menu</strong>, click <strong>Add Menu Item</strong>. Give it a
+                <strong> Label</strong> (what visitors see), pick where it links to (for your own pages just
+                choose the page by <em>name</em> from the dropdown), set an <strong>Order</strong> number,
+                and save. The phone-shaped <strong>Mobile Preview</strong> beside the tables shows exactly
+                how your menu will look.
+            </Step>
+            <Step n={2} title="Turn the live menu on">
+                In the Nav Menu title banner, switch <strong>Backend-driven</strong> ON. From that moment
+                the public site builds its menu from what you configured here. Leave it OFF while you're
+                still experimenting — the site keeps its old menu until you flip the switch.
+            </Step>
+            <Step n={3} title="Arrange the home page">
+                In <strong>Home Layout</strong>, drag/move the home page sections into the order you want
+                and switch individual sections on or off (e.g. show the Speakers strip once speakers are
+                announced). Press <strong>Save</strong>.
+            </Step>
+        </div>
+    );
+}
+
+function TabTabs() {
+    return (
+        <div>
+            <Note type="info">
+                Every tab works the same way: press the <strong>Add …</strong> button in the title banner,
+                fill the pop-up form, press <strong>Add</strong>. To change an entry press
+                <strong> Edit</strong> on its card or row; to remove it press <strong>Delete</strong> and
+                confirm. An <strong>Order</strong> number on an entry decides its position — smaller
+                numbers appear first.
             </Note>
 
-            <SectionTitle>Step 2 — Find Your Conference</SectionTitle>
-            <Step n={1} title="Open Your Dashboard">
-                Go to your <strong>Dashboard</strong> (route <code>/cf/dashboard</code>) — this lists only
-                the conferences that belong to you.
+            <SectionTitle>Home</SectionTitle>
+            <TabRefCard title="Home" tags={[{ label: 'one per conference', color: '#92400e' }]}
+                fields="Conference Name · Starting Date · Ending Date · About sections (Title + rich-text Description)">
+                <RefLabel>What to enter</RefLabel>
+                <Body>
+                    The conference's name and its start/end dates, plus one or more <strong>About</strong>
+                    sections. Type the name exactly as it should appear on the site. Save with
+                    <strong> Add / Update Conference Info</strong>. For About sections: pick one from the
+                    left-hand list (or <strong>Add New About</strong>), write in the editor while watching
+                    the live preview, then <strong>Update About Section</strong>.
+                </Body>
+                <RefLabel>Good to know</RefLabel>
+                <Body color="#92400e">
+                    <strong>Import from Conference</strong> copies the name, dates and all About sections
+                    from a previous conference — it fills the screen for review; save to keep it.
+                </Body>
+            </TabRefCard>
+
+            <SectionTitle>Nav Menu — the Site's Navigation Bar</SectionTitle>
+            <TabRefCard title="Nav Menu"
+                fields="Label · Link (choose type below) · Order · 'Show as highlighted button' · optional dropdown sub-items">
+                <RefLabel>Title banner switches</RefLabel>
+                <Body>
+                    <strong>Backend-driven</strong> — ON means the public site uses this menu; OFF keeps
+                    the site's built-in menu. <strong>Split left/right</strong> — turn ON only if your
+                    site shows two menu groups (some items on the left of the bar, others on the right);
+                    it adds a Left/Right choice to each item. Most sites leave it OFF.
+                </Body>
+                <RefLabel>Adding an item — choosing the link</RefLabel>
+                <Body>
+                    In the pop-up, after typing the <strong>Label</strong>, pick the <strong>Link Type</strong>:
+                    <br />• <strong>Existing page (Common Template)</strong> — the default. Simply pick one
+                    of your pages <em>by name</em> from the dropdown. Use this for Tracks, Committees,
+                    Registration Fee and any page you built in Common Template.
+                    <br />• <strong>Custom internal path</strong> — type a path that exists on your site,
+                    e.g. <code>/speakers</code>. Use this for special pages the site provides ready-made.
+                    <br />• <strong>External URL</strong> — a full address like
+                    <code> https://forms.gle/…</code>; it opens in a new tab.
+                </Body>
+                <RefLabel>Dropdown menus</RefLabel>
+                <Body>
+                    To make an item like "Committees ▾" with entries underneath, add
+                    <strong> Sub-items</strong> inside the pop-up — each sub-item has its own label and
+                    link, chosen exactly the same way. An item with sub-items acts as the dropdown heading.
+                </Body>
+                <RefLabel>Register button</RefLabel>
+                <Body>
+                    Tick <strong>"Show as a highlighted button"</strong> on one item (e.g. "Register") to
+                    display it as the standout button at the end of the bar instead of a normal link.
+                </Body>
+                <RefLabel>Choosing a speaker page design</RefLabel>
+                <Body>
+                    The site offers more than one ready-made design for the Speakers page. To pick one:
+                    add (or edit) the Speakers menu item, choose <strong>Custom internal path</strong> as
+                    the Link Type, and type the design's path — <code>/speakers1</code> for design 1,
+                    <code> /speakers2</code> for design 2, and so on. Whichever path you save is the design
+                    visitors get. You can switch designs at any time by editing the item and changing the
+                    path — no other changes needed.
+                </Body>
+                <RefLabel>Good to know</RefLabel>
+                <Body color="#92400e">
+                    Exact duplicates are rejected with a "Duplicate entry" message. Use the ↑ ↓ arrows on
+                    each row to reorder without editing. The <strong>Mobile Preview</strong> phone on the
+                    right always shows the current result — tap a dropdown in it to peek inside.
+                </Body>
+            </TabRefCard>
+
+            <SectionTitle>Home Layout — What Shows on the Home Page</SectionTitle>
+            <TabRefCard title="Home Layout"
+                fields="Per section: Show/Hide switch · position in the list">
+                <RefLabel>What to enter</RefLabel>
+                <Body>
+                    A list of the home page's building blocks — Hero Slider, About Conference, Timeline,
+                    About Institute, Countdown, About Department, Speakers, Sponsors, and the CMT notice.
+                    Move sections up or down to change the order they appear on the home page, and use each
+                    section's switch to show or hide it. Press <strong>Save</strong> to apply.
+                </Body>
+                <RefLabel>Good to know</RefLabel>
+                <Body color="#92400e">
+                    <strong>Speakers</strong> and <strong>Sponsors</strong> start hidden — switch them on
+                    when you're ready to show them. The Speakers one can also be switched from the Speakers
+                    tab's own "Show on home screen" toggle; it's the same setting in both places.
+                </Body>
+            </TabRefCard>
+
+            <SectionTitle>Customisation — Pick Component Designs</SectionTitle>
+            <TabRefCard title="Customisation"
+                fields="Per home page component: pick Design 1, 2, 3 or 4 · Save Customisation">
+                <RefLabel>What to enter</RefLabel>
+                <Body>
+                    Some home page components — currently the <strong>Countdown timer</strong> and the
+                    <strong> Important Dates / Timeline</strong> — come in several ready-made looks. Each
+                    component shows numbered design tiles; click the design you want (a tick marks the
+                    selected one, and the badge beside the component name shows the current choice), then
+                    press <strong>Save Customisation</strong>. Use <strong>Discard</strong> to undo
+                    unsaved picks.
+                </Body>
+                <RefLabel>Good to know</RefLabel>
+                <Body color="#92400e">
+                    Nothing changes on the site until you press Save — the Save button stays disabled
+                    while there's nothing new to save. The design numbers match the variants built into
+                    the public site, so the easiest way to choose is: pick a design, save, and check the
+                    site's home page — then adjust if it isn't the look you wanted.
+                </Body>
+            </TabRefCard>
+
+            <SectionTitle>Common Template — Your Site's Pages</SectionTitle>
+            <TabRefCard title="Common Template"
+                fields="Page Title · Description (rich text) · Featured (Yes/No)">
+                <RefLabel>What to enter</RefLabel>
+                <Body>
+                    One entry per page of your site. Click <strong>Add New Page</strong>, type a
+                    <strong> Page Title</strong> (e.g. "Registration Fee"), write the content in the
+                    editor, choose Featured, and press <strong>Add Page</strong>. To edit later, pick the
+                    page from the left-hand list, make changes, press <strong>Update Page</strong> — the
+                    button shows a spinner while saving. <strong>Show Preview</strong> opens a side-by-side
+                    live preview.
+                </Body>
+                <RefLabel>Putting a page in the menu</RefLabel>
+                <Body>
+                    After saving, open <strong>Nav Menu</strong>, add an item, keep the default
+                    <strong> "Existing page"</strong> link type, and pick this page by name from the
+                    dropdown. That's all — no technical details needed.
+                </Body>
+                <RefLabel>Good to know</RefLabel>
+                <Body color="#92400e">
+                    <strong>Import data</strong> copies a single page from another conference and saves it
+                    immediately as a new page here — repeat for each page you want to reuse.
+                </Body>
+            </TabRefCard>
+
+            <SectionTitle>Announcements</SectionTitle>
+            <TabRefCard title="Announcements"
+                fields="Title · Meta Description (one-line summary) · Description (rich text) · Link · Order · Featured · Hidden · New">
+                <RefLabel>What to enter</RefLabel>
+                <Body>
+                    News items like "Registration Now Open". <strong>Title</strong> is the headline;
+                    <strong> Meta Description</strong> is the one-line summary shown in lists;
+                    <strong> Description</strong> is the full text; <strong>Link</strong> is where the
+                    announcement points when clicked (paste any address, or <code>#</code> for none).
+                    Use <strong>New</strong> to show a "new" tag on the site and <strong>Hidden</strong> to
+                    take an announcement down without deleting it. Pick an announcement from the left list
+                    to edit; the right panel previews it live.
+                </Body>
+            </TabRefCard>
+
+            <SectionTitle>Images</SectionTitle>
+            <TabRefCard title="Images"
+                fields="Name · Image (upload a file or paste a link) · Order · Featured">
+                <RefLabel>What to enter</RefLabel>
+                <Body>
+                    Gallery and banner pictures. Click <strong>Add Image</strong>; in the pop-up, either
+                    press <strong>Choose file → Upload</strong> (the link fills itself and a thumbnail
+                    appears) or paste a picture's address into the link box. Give it a short
+                    <strong> Name</strong> and an <strong>Order</strong> number. Saved images appear as
+                    cards with their picture on top.
+                </Body>
+            </TabRefCard>
+
+            <SectionTitle>Event Dates</SectionTitle>
+            <TabRefCard title="Event Dates"
+                fields="Title · Date · Order · Is Date Extended (+ New Date) · Completed · Featured">
+                <RefLabel>What to enter</RefLabel>
+                <Body>
+                    Every deadline and milestone — abstract submission, notification, camera-ready,
+                    registration close, the conference days themselves. One entry each, with a
+                    <strong> Title</strong>, the <strong>Date</strong>, and an <strong>Order</strong> number.
+                </Body>
+                <RefLabel>When a deadline moves</RefLabel>
+                <Body color="#92400e">
+                    Don't overwrite the original date. Set <strong>Is Date Extended</strong> to Yes and put
+                    the new deadline in <strong>New Date</strong> — the card then shows the old date struck
+                    out with the new one beside it, exactly as visitors will see it. Mark
+                    <strong> Completed</strong> once a milestone has passed (its card dims).
+                </Body>
+            </TabRefCard>
+
+            <SectionTitle>Speakers</SectionTitle>
+            <TabRefCard title="Speakers"
+                fields="Name · Designation · Institute · Photo (upload or link) · Order · Profile Link · Talk Type · Talk Title · Bio · Abstract · Feature">
+                <RefLabel>What to enter</RefLabel>
+                <Body>
+                    One entry per speaker. <strong>Name</strong>, <strong>Designation</strong> and
+                    <strong> Institute</strong> appear on the card; add the <strong>photo</strong> by
+                    uploading a file (press <strong>Upload</strong> and the link fills itself) or pasting a
+                    picture address — a preview thumbnail confirms it worked. <strong>Profile Link</strong>
+                    is the speaker's homepage (optional). <strong>Bio</strong> and <strong>Abstract</strong>
+                    are rich-text. <strong>Feature</strong> = No hides the speaker from the site without
+                    deleting them.
+                </Body>
+                <RefLabel>Talk Type — invited speakers</RefLabel>
+                <Body color="#92400e">
+                    Enter <strong>1</strong> as the Talk Type to mark someone as an <strong>Invited
+                    Speaker</strong> — the site shows them under a separate "Invited Speakers" tab. Any
+                    other value (or blank) lists them under "Our Speakers".
+                </Body>
+                <RefLabel>Show on home screen</RefLabel>
+                <Body>
+                    The switch in the title banner puts a Speakers strip on the site's home page (the same
+                    setting as the Speakers row in Home Layout). Turn it on once your speaker list is ready
+                    to show.
+                </Body>
+            </TabRefCard>
+
+            <SectionTitle>File Upload</SectionTitle>
+            <TabRefCard title="File Upload"
+                fields="Choose a file · press Upload">
+                <RefLabel>What it's for</RefLabel>
+                <Body>
+                    A general store for files — pictures, PDFs, brochures. Pick a file (its type shows as a
+                    badge), press <strong>Upload</strong>, and it appears as a card with a preview. Press
+                    <strong> Copy</strong> on a card to copy its link, then paste that link into any image
+                    or link box anywhere in the module. The ↗ button opens the file in a new tab.
+                </Body>
+            </TabRefCard>
+        </div>
+    );
+}
+
+function TabEditor() {
+    return (
+        <div>
+            <Note type="key">
+                The same rich-text editor is used everywhere you write formatted content — About sections,
+                Common Template pages, Announcements, speaker Bios. Everything below applies in all of them.
+            </Note>
+
+            <SectionTitle>Writing &amp; Formatting</SectionTitle>
+            <Step n={1} title="The toolbar">
+                All buttons are always visible: bold/italic/underline, bullet and numbered lists,
+                paragraph styles and text size, colours, alignment, indent, table, link, image,
+                horizontal line, undo/redo, and full-screen. Hover any button for its name.
             </Step>
-            <Step n={2} title="Open the Admin Panel">
-                Click <strong>Adminpanel</strong> next to your conference to open
-                <code> /cf/&lt;confid&gt;</code>, which defaults to the <strong>Home</strong> tab.
+            <Step n={2} title="Lists">
+                Select your lines and press the bullet or numbered list button. To switch a list from
+                numbers to bullets (or back), <strong>select all its lines first</strong>, then press the
+                other list button — with only the cursor placed on one line, only that line converts.
+            </Step>
+            <Step n={3} title="Links">
+                Select the text, press the link button, paste the address. Links show blue and underlined
+                in the preview.
             </Step>
 
-            <SectionTitle>Step 3 — About Conference (Home Tab)</SectionTitle>
-            <Step n={1} title="Fill in Core Details">
-                On the <strong>Home</strong> tab, enter: Name of the Conference, Starting/Ending Date,
-                YouTube Link, Instagram Link, Facebook Link, Twitter Link, Logo, Short Name of Conference,
-                Abstract Link, Registration Link, Flyer Link, Brochure Link, and Poster Link.
+            <SectionTitle>Tables</SectionTitle>
+            <Step n={1} title="Insert a table">
+                Press the table button and choose the size. Cells have visible borders while editing so
+                empty cells are easy to click into.
             </Step>
-            <Step n={2} title="Add About Sections">
-                Add one or more rich-text <strong>About</strong> sections (title + body). Use
-                <strong> Insert Table</strong> for tabular content and <strong>Show/Hide HTML</strong> to
-                edit the raw HTML directly. Use <strong>Add New About</strong> for additional sections, and
-                <strong> Update</strong>/<strong>Delete</strong> to manage existing ones.
+            <Step n={2} title="Add / remove rows and columns">
+                Click inside any cell — a small menu appears offering Insert Row Above/Below, Insert
+                Column Left/Right, Merge/Unmerge Cells, Delete Row/Column/Table.
+            </Step>
+
+            <SectionTitle>Pictures — Inserting &amp; Resizing</SectionTitle>
+            <Step n={1} title="Insert">
+                Press the image button and pick a file, or paste a picture link. New pictures come in at a
+                sensible size rather than full-size.
+            </Step>
+            <Step n={2} title="Resize by dragging">
+                Click directly <strong>on the picture</strong> — a dashed frame appears with a round blue
+                handle at its bottom-right corner and a size readout on top. Drag the handle until the
+                readout shows the size you want, then release. This works the same for pictures
+                <strong> inside table cells</strong>; a picture can't be dragged wider than its cell.
             </Step>
             <Step n={3} title="Save">
-                Click <strong>Add Conference Info</strong> the first time; the button becomes
-                <strong> Update Conference Info</strong> once a record already exists.
+                Sizes and all edits are kept when you press the screen's own Add/Update button —
+                remember the editor content is only stored when the form is saved.
             </Step>
-            <Note type="warning">
-                <strong>Home info is a singleton per conference.</strong> Trying to add a second record
-                triggers <em>"You cannot Add multiple values of this for one conference"</em> — edit the
-                existing one instead.
+
+            <Note type="tip">
+                The <strong>Show HTML</strong> button (where available) reveals the raw markup for
+                copy-pasting between pages — most users never need it.
             </Note>
-            <Note type="key">
-                The <strong>About</strong> section you write here is what renders on the conference's public
-                <strong> Home / landing page</strong> — it is not a separate page. If you need additional
-                standalone pages (Call for Papers, Travel Info, etc.), build those under
-                <strong> Common Template</strong> instead (see Content Sections).
+        </div>
+    );
+}
+
+function TabTips() {
+    return (
+        <div>
+            <SectionTitle>Order &amp; Visibility — How Display Is Controlled</SectionTitle>
+            <div style={{
+                background: '#f8f9ff', border: '1px solid #e4e8f5',
+                borderRadius: 10, padding: '16px 20px', marginBottom: 20,
+                fontSize: 13, color: '#374151', lineHeight: 1.8,
+            }}>
+                There is no master "publish" button. Two per-entry settings do everything:
+                <br />• <strong>Order</strong> (also called Sequence) — position among entries of the same
+                kind; smaller numbers first. Leave gaps (10, 20, 30…) so you can slot items in later.
+                <br />• <strong>Feature / Featured</strong> — Yes shows the entry on the public site; No
+                hides it without deleting. Announcements additionally have <strong>Hidden</strong> and
+                <strong> New</strong> flags.
+            </div>
+
+            <SectionTitle>Frequently Asked</SectionTitle>
+            <Note type="tip">
+                <strong>My change isn't on the site.</strong> Check three things: you pressed the pop-up's
+                Add/Update button (a green message confirms), the entry's Feature is Yes, and — for menu
+                changes — the Nav Menu's <strong>Backend-driven</strong> switch is ON.
             </Note>
             <Note type="tip">
-                Running a recurring/annual conference? Use <strong>Import from Conference</strong> to
-                pre-fill the Home form from a previous conference. See <strong>Content Sections</strong> →
-                "Importing Content from Another Conference" for exactly what does and doesn't get copied.
+                <strong>I want a different Speakers page look.</strong> Edit the Speakers item in Nav Menu,
+                set Link Type to <strong>Custom internal path</strong> and type <code>/speakers1</code>,
+                <code> /speakers2</code>, etc. — each path is a different ready-made design.
             </Note>
-
-            <SectionTitle>Step 4 — Navbar</SectionTitle>
-            <Step n={1} title="Set Up the Navbar">
-                Open the <strong>Navbar</strong> tab and fill in <strong>Heading</strong>,
-                <strong> Sub Heading</strong>, <strong>Name</strong>, and <strong>Url</strong>.
-            </Step>
+            <Note type="tip">
+                <strong>A deadline was extended.</strong> In Event Dates, edit the entry: set Is Date
+                Extended = Yes and fill New Date. Don't replace the original date — the site shows both.
+            </Note>
+            <Note type="tip">
+                <strong>Uploading a picture.</strong> Anywhere you see a Choose-file box with an Upload
+                button (Speakers, Images), uploading fills the link automatically. For everything else,
+                upload on the <strong>File Upload</strong> page, press Copy on the card, and paste.
+            </Note>
             <Note type="warning">
-                Like Home, the Navbar is a <strong>singleton</strong> — only one record is allowed per
-                conference; a second Add attempt is blocked.
-            </Note>
-            <Note type="key">
-                This form only stores the underlying Heading/Sub Heading/Name/Url values — it does
-                <strong> not</strong> let you add or rearrange multiple menu links yourself. To change what
-                appears in the live navigation menu, or to wire a new Common Template page into it, contact
-                a developer.
-            </Note>
-        </div>
-    );
-}
-
-function RefTag({ children, color }) {
-    return (
-        <span style={{
-            fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 99,
-            background: `${color}15`, color, border: `1px solid ${color}40`,
-        }}>{children}</span>
-    );
-}
-
-function RefLabel({ children }) {
-    return (
-        <div style={{
-            fontSize: 10, fontWeight: 800, textTransform: 'uppercase',
-            letterSpacing: '0.06em', color: T.textMuted, marginBottom: 3, marginTop: 10,
-        }}>{children}</div>
-    );
-}
-
-function TabRefCard({ title, route, tags = [], fields, children }) {
-    return (
-        <div style={{
-            background: '#fff', border: '1px solid #e4e8f5', borderRadius: 10,
-            padding: '14px 18px', marginBottom: 12,
-        }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                <div style={{ fontWeight: 800, fontSize: 14, color: T.text }}>{title}</div>
-                {route && <code style={{ fontSize: 11 }}>{route}</code>}
-                {tags.map(t => <RefTag key={t.label} color={t.color}>{t.label}</RefTag>)}
-            </div>
-            {children}
-            {fields && (
-                <>
-                    <RefLabel>Fields</RefLabel>
-                    <div style={{ fontSize: 12, color: T.accent, fontFamily: 'monospace', lineHeight: 1.7 }}>{fields}</div>
-                </>
-            )}
-        </div>
-    );
-}
-
-function TabContent() {
-    return (
-        <div>
-            <Note type="warning">
-                The admin sidebar only shows clickable tabs for <strong>8</strong> items — Home, Images,
-                Event Dates, Speakers, Navbar, File Upload, Common Template, and Announcements (File Upload
-                is a general utility, not a content section). The other <strong>10 sections</strong> —
-                Committees, Sponsors, Sponsorship Rates, Awards, Contacts, Locations, Participants,
-                Accommodation, Events, and Souvenir — have no sidebar button and must be opened by typing
-                the URL directly: <code>/cf/&lt;confid&gt;/&lt;section&gt;</code> (e.g.
-                <code> /cf/&lt;confid&gt;/committee</code>). Full list of these URLs is in
-                <strong> Tips &amp; Gotchas</strong>.
-            </Note>
-            <Note type="info">
-                Unless noted otherwise, every section below follows the same pattern: fill in the form and
-                click <strong>Add</strong> (or <strong>Save</strong>) to create a new entry; click
-                <strong> Edit</strong> on an existing row to load it back into the form, change it, and
-                click <strong>Update</strong>; click <strong>Delete</strong> to remove it. Home, Navbar,
-                Images, Announcements, and Common Template work differently — see their cards below.
+                <strong>Deletes are permanent.</strong> The confirmation box is your only safety net —
+                prefer switching Feature to No when you might need the entry again.
             </Note>
 
-            <SectionTitle>Home & Navbar — Core Site Settings</SectionTitle>
-            <TabRefCard title="Home (About Conference)" route="home tab · default landing tab" tags={[{ label: 'singleton', color: '#92400e' }]}>
-                <RefLabel>What it is</RefLabel>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>
-                    The conference's core profile (dates, social links, logo, registration/abstract/flyer
-                    links) plus the <strong>About</strong> rich-text sections. This is the data that
-                    populates the conference's public <strong>Home / landing page</strong> — there is no
-                    separate "About page", the About sections render directly on Home.
-                </div>
-                <RefLabel>How to update</RefLabel>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>
-                    Edit the fields and click <strong>Update Conference Info</strong>. For About sections,
-                    edit one inline and click <strong>Update About Section</strong>, or use
-                    <strong> Add New About</strong> / <strong>Delete This About</strong> to manage sections.
-                    See Getting Started, Step 3 for the full field list.
-                </div>
-                <RefLabel>Note</RefLabel>
-                <div style={{ fontSize: 13, color: '#92400e', lineHeight: 1.7 }}>
-                    The admin form only edits the <em>content</em> shown on Home — changing the page's
-                    actual layout/structure requires a developer.
-                </div>
-            </TabRefCard>
-            <TabRefCard title="Navbar" route="navbar tab" tags={[{ label: 'singleton', color: '#92400e' }, { label: 'dev required for menu changes', color: '#dc2626' }]}>
-                <RefLabel>What it is</RefLabel>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>
-                    Stores one record of <strong>Heading</strong>, <strong>Sub Heading</strong>,
-                    <strong> Name</strong>, and <strong>Url</strong> — the underlying data referenced by the
-                    site's navigation bar.
-                </div>
-                <RefLabel>How to update</RefLabel>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>
-                    Edit the four fields and click <strong>Update</strong>. Because only one record is
-                    allowed, this form cannot represent a full multi-link menu on its own.
-                </div>
-                <RefLabel>Note</RefLabel>
-                <div style={{ fontSize: 13, color: '#92400e', lineHeight: 1.7 }}>
-                    To add, remove, or reorder links in the <strong>live navigation menu</strong> —
-                    including wiring up a new Common Template page — <strong>contact a developer</strong>.
-                    This is not something you can do end-to-end from this tab alone.
-                </div>
-            </TabRefCard>
-
-            <SectionTitle>Schedule Items — Event Dates vs. Events</SectionTitle>
-            <Note type="key">
-                These are two different sections — use <strong>Event Dates</strong> for anything with a
-                date attached (deadlines, milestones). Use <strong>Events</strong> only for a general
-                named item/session that has no date field of its own.
-            </Note>
-            <TabRefCard title="Event Dates" route="eventdates tab" fields="Title, Date, Sequence, Is Date Extended (+ New Date), Completed, Featured">
-                <RefLabel>What it is</RefLabel>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>
-                    The single place for every date-driven milestone — abstract submission, notification,
-                    camera-ready, registration close, the conference dates themselves, etc.
-                </div>
-                <RefLabel>How to update</RefLabel>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>
-                    Add a new entry with Title/Date/Sequence. If a deadline changes, toggle
-                    <strong> Is Date Extended</strong> to Yes and fill in <strong>New Date</strong> instead
-                    of editing the original date — this lets the public site show the change as an
-                    extension. Mark <strong>Completed</strong> once it has passed, and use
-                    <strong> Featured</strong> to highlight it. Edit/Delete from the list as usual.
-                </div>
-            </TabRefCard>
-            <TabRefCard title="Events" route="events tab (hidden — type URL)" fields="Title of the Event, Description (rich text), Sequence, Feature">
-                <RefLabel>What it is</RefLabel>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>
-                    A generic, undated list of named items — e.g. workshops, side sessions, or tracks that
-                    don't need their own deadline/date tracking. It has no date field at all, unlike Event Dates.
-                </div>
-                <RefLabel>How to update</RefLabel>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>
-                    Fill in Title, Description, and Sequence, click <strong>Add</strong>. Edit/Delete from
-                    the table below the form.
-                </div>
-            </TabRefCard>
-
-            <SectionTitle>People</SectionTitle>
-            <TabRefCard title="Speakers" route="speakers tab" fields="Name, Designation, Institute, Image Link, Sequence, Profile Link, Talk Type, Talk Title, Bio, Abstract, Feature">
-                <RefLabel>What it is</RefLabel>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>Keynote and invited speaker profiles, with their talk details and biography.</div>
-                <RefLabel>How to update</RefLabel>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>Standard Add/Edit/Delete form — fill the fields, click Add; click Edit on a row to modify it.</div>
-            </TabRefCard>
-            <TabRefCard title="Committees" route="committee (hidden — type URL)" fields="Type of Committee, Description (rich text), Sequence, Feature">
-                <RefLabel>What it is</RefLabel>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>Committee listings, e.g. "Organizing Committee" or "Technical Committee" — the rich-text Description typically lists the members.</div>
-                <RefLabel>How to update</RefLabel>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>Add a committee type with its member list in Description; Edit/Delete existing ones from the list.</div>
-            </TabRefCard>
-            <TabRefCard title="Contacts" route="contact (hidden — type URL)" fields="Title, Name, Designation, Institute, Profile Link, Image Link, Phone, E-mail, Fax, Sequence, Feature">
-                <RefLabel>What it is</RefLabel>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>The "Contact Us" entries — organizing committee contact points shown to the public.</div>
-                <RefLabel>How to update</RefLabel>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>Standard Add/Edit/Delete form.</div>
-            </TabRefCard>
-            <TabRefCard title="Participants" route="participants (hidden — type URL)" fields="Author Name, Designation of Author, Institute of Author, Title of Paper, Paper Id">
-                <RefLabel>What it is</RefLabel>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>The roster of accepted papers/authors, maintained by the organizer after paper acceptance — not a self-service registration form. See Participants &amp; Payment for more.</div>
-                <RefLabel>How to update</RefLabel>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>Standard Add/Edit/Delete form, one record per author.</div>
-            </TabRefCard>
-
-            <SectionTitle>Venue & Logistics</SectionTitle>
-            <TabRefCard title="Location" route="locations (hidden — type URL)" tags={[{ label: 'singleton', color: '#92400e' }]} fields="Description (rich text), Address, Latitude, Longitude, Sequence, Feature">
-                <RefLabel>What it is</RefLabel>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>Venue details — address and map coordinates.</div>
-                <RefLabel>How to update</RefLabel>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>Only one record is allowed per conference — fill it in once and use Update for any changes thereafter.</div>
-            </TabRefCard>
-            <TabRefCard title="Accommodation" route="accommodation (hidden — type URL)" fields="Title, Description (rich text), Sequence, Feature">
-                <RefLabel>What it is</RefLabel>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>Nearby hotel or on-campus stay options — repeatable, one entry per option.</div>
-                <RefLabel>How to update</RefLabel>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>Standard Add/Edit/Delete form.</div>
-            </TabRefCard>
-            <TabRefCard title="Souvenir" route="souvenir (hidden — type URL)" fields="Location, Price, Description, Sequence, Feature">
-                <RefLabel>What it is</RefLabel>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>Conference souvenir/memento details — pickup point and price.</div>
-                <RefLabel>How to update</RefLabel>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>Fill the form and submit. Unlike Home/Navbar/Location, this form does not block a second submission — avoid clicking Add more than once unless you intend to create a duplicate entry.</div>
-            </TabRefCard>
-
-            <SectionTitle>Sponsorship</SectionTitle>
-            <Note type="info">
-                <strong>Sponsorship Rates</strong> and <strong>Sponsors</strong> are two distinct sections —
-                don't confuse them.
-            </Note>
-            <TabRefCard title="Sponsorship Rates" route="sponsorship-rates (hidden — type URL)" fields="Category, Price, Description, Sequence, Featured">
-                <RefLabel>What it is</RefLabel>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>The rate card / pricing tiers offered to prospective sponsors (e.g. "Platinum Sponsor – $5000").</div>
-                <RefLabel>How to update</RefLabel>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>Standard Add/Edit/Delete form, one row per tier.</div>
-            </TabRefCard>
-            <TabRefCard title="Sponsors" route="sponsors (hidden — type URL)" fields="Name of the Sponsor, Type, Logo, Sequence, Feature">
-                <RefLabel>What it is</RefLabel>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>The actual roster/logo wall of sponsors who have signed on — separate from the rate card above.</div>
-                <RefLabel>How to update</RefLabel>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>Standard Add/Edit/Delete form, one row per sponsor.</div>
-            </TabRefCard>
-
-            <SectionTitle>Media & Announcements</SectionTitle>
-            <TabRefCard title="Images" route="images tab" fields="Name, Image Link, Sequence, Featured">
-                <RefLabel>What it is</RefLabel>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>The photo gallery.</div>
-                <RefLabel>How to update</RefLabel>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>Click <strong>Add New Image</strong> (or "Add Your First Image") to add an inline row with a live thumbnail preview — each row has its own <strong>Save</strong>/<strong>Update</strong> and <strong>Delete</strong>, they don't share one form.</div>
-            </TabRefCard>
-            <TabRefCard title="Awards" route="awards (hidden — type URL)" fields="Title-1, Title-2, Description (rich text), Link, Sequence, Featured, Hidden, New">
-                <RefLabel>What it is</RefLabel>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>Best paper / best presentation awards or similar recognitions.</div>
-                <RefLabel>How to update</RefLabel>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>Standard Add/Edit/Delete form; use Hidden to temporarily suppress an entry without deleting it.</div>
-            </TabRefCard>
-            <TabRefCard title="Announcements" route="announcement tab" fields="Title, Meta Description, Description (rich text), Link, Sequence, Featured, Hidden, New">
-                <RefLabel>What it is</RefLabel>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>News/announcement posts (e.g. "Registration Now Open").</div>
-                <RefLabel>How to update</RefLabel>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>Two-pane layout: pick an existing announcement from the left list to edit it, or click <strong>Add Announcement</strong>/<strong>New Announcement</strong> to start one. Use <strong>Show/Hide HTML</strong> with Apply Changes if you need to edit the raw markup. Save with Update, or remove with Delete.</div>
-            </TabRefCard>
-
-            <SectionTitle>Extra Pages — Common Template</SectionTitle>
-            <TabRefCard title="Common Template" route="commontemplate tab" tags={[{ label: 'used for all other navbar pages', color: '#6366f1' }]}>
-                <RefLabel>What it is</RefLabel>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>
-                    The page builder for <strong>every public page other than Home</strong> — Call for
-                    Papers, Travel Info, or any custom page you want linked from the navigation menu.
-                    If you want a new page to be reachable from the navbar, build its content here first,
-                    then have a developer wire the Navbar link to it (see the Navbar card above).
-                </div>
-                <RefLabel>How to update</RefLabel>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>
-                    Click <strong>Add New Page</strong>, enter a <strong>Page Title</strong>, and write the
-                    body in the rich-text editor. Toggle <strong>Featured</strong>, and use
-                    <strong> Show/Hide Preview</strong> or <strong>Show/Hide HTML</strong> (with Apply
-                    Changes / Copy HTML) as needed. Save with <strong>Add Page</strong> /
-                    <strong> Update Page</strong>, or remove with <strong>Delete Page</strong>.
-                </div>
-            </TabRefCard>
-
-            <SectionTitle>Importing Content from Another Conference</SectionTitle>
-            <Note type="key">
-                Two sections support copying content from an <strong>existing</strong> conference into the
-                one you're currently editing — useful for recurring/annual conferences so you don't start
-                from a blank form every year. The behavior is different in each place — read carefully.
-            </Note>
-            <TabRefCard title="Import from Conference — on the Home tab" tags={[{ label: 'fills the form only', color: '#f59e0b' }]}>
-                <RefLabel>How it works</RefLabel>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>
-                    Click <strong>Import from Conference</strong>, choose a source conference from the
-                    dropdown. A preview shows its Name, Start Date, End Date, and Short Name. Click
-                    <strong> Apply Import</strong> to copy its Home fields (dates, links, logo, short name,
-                    etc.) into your current form.
-                </div>
-                <RefLabel>Important</RefLabel>
-                <div style={{ fontSize: 13, color: '#92400e', lineHeight: 1.7 }}>
-                    This only <strong>pre-fills the form</strong> — nothing is saved until you review the
-                    imported values and click <strong>Update Conference Info</strong> yourself. It also only
-                    copies the core Home fields, <strong>not</strong> the About rich-text sections — those
-                    must still be written (or re-added) separately.
-                </div>
-            </TabRefCard>
-            <TabRefCard title="Import Data — on the Common Template tab" tags={[{ label: 'saves immediately', color: '#10b981' }]}>
-                <RefLabel>How it works</RefLabel>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>
-                    Click <strong>Import data</strong>, choose a source conference, then browse the list of
-                    <strong> its</strong> pages. Click <strong>Import</strong> next to the specific page you
-                    want — that page's full content is copied and added as a brand-new page in your
-                    conference right away.
-                </div>
-                <RefLabel>Important</RefLabel>
-                <div style={{ fontSize: 13, color: '#92400e', lineHeight: 1.7 }}>
-                    Unlike Home's import, this one <strong>saves immediately</strong> — there's no
-                    review-then-save step. It's per-page: importing a "Travel Info" page doesn't bring in
-                    any of that conference's other pages, so repeat the action for each page you want to reuse.
-                </div>
-            </TabRefCard>
-        </div>
-    );
-}
-
-function TabParticipants() {
-    return (
-        <div>
-            <SectionTitle>Participants (Authors & Papers)</SectionTitle>
+            <SectionTitle>Older Sections (No Sidebar Button)</SectionTitle>
             <div style={{
                 background: '#f8f9ff', border: '1px solid #e4e8f5',
                 borderRadius: 10, padding: '16px 20px', marginBottom: 20,
             }}>
                 <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7, marginBottom: 10 }}>
-                    Open <code>/cf/&lt;confid&gt;/participants</code> to maintain the roster of accepted
-                    papers and authors.
-                </div>
-                <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: '#374151', lineHeight: 1.9 }}>
-                    <li>Add a record per author with: <strong>Author Name</strong>,
-                    <strong> Designation of Author</strong>, <strong>Institute of Author</strong>,
-                    <strong> Title of Paper</strong>, and <strong>Paper Id</strong>.</li>
-                    <li>This is maintained by the organizer <strong>after paper acceptance</strong> — it is
-                    not a self-service registration form filled in by attendees themselves.</li>
-                </ul>
-            </div>
-            <Note type="info">
-                There is no self-registration flow for attendees within this module — participant records
-                here represent the accepted-author roster, entered by the organizer.
-            </Note>
-
-            <SectionTitle>Payment Portal</SectionTitle>
-            <div style={{
-                background: '#fff7ed', border: '1px solid #fed7aa',
-                borderRadius: 10, padding: '16px 20px', marginBottom: 12,
-                fontSize: 13, color: '#374151', lineHeight: 1.7,
-            }}>
-                The <strong>Make Payment</strong> button (route <code>/payment-portal</code>) opens a
-                simple instructions page with a single <strong>Payment Portal</strong> button that opens an
-                external registration site in a new tab.
-            </div>
-            <Note type="warning">
-                <strong>This is a placeholder, not an integrated payment gateway.</strong> The link is
-                fixed and is <strong>not specific to the conference</strong> you came from — it does not
-                vary by conference ID. Treat conference registration payment as handled outside this
-                module for now.
-            </Note>
-        </div>
-    );
-}
-
-function TabOther() {
-    return (
-        <div>
-            <SectionTitle>Direct URLs for Hidden Sections</SectionTitle>
-            <div style={{
-                background: '#f8f9ff', border: '1px solid #e4e8f5',
-                borderRadius: 10, padding: '16px 20px', marginBottom: 20,
-            }}>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7, marginBottom: 10 }}>
-                    These sections have no button in the admin sidebar — replace
-                    <code> &lt;confid&gt;</code> with your conference's ID:
+                    Some rarely-used sections were removed from the sidebar but still work — open them by
+                    typing the address, replacing <code>&lt;confid&gt;</code> with your conference's ID
+                    (the code visible in your browser's address bar on any admin page):
                 </div>
                 <div style={{
                     background: '#0f172a', color: '#e2e8f0', borderRadius: 8,
@@ -615,70 +618,22 @@ function TabOther() {
                 }}>
                     /cf/&lt;confid&gt;/committee&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;— Committees<br />
                     /cf/&lt;confid&gt;/sponsors&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;— Sponsors<br />
+                    /cf/&lt;confid&gt;/sponsorship-rates — Sponsorship Rates<br />
                     /cf/&lt;confid&gt;/awards&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;— Awards<br />
                     /cf/&lt;confid&gt;/contact&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;— Contacts<br />
                     /cf/&lt;confid&gt;/locations&nbsp;&nbsp;&nbsp;&nbsp;— Location<br />
                     /cf/&lt;confid&gt;/participants&nbsp;— Participants<br />
-                    /cf/&lt;confid&gt;/sponsorship-rates — Sponsorship Rates<br />
                     /cf/&lt;confid&gt;/accommodation&nbsp;— Accommodation<br />
                     /cf/&lt;confid&gt;/events&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;— Events<br />
                     /cf/&lt;confid&gt;/souvenir&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;— Souvenir
                 </div>
             </div>
 
-            <SectionTitle>Visibility — Feature & Sequence, Not Publish</SectionTitle>
-            <div style={{
-                background: '#f8f9ff', border: '1px solid #e4e8f5',
-                borderRadius: 10, padding: '16px 20px', marginBottom: 20,
-            }}>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>
-                    There is no master "lock" or "publish" action anywhere in this module. Instead, every
-                    content record carries its own <strong>Feature/Featured</strong> (and sometimes
-                    <strong> Hidden</strong>) toggle controlling whether it appears on the public site, and
-                    a <strong>Sequence</strong> number controlling its display order relative to other
-                    records of the same type. Content can be edited at any time — there's nothing to
-                    "unlock" first.
-                </div>
-            </div>
-
-            <SectionTitle>File Upload Utility</SectionTitle>
-            <div style={{
-                background: '#f8f9ff', border: '1px solid #e4e8f5',
-                borderRadius: 10, padding: '16px 20px', marginBottom: 20,
-            }}>
-                <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>
-                    Use the general-purpose <strong>File Upload</strong> page (route <code>/fileupload</code>)
-                    to upload an image or document and get back a hosted link — paste that link into any
-                    Logo, Image, Poster, Flyer, or Brochure field across the module's sections.
-                </div>
-            </div>
-
-            <SectionTitle>Role Gating Summary</SectionTitle>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
-                {[
-                    { action: 'Read (view any section)', color: '#10b981', desc: 'Public — no login required. This is what lets the conference website display without visitors signing in.' },
-                    { action: 'Create / Delete', color: '#ef4444', desc: 'Requires the Event Organizer (EO) role, or admin.' },
-                    { action: 'Update', color: '#f59e0b', desc: 'Generally not role-gated in the current implementation — be mindful of who has access to admin URLs.' },
-                ].map(c => (
-                    <div key={c.action} style={{
-                        background: '#f8f9ff', border: '1px solid #e4e8f5',
-                        borderRadius: 10, padding: '12px 16px',
-                        display: 'flex', gap: 14, alignItems: 'flex-start',
-                    }}>
-                        <div style={{
-                            flexShrink: 0, marginTop: 2,
-                            background: `${c.color}18`, border: `1px solid ${c.color}40`,
-                            color: c.color, fontWeight: 700, fontSize: 11,
-                            padding: '3px 8px', borderRadius: 6, whiteSpace: 'nowrap',
-                        }}>{c.action}</div>
-                        <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7 }}>{c.desc}</div>
-                    </div>
-                ))}
-            </div>
-
-            <Note type="tip">
-                Keep <strong>Sequence</strong> numbers consistent across a section (e.g. speakers, sponsors)
-                so items display in the order you intend on the public site.
+            <SectionTitle>Payment Portal</SectionTitle>
+            <Note type="warning">
+                The <strong>Make Payment</strong> button in the sidebar opens a fixed external registration
+                site — it is a placeholder, not an integrated payment gateway, and is not specific to your
+                conference.
             </Note>
         </div>
     );
@@ -699,11 +654,11 @@ export default function ConfManual({ standalone = false }) {
     }, [standalone]);
 
     const TAB_CONTENT = {
-        overview:     <TabOverview setTab={setTab} />,
-        setup:        <TabSetup />,
-        content:      <TabContent />,
-        participants: <TabParticipants />,
-        other:        <TabOther />,
+        overview: <TabOverview setTab={setTab} />,
+        setup:    <TabSetup />,
+        tabs:     <TabTabs />,
+        editor:   <TabEditor />,
+        tips:     <TabTips />,
     };
 
     const activeIdx = TABS.findIndex(t => t.id === tab);
