@@ -6,7 +6,7 @@ import getEnvironment from "../../getenvironment";
 import {
   FaHome, FaBars, FaFileAlt, FaBullhorn, FaImages,
   FaCalendarAlt, FaMicrophone, FaUpload, FaTimes, FaCreditCard, FaQuestionCircle,
-  FaChevronLeft, FaChevronRight, FaThLarge,
+  FaChevronLeft, FaChevronRight, FaThLarge, FaPalette,
 } from 'react-icons/fa';
 
 // Height of the global app navbar (sticky, z-index 9999) rendered above all routes.
@@ -25,6 +25,7 @@ const navGroups = [
     items: [
       { name: 'Nav Menu', href: 'navmenu', icon: FaBars, iconColor: 'tw-text-indigo-400' },
       { name: 'Home Layout', href: 'homelayout', icon: FaThLarge, iconColor: 'tw-text-pink-400' },
+      { name: 'Customisation', href: 'customisation', icon: FaPalette, iconColor: 'tw-text-fuchsia-400' },
       { name: 'Common Template', href: 'commontemplate', icon: FaFileAlt, iconColor: 'tw-text-cyan-400' },
       { name: 'Announcements', href: 'announcement', icon: FaBullhorn, iconColor: 'tw-text-violet-400' },
       { name: 'Images', href: 'images', icon: FaImages, iconColor: 'tw-text-teal-400' },
@@ -35,6 +36,7 @@ const navGroups = [
     title: 'People',
     items: [
       { name: 'Speakers', href: 'speakers', icon: FaMicrophone, iconColor: 'tw-text-emerald-400' },
+      { name: 'Speaker Layout', href: 'speakerlayout', icon: FaThLarge, iconColor: 'tw-text-teal-400' },
     ],
   },
   {
@@ -119,16 +121,14 @@ const Sidebar = () => {
     <div className="tw-flex tw-flex-col tw-overflow-y-auto"
       style={{ height: '100%', background: 'linear-gradient(180deg, #0f172a 0%, #1e1b4b 60%, #312e81 100%)' }}>
 
-      {/* Brand + conference header */}
+      {/* Conference title + collapse toggle */}
       <div className={classNames('tw-flex-shrink-0 tw-border-b tw-border-white/10', isCompact ? 'tw-px-2 tw-py-4' : 'tw-px-4 tw-pt-4 tw-pb-4')}>
-        <div className={classNames('tw-flex tw-items-center', isCompact ? 'tw-justify-center' : 'tw-justify-between')}>
+        <div className={classNames('tw-flex tw-items-center', isCompact ? 'tw-justify-center' : 'tw-justify-between tw-gap-2')}>
           {!isCompact && (
-            <Link to="/" className="tw-flex tw-items-center">
-              <img className="tw-h-8 tw-w-auto tw-max-w-[120px] tw-brightness-0 tw-invert" src="/confSidebarLogo.png" alt="XCEED" />
-            </Link>
+            <p className="tw-flex-1 tw-text-base tw-font-bold tw-text-white tw-leading-snug">{conferenceName}</p>
           )}
           <button
-            className="lg:tw-hidden tw-text-slate-300 hover:tw-text-white"
+            className="lg:tw-hidden tw-flex-shrink-0 tw-text-slate-300 hover:tw-text-white"
             onClick={() => setMobileOpen(false)}
             aria-label="Close menu"
           >
@@ -136,7 +136,7 @@ const Sidebar = () => {
           </button>
           {/* Desktop collapse toggle */}
           <button
-            className="tw-hidden lg:tw-flex tw-items-center tw-justify-center tw-h-7 tw-w-7 tw-rounded-md tw-bg-white/10 hover:tw-bg-white/20 tw-text-slate-200 tw-transition-colors"
+            className="tw-hidden lg:tw-flex tw-flex-shrink-0 tw-items-center tw-justify-center tw-h-7 tw-w-7 tw-rounded-md tw-bg-white/10 hover:tw-bg-white/20 tw-text-slate-200 tw-transition-colors"
             onClick={toggleCollapsed}
             title={isCompact ? 'Expand sidebar' : 'Collapse sidebar'}
             aria-label={isCompact ? 'Expand sidebar' : 'Collapse sidebar'}
@@ -147,8 +147,6 @@ const Sidebar = () => {
 
         {!isCompact && (
           <>
-            <p className="tw-mt-3 tw-text-base tw-font-bold tw-text-white tw-leading-snug">{conferenceName}</p>
-
             {startDate && (
               <p className="tw-mt-1 tw-text-xs tw-text-slate-400">
                 Starts {new Date(startDate).toLocaleString('en-US', {

@@ -13,6 +13,92 @@ import { PageShell, PageHeader } from "../components/ui";
 
 const ACCENT = "pink";
 
+// ── Wireframe thumbnails ──────────────────────────────────────────────────────
+// Tiny schematic mockups so the admin sees the *shape* of each section, not just
+// its name. Drawn locally with Chakra primitives — the real designs render on the
+// public conference site, which isn't part of this admin client.
+const Bar = (props) => <Box h="4px" borderRadius="full" bg="gray.300" {...props} />;
+
+const SectionThumb = ({ sectionKey, accent = ACCENT }) => {
+    const dot = (opacity) => (
+        <Box w="5px" h="5px" borderRadius="full" bg="whiteAlpha.900" opacity={opacity} />
+    );
+    switch (sectionKey) {
+        case "slider":
+            return (
+                <Flex h="44px" borderRadius="md" bgGradient={`linear(to-r, ${accent}.300, ${accent}.500)`} align="flex-end" justify="center" pb={1.5}>
+                    <HStack spacing={1}>{dot(1)}{dot(0.5)}{dot(0.5)}</HStack>
+                </Flex>
+            );
+        case "aboutConf":
+        case "aboutDept":
+            return (
+                <HStack spacing={2} align="center" py={1}>
+                    <Box w="34px" h="30px" borderRadius="md" bg={`${accent}.100`} flexShrink={0} />
+                    <Box flex="1"><Bar w="90%" mb={1.5} /><Bar w="70%" mb={1.5} /><Bar w="80%" /></Box>
+                </HStack>
+            );
+        case "aboutInstitute":
+            return (
+                <HStack spacing={2} align="center" py={1}>
+                    <Box flex="1"><Bar w="80%" mb={1.5} /><Bar w="70%" mb={1.5} /><Bar w="85%" /></Box>
+                    <Box w="34px" h="30px" borderRadius="md" bg="gray.200" flexShrink={0} />
+                </HStack>
+            );
+        case "timeline":
+            return (
+                <HStack spacing={0} py={2} px={1} justify="space-between">
+                    {[0, 1, 2, 3].map((i) => (
+                        <Flex key={i} align="center" flex={i < 3 ? 1 : "0 0 auto"} w="100%">
+                            <Box w="7px" h="7px" borderRadius="full" bg={`${accent}.400`} flexShrink={0} />
+                            {i < 3 && <Box flex="1" h="2px" bg="gray.200" />}
+                        </Flex>
+                    ))}
+                </HStack>
+            );
+        case "countdown":
+            return (
+                <HStack spacing={1} justify="center" py={1.5}>
+                    {["12", "04", "57", "30"].map((n, i) => (
+                        <React.Fragment key={i}>
+                            <Center w="20px" h="22px" borderRadius="sm" bg="gray.800">
+                                <Text fontSize="10px" fontWeight="bold" color="white">{n}</Text>
+                            </Center>
+                            {i < 3 && <Text fontSize="10px" color="gray.400">:</Text>}
+                        </React.Fragment>
+                    ))}
+                </HStack>
+            );
+        case "speakers":
+            return (
+                <HStack spacing={2} justify="center" py={1}>
+                    {[0, 1, 2, 3].map((i) => (
+                        <Box key={i}>
+                            <Box w="22px" h="22px" borderRadius="full" bg={`${accent}.200`} mb={1} />
+                            <Bar w="22px" />
+                        </Box>
+                    ))}
+                </HStack>
+            );
+        case "sponsors":
+            return (
+                <HStack spacing={2} justify="center" py={2}>
+                    {[0, 1, 2].map((i) => (
+                        <Box key={i} w="42px" h="18px" borderRadius="sm" bg="gray.200" />
+                    ))}
+                </HStack>
+            );
+        case "cmtNotice":
+            return (
+                <Center py={1.5}>
+                    <Box w="80%" h="10px" borderRadius="full" bg="gray.100" />
+                </Center>
+            );
+        default:
+            return <Center py={3}><Bar w="60%" /></Center>;
+    }
+};
+
 // Short descriptions shown under each section name in the admin list.
 const SECTION_HINTS = {
     slider: "Hero image slider at the top of the page",
@@ -203,15 +289,18 @@ const HomeLayout = () => {
                                     </Text>
                                 </Box>
                                 {sections.filter((s) => s.visible).map((s) => (
-                                    <Center
+                                    <Box
                                         key={s.key}
-                                        py={2.5}
+                                        px={3} py={2}
                                         borderBottom="1px dashed"
                                         borderColor="gray.200"
-                                        bg={`${ACCENT}.50`}
+                                        bg="white"
                                     >
-                                        <Text fontSize="xs" fontWeight="medium" color={`${ACCENT}.800`}>{s.label}</Text>
-                                    </Center>
+                                        <Text fontSize="9px" fontWeight="semibold" letterSpacing="wide" textTransform="uppercase" color="gray.400" mb={1}>
+                                            {s.label}
+                                        </Text>
+                                        <SectionThumb sectionKey={s.key} accent={ACCENT} />
+                                    </Box>
                                 ))}
                                 <Box bg="gray.800" px={3} py={1.5}>
                                     <Text color="whiteAlpha.700" fontSize="10px" letterSpacing="widest" textAlign="center">
@@ -220,7 +309,7 @@ const HomeLayout = () => {
                                 </Box>
                             </Box>
                             <Text fontSize="xs" color="gray.500" mt={3}>
-                                This is how the home page sections will be stacked on the public site.
+                                A schematic of how the home page sections will be stacked on the public site. Actual colours and content come from your site settings.
                             </Text>
                         </Box>
                     </Box>
