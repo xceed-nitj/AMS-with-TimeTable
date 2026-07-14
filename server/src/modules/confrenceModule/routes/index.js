@@ -4,6 +4,7 @@ const router = express.Router();
 
 router.use("/navbar", require("./navbar"));
 router.use("/navitem", require("./navItem"));
+router.use("/homelayout", require("./homeLayout"));
 router.use("/announcements", require("./announcements"));
 
 router.use("/speakers", require("./speakers")); // Include speakers routes

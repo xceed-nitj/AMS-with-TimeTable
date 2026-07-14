@@ -5,7 +5,7 @@ import LoadingIcon from "../components/LoadingIcon";
 import getEnvironment from "../../getenvironment";
 import {
     FormControl, FormLabel, Input, Button, Select, Badge, Center,
-    Box, Flex, Text, SimpleGrid, HStack, Icon, Tooltip, Image, Link, useToast,
+    Box, Flex, Text, SimpleGrid, HStack, Icon, Tooltip, Image, Link, useToast, Switch,
     Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, ModalCloseButton,
 } from '@chakra-ui/react';
 import JoditEditor from "../components/RichTextEditor";
@@ -63,6 +63,47 @@ const Speaker = () => {
         }
         setEditorsReady(false);
     }, [isFormOpen]);
+
+    // "Show on home screen" — drives the `speakers` section of the public
+    // site's home layout (the same setting as in the Home Layout tab).
+    const [showOnHome, setShowOnHome] = useState(false);
+    const [layoutSections, setLayoutSections] = useState(null);
+    const [savingLayout, setSavingLayout] = useState(false);
+
+    useEffect(() => {
+        axios.get(`${apiUrl}/conferencemodule/homelayout/${IdConf}`, { withCredentials: true })
+            .then(res => {
+                const sections = res.data?.sections || [];
+                setLayoutSections(sections);
+                setShowOnHome(!!sections.find(s => s.key === "speakers")?.visible);
+            })
+            .catch(err => console.log(err));
+    }, [IdConf, apiUrl]);
+
+    const handleShowOnHomeToggle = () => {
+        if (!layoutSections) return;
+        const next = !showOnHome;
+        const updated = layoutSections.map(s => s.key === "speakers" ? { ...s, visible: next } : s);
+        setSavingLayout(true);
+        axios.put(`${apiUrl}/conferencemodule/homelayout/${IdConf}`, { sections: updated }, { withCredentials: true })
+            .then(res => {
+                setLayoutSections(res.data?.sections || updated);
+                setShowOnHome(next);
+                toast({
+                    title: next ? "Speakers shown on home screen" : "Speakers hidden from home screen",
+                    status: "success", duration: 2500, isClosable: true,
+                });
+            })
+            .catch(err => {
+                console.log(err);
+                toast({
+                    title: "Failed to update home layout",
+                    description: err?.response?.data?.error || err.message,
+                    status: "error", duration: 4000, isClosable: true,
+                });
+            })
+            .finally(() => setSavingLayout(false));
+    };
 
     const { ConfId, Name, Designation, Institute, ProfileLink, ImgLink, TalkType, TalkTitle, Abstract, Bio, sequence, feature } = formData;
 
@@ -233,13 +274,31 @@ const Speaker = () => {
                 accent={ACCENT}
                 variant="outline"
             >
-                <Button
-                    colorScheme={ACCENT}
-                    leftIcon={<FaPlus />}
-                    onClick={openAddModal}
-                >
-                    Add Speaker
-                </Button>
+                <HStack spacing={6} wrap="wrap" justify="flex-end">
+                    <Tooltip
+                        hasArrow
+                        label="Show the Speakers section on the public site's home page — same setting as in the Home Layout tab."
+                    >
+                        <HStack spacing={3}>
+                            <Text fontSize="md" fontWeight="bold" color="gray.700">Show on home screen</Text>
+                            <Switch
+                                size="lg"
+                                isChecked={showOnHome}
+                                onChange={handleShowOnHomeToggle}
+                                isDisabled={savingLayout || !layoutSections}
+                                colorScheme={ACCENT}
+                            />
+                        </HStack>
+                    </Tooltip>
+                    <Button
+                        size="lg"
+                        colorScheme={ACCENT}
+                        leftIcon={<FaPlus />}
+                        onClick={openAddModal}
+                    >
+                        Add Speaker
+                    </Button>
+                </HStack>
             </PageHeader>
 
             {!loading ? (
