@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useParams } from "react-router-dom";
+import { useParams, Link as RouterLink } from "react-router-dom";
 import LoadingIcon from "../components/LoadingIcon";
 import getEnvironment from "../../getenvironment";
 import {
-    Box, Flex, Text, Button, Badge, HStack, SimpleGrid, Center, Code, useToast,
+    Box, Flex, Text, Button, Badge, HStack, SimpleGrid, Center, Code, Icon, useToast,
 } from "@chakra-ui/react";
-import { FaMicrophone, FaSave, FaUndo, FaCheckCircle } from "react-icons/fa";
+import { FaMicrophone, FaSave, FaUndo, FaCheckCircle, FaBars, FaExclamationTriangle, FaArrowRight } from "react-icons/fa";
 import { PageShell, PageHeader } from "../components/ui";
 
 const ACCENT = "teal";
@@ -137,6 +137,12 @@ const SpeakerLayout = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
+    // Nav menu items whose link is tied to the Speakers page (linkType
+    // "speakers"). Their url is resolved server-side from this same design
+    // selection, so they always match — this list is just shown for visibility.
+    const [navItems, setNavItems] = useState([]);
+    const [navLoading, setNavLoading] = useState(true);
+
     useEffect(() => {
         if (!confId) return;
         setLoading(true);
@@ -150,9 +156,29 @@ const SpeakerLayout = () => {
             .finally(() => setLoading(false));
     }, [confId, apiUrl]);
 
+    useEffect(() => {
+        if (!confId) return;
+        setNavLoading(true);
+        axios.get(`${apiUrl}/conferencemodule/navitem/conf/${confId}`, { withCredentials: true })
+            .then((res) => setNavItems(res.data || []))
+            .catch((err) => console.log(err))
+            .finally(() => setNavLoading(false));
+    }, [confId, apiUrl, savedComponents]);
+
     const speakers = components.find((c) => c.key === COMPONENT_KEY);
     const designCount = speakers?.designCount || 5;
     const selected = speakers?.design || 1;
+
+    // Menu entries (top-level or nested under a dropdown) pointing at the
+    // Speakers page, flattened for display.
+    const speakersMenuEntries = navItems.flatMap((item) => {
+        const entries = [];
+        if (item.linkType === "speakers") entries.push({ label: item.label, section: item.section, parent: null });
+        (item.subItems || []).forEach((sub) => {
+            if (sub.linkType === "speakers") entries.push({ label: sub.label, section: item.section, parent: item.label });
+        });
+        return entries;
+    });
 
     const isDirty = JSON.stringify(components) !== JSON.stringify(savedComponents);
 
@@ -219,6 +245,53 @@ const SpeakerLayout = () => {
                             speakers{selected} selected
                         </Badge>
                     </Flex>
+
+                    {/* Navbar menu link — shows which menu item(s) point at the
+                        Speakers page, or prompts to create one in Nav Menu first. */}
+                    {!navLoading && (
+                        <Box bg="white" borderRadius="2xl" boxShadow="md" overflow="hidden">
+                            <Flex px={5} py={3} borderBottom="1px solid" borderColor="gray.100" align="center" gap={2}>
+                                <Icon as={FaBars} color={`${ACCENT}.500`} />
+                                <Text fontWeight="bold" color={`${ACCENT}.800`}>Navbar Menu Link</Text>
+                            </Flex>
+                            <Box p={5}>
+                                {speakersMenuEntries.length > 0 ? (
+                                    <Flex direction="column" gap={2}>
+                                        <Text fontSize="sm" color="gray.600">
+                                            These menu items link to the Speakers page and update automatically whenever you change the design above:
+                                        </Text>
+                                        <Flex wrap="wrap" gap={2} mt={1}>
+                                            {speakersMenuEntries.map((entry, i) => (
+                                                <Badge key={i} colorScheme={ACCENT} variant="subtle" borderRadius="full" px={3} py={1}>
+                                                    {entry.parent ? `${entry.parent} → ${entry.label}` : entry.label}
+                                                    {" "}({entry.section}) → /speakers{selected}
+                                                </Badge>
+                                            ))}
+                                        </Flex>
+                                    </Flex>
+                                ) : (
+                                    <Flex align="center" gap={3} bg="orange.50" border="1px solid" borderColor="orange.200" borderRadius="lg" p={3}>
+                                        <Icon as={FaExclamationTriangle} color="orange.400" flexShrink={0} />
+                                        <Text fontSize="sm" color="orange.800" flex="1">
+                                            No menu item links to the Speakers page yet. Create one in <b>Nav Menu</b> first —
+                                            add a menu item and set its link type to <b>&ldquo;Speakers Page&rdquo;</b>; it will always
+                                            point at whichever design (/speakers1 … /speakers{designCount}) is selected here.
+                                        </Text>
+                                        <Button
+                                            as={RouterLink}
+                                            to={`/cf/${confId}/navmenu`}
+                                            size="sm"
+                                            colorScheme="orange"
+                                            rightIcon={<FaArrowRight />}
+                                            flexShrink={0}
+                                        >
+                                            Go to Nav Menu
+                                        </Button>
+                                    </Flex>
+                                )}
+                            </Box>
+                        </Box>
+                    )}
 
                     <SimpleGrid columns={{ base: 1, sm: 2, lg: 3 }} spacing={5}>
                         {Array.from({ length: designCount }, (_, i) => i + 1).map((design) => {

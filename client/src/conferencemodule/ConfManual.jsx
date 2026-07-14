@@ -159,14 +159,13 @@ function TabOverview({ setTab }) {
                 border: '1px solid #e4e8f5', overflow: 'hidden', marginBottom: 24,
             }}>
                 {[
-                    { n: 1, icon: '⚙️', label: 'Create Conference', sub: 'Name · Email', tab: 'setup' },
-                    { n: 2, icon: '🏠', label: 'Home Details', sub: 'Name · Dates · About', tab: 'setup' },
-                    { n: 3, icon: '📄', label: 'Build Pages & Content', sub: 'Pages, speakers, images…', tab: 'tabs' },
-                    { n: 4, icon: '🧭', label: 'Set Up the Menu', sub: 'Nav Menu · Home Layout', tab: 'tabs' },
+                    { n: 1, icon: '🏠', label: 'Home Details', sub: 'Name · Dates · About', tab: 'setup' },
+                    { n: 2, icon: '📄', label: 'Build Pages & Content', sub: 'Pages, speakers, images…', tab: 'tabs' },
+                    { n: 3, icon: '🧭', label: 'Set Up the Menu', sub: 'Nav Menu · Home Layout', tab: 'tabs' },
                 ].map((s, i) => (
                     <div key={s.n} style={{
                         flex: 1, padding: '16px 14px', textAlign: 'center',
-                        borderRight: i < 3 ? '1px solid #e4e8f5' : 'none',
+                        borderRight: i < 2 ? '1px solid #e4e8f5' : 'none',
                         cursor: 'pointer',
                     }} onClick={() => setTab(s.tab)}>
                         <div style={{ fontSize: 22, marginBottom: 6 }}>{s.icon}</div>
@@ -204,20 +203,7 @@ function TabOverview({ setTab }) {
 function TabSetup() {
     return (
         <div>
-            <SectionTitle>Step 1 — Create the Conference</SectionTitle>
-            <Step n={1} title="Open Create Conference">
-                Navigate to <strong>Conferences</strong> (route <code>/cf/addconf</code>).
-            </Step>
-            <Step n={2} title="Fill in Name and Email">
-                Enter the <strong>Name of the Conference</strong> (e.g. "MAC 2027") and the organiser's
-                <strong> Email</strong>, then click <strong>Add</strong>. Each conference needs a unique email.
-            </Step>
-            <Step n={3} title="Open the Admin Panel">
-                Go to your <strong>Dashboard</strong> (<code>/cf/dashboard</code>), find your conference and
-                click through — the admin panel opens on the <strong>Home</strong> tab.
-            </Step>
-
-            <SectionTitle>Step 2 — Home Tab: Name, Dates &amp; About</SectionTitle>
+            <SectionTitle>Step 1 — Home Tab: Name, Dates &amp; About</SectionTitle>
             <Step n={1} title="Enter the basics">
                 On <strong>Home</strong>, type the <strong>Name of the Conference</strong> and pick the
                 <strong> Starting Date</strong> and <strong>Ending Date</strong>. Click
@@ -238,7 +224,7 @@ function TabSetup() {
                 brought in — review everything and save.
             </Step>
 
-            <SectionTitle>Step 3 — Build Your Pages</SectionTitle>
+            <SectionTitle>Step 2 — Build Your Pages</SectionTitle>
             <Step n={1} title="Create pages in Common Template">
                 Every extra page of your site — Tracks, Committees, Registration Fee, Travel Info — is
                 created in <strong>Common Template</strong>. Click <strong>Add New Page</strong>, give it a
@@ -250,7 +236,7 @@ function TabSetup() {
                 Details for every field are in the <strong>Tab-by-Tab Guide</strong>.
             </Step>
 
-            <SectionTitle>Step 4 — Wire Up the Site Menu</SectionTitle>
+            <SectionTitle>Step 3 — Wire Up the Site Menu</SectionTitle>
             <Step n={1} title="Add menu items">
                 In <strong>Nav Menu</strong>, click <strong>Add Menu Item</strong>. Give it a
                 <strong> Label</strong> (what visitors see), pick where it links to (for your own pages just
@@ -286,18 +272,46 @@ function TabTabs() {
             <SectionTitle>Home</SectionTitle>
             <TabRefCard title="Home" tags={[{ label: 'one per conference', color: '#92400e' }]}
                 fields="Conference Name · Starting Date · Ending Date · About sections (Title + rich-text Description)">
-                <RefLabel>What to enter</RefLabel>
+                <RefLabel>Screen layout</RefLabel>
                 <Body>
-                    The conference's name and its start/end dates, plus one or more <strong>About</strong>
-                    sections. Type the name exactly as it should appear on the site. Save with
-                    <strong> Add / Update Conference Info</strong>. For About sections: pick one from the
-                    left-hand list (or <strong>Add New About</strong>), write in the editor while watching
-                    the live preview, then <strong>Update About Section</strong>.
+                    Three columns on desktop: a left rail listing every <strong>About</strong> section (click
+                    one to edit it, or <strong>Conference Details</strong> at its top to get back to the
+                    name/dates form); the form/editor in the middle; and a <strong>Live Preview</strong> on
+                    the right that renders the About section you're currently editing exactly as it will
+                    look on the site. Your <strong>Conference ID</strong> is shown above the form — it's the
+                    same code visible in the browser's address bar, used in a few older direct-link URLs
+                    (see Tips &amp; FAQs).
+                </Body>
+                <RefLabel>Conference Details — name &amp; dates</RefLabel>
+                <Body>
+                    Three fields: <strong>Name of the Conference</strong>, <strong>Starting Date</strong> and
+                    <strong> Ending Date</strong> (date pickers). Press <strong>Add Conference Info</strong>
+                    the first time, <strong>Update Conference Info</strong> after that. These dates also
+                    drive the countdown timer in the sidebar and on the public site.
+                </Body>
+                <RefLabel>About sections</RefLabel>
+                <Body>
+                    Each About entry has a <strong>Title</strong> (e.g. "About the Conference", "About the
+                    Institute") and a rich-text <strong>Description</strong>. Click <strong>Add New
+                    About</strong> (title banner or left rail) to start a new one, or click an existing
+                    entry in the left rail to open it — the rail shows "Currently editing" on the one that's
+                    open. Inside the editor toolbar, <strong>Insert Table</strong> drops in a 3×3 table at
+                    the cursor, and <strong>Show HTML</strong> opens an editable raw-markup box underneath
+                    (with <strong>Apply Changes</strong> to push edits back into the editor and
+                    <strong> Copy HTML</strong> to copy it) — most people never need this. Press
+                    <strong> Update About Section</strong> to save just that entry; if there's more than one
+                    About section, <strong>Delete This About</strong> removes the one you're viewing (asks
+                    to confirm first).
                 </Body>
                 <RefLabel>Good to know</RefLabel>
                 <Body color="#92400e">
-                    <strong>Import from Conference</strong> copies the name, dates and all About sections
-                    from a previous conference — it fills the screen for review; save to keep it.
+                    Only one Home record exists per conference — the form always edits/creates that single
+                    record, so there's nothing to duplicate. <strong>Import from Conference</strong> opens a
+                    picker of your other conferences; choosing one shows a preview (name, dates, and how
+                    many About sections it has) before you commit. <strong>Apply Import</strong> fills the
+                    name/dates into the form and brings in all About sections — if this conference already
+                    has a saved Home record, the imported About sections are saved immediately; otherwise
+                    review and press Update/Add to keep them.
                 </Body>
             </TabRefCard>
 

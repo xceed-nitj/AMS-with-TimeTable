@@ -24,12 +24,12 @@ const navGroups = [
     title: 'Site & Content',
     items: [
       { name: 'Nav Menu', href: 'navmenu', icon: FaBars, iconColor: 'tw-text-indigo-400' },
-      { name: 'Home Layout', href: 'homelayout', icon: FaThLarge, iconColor: 'tw-text-pink-400' },
-      { name: 'Customisation', href: 'customisation', icon: FaPalette, iconColor: 'tw-text-fuchsia-400' },
       { name: 'Common Template', href: 'commontemplate', icon: FaFileAlt, iconColor: 'tw-text-cyan-400' },
       { name: 'Announcements', href: 'announcement', icon: FaBullhorn, iconColor: 'tw-text-violet-400' },
       { name: 'Images', href: 'images', icon: FaImages, iconColor: 'tw-text-teal-400' },
       { name: 'Event Dates', href: 'eventdates', icon: FaCalendarAlt, iconColor: 'tw-text-orange-400' },
+      { name: 'Home Layout', href: 'homelayout', icon: FaThLarge, iconColor: 'tw-text-pink-400' },
+      { name: 'Customisation', href: 'customisation', icon: FaPalette, iconColor: 'tw-text-fuchsia-400' },
     ],
   },
   {

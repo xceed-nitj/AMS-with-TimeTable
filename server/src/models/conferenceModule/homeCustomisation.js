@@ -26,7 +26,7 @@ const HomeCustomisation = mongoose.model("cf-homecustomisation", homeCustomisati
 // for that component — bump it here when a new design is added.
 const DEFAULT_COMPONENTS = [
   { key: "countdown", design: 1, designCount: 4 },
-  { key: "eventDates", design: 1, designCount: 4 },
+  { key: "eventDates", design: 1, designCount: 3 },
   // Speakers section layout: the public site renders /speakers1 … /speakers5
   // depending on the chosen design. Managed from its own "Speaker Layout"
   // admin tab rather than the generic Customisation list.
