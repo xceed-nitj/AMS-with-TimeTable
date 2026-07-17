@@ -132,9 +132,18 @@ router.post('/run-attendance', async (req, res) => {
 
 // ─── Live RTSP Ground Truth (SSE streaming) ───────────────────────
 
-const http = require('http');
-const fs   = require('fs');
+const axios = require('axios');
+const fs    = require('fs');
 const { buildExistingFoldersPayload } = require('../controllers/embeddingSyncHelper');
+
+// The ML service may run on a separate machine (e.g. the H100 GPU box) —
+// always resolve it from ML_SERVICE_URL, same as every other integration
+// point (mlServiceClient.js, mlRoutes.js, cameraController.js, etc.).
+// Previously these routes hardcoded hostname/port to 127.0.0.1:8500, which
+// silently ignored ML_SERVICE_URL and broke as soon as the service moved
+// off the Node host.
+const rawMlUrl = process.env.ML_SERVICE_URL || 'http://localhost:8500';
+const ML_SERVICE_URL = /^https?:\/\//i.test(rawMlUrl) ? rawMlUrl : `http://${rawMlUrl}`;
 
 const GT_BASE_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'ground_truth');
 
@@ -215,10 +224,10 @@ function handleGroundTruthEvent(event, batch, pythonFolderMap) {
     }
 }
 
-router.post('/extract-rtsp-stream', (req, res) => {
+router.post('/extract-rtsp-stream', async (req, res) => {
     const batch           = req.body.batch || '';
     const existingFolders = buildExistingFoldersPayload(path.join(GT_BASE_DIR, batch));
-    const body            = JSON.stringify({ ...req.body, existingFolders });
+    const body            = { ...req.body, existingFolders };
     const pythonFolderMap = {};   // person_XXX → ObjectId string, scoped to this stream
 
     res.setHeader('Content-Type', 'text/event-stream');
@@ -227,149 +236,103 @@ router.post('/extract-rtsp-stream', (req, res) => {
     res.setHeader('X-Accel-Buffering', 'no');
     res.flushHeaders();
 
-    const options = {
-        hostname: '127.0.0.1',
-        port: 8500,
-        path: '/extract-rtsp-stream',
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Content-Length': Buffer.byteLength(body),
-        },
-    };
-
-    const proxy = http.request(options, (mlRes) => {
-        let buffer = '';
-
-        mlRes.on('data', (chunk) => {
-            buffer += chunk.toString();
-
-            // Process complete SSE events (each terminated by \n\n)
-            let boundary;
-            while ((boundary = buffer.indexOf('\n\n')) !== -1) {
-                const eventText = buffer.substring(0, boundary + 2);
-                buffer = buffer.substring(boundary + 2);
-
-                const dataLine = eventText.trimEnd();
-                if (!dataLine.startsWith('data: ')) {
-                    if (!res.writableEnded) res.write(eventText);
-                    continue;
-                }
-
-                let event = null;
-                try { event = JSON.parse(dataLine.slice(6)); } catch {}
-
-                if (event && GT_INTERNAL.has(event.type)) {
-                    handleGroundTruthEvent(event, batch, pythonFolderMap);
-                } else {
-                    if (!res.writableEnded) res.write(eventText);
-                }
-            }
+    let proxyRes;
+    try {
+        proxyRes = await axios.post(`${ML_SERVICE_URL}/extract-rtsp-stream`, body, {
+            responseType: 'stream',
+            timeout: 0,   // long-lived stream — runs until the client stops it
+            headers: { 'Content-Type': 'application/json' },
         });
-
-        mlRes.on('end', () => {
-            if (buffer && !res.writableEnded) res.write(buffer);
-            if (!res.writableEnded) res.end();
-        });
-
-        mlRes.on('error', (err) => {
-            console.error('ML stream error:', err.message);
-            if (!res.writableEnded) res.end();
-        });
-    });
-
-    proxy.on('error', (err) => {
+    } catch (err) {
         console.error('RTSP proxy error:', err.message);
         if (!res.writableEnded) {
             res.write(`data: ${JSON.stringify({ type: 'error', message: 'ML service unavailable' })}\n\n`);
             res.end();
         }
+        return;
+    }
+
+    let buffer = '';
+
+    proxyRes.data.on('data', (chunk) => {
+        buffer += chunk.toString();
+
+        // Process complete SSE events (each terminated by \n\n)
+        let boundary;
+        while ((boundary = buffer.indexOf('\n\n')) !== -1) {
+            const eventText = buffer.substring(0, boundary + 2);
+            buffer = buffer.substring(boundary + 2);
+
+            const dataLine = eventText.trimEnd();
+            if (!dataLine.startsWith('data: ')) {
+                if (!res.writableEnded) res.write(eventText);
+                continue;
+            }
+
+            let event = null;
+            try { event = JSON.parse(dataLine.slice(6)); } catch {}
+
+            if (event && GT_INTERNAL.has(event.type)) {
+                handleGroundTruthEvent(event, batch, pythonFolderMap);
+            } else {
+                if (!res.writableEnded) res.write(eventText);
+            }
+        }
     });
 
-    // Only destroy proxy when response is closed, not request
+    proxyRes.data.on('end', () => {
+        if (buffer && !res.writableEnded) res.write(buffer);
+        if (!res.writableEnded) res.end();
+    });
+
+    proxyRes.data.on('error', (err) => {
+        console.error('ML stream error:', err.message);
+        if (!res.writableEnded) res.end();
+    });
+
+    // Only destroy the upstream stream when the response is closed
     res.on('close', () => {
         console.log('Response closed — aborting ML stream');
-        proxy.destroy();
+        proxyRes.data.destroy();
     });
-
-    proxy.write(body);
-    proxy.end();
 });
 
-router.post('/stop-rtsp-stream', (req, res) => {
-    const body = JSON.stringify(req.body || {});
-    const options = {
-        hostname: '127.0.0.1',
-        port: 8500,
-        path: '/stop-rtsp-stream',
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
-    };
-
-    const proxy = http.request(options, (mlRes) => {
-        let data = '';
-        mlRes.on('data', chunk => data += chunk);
-        mlRes.on('end', () => {
-            try { res.json(JSON.parse(data)); }
-            catch { res.json({ status: 'ok' }); }
-        });
-    });
-
-    proxy.on('error', (err) => {
+router.post('/stop-rtsp-stream', async (req, res) => {
+    try {
+        const result = await axios.post(`${ML_SERVICE_URL}/stop-rtsp-stream`, req.body || {}, { timeout: 10000 });
+        res.json(result.data);
+    } catch (err) {
         console.error('Stop proxy error:', err.message);
         res.status(502).json({ error: 'ML service unavailable' });
-    });
-
-    proxy.write(body);
-    proxy.end();
+    }
 });
 
-router.get('/rtsp-preview', (req, res) => {
+router.get('/rtsp-preview', async (req, res) => {
     const jobId = req.query.jobId;
-    const options = {
-        hostname: '127.0.0.1',
-        port: 8500,
-        path: jobId ? `/rtsp-preview?jobId=${encodeURIComponent(jobId)}` : '/rtsp-preview',
-        method: 'GET',
-    };
-    const proxy = http.request(options, (mlRes) => {
-        res.setHeader('Content-Type', 'multipart/x-mixed-replace; boundary=frame');
+    try {
+        const result = await axios.get(`${ML_SERVICE_URL}/rtsp-preview`, {
+            params: jobId ? { jobId } : undefined,
+            responseType: 'stream',
+            timeout: 0,   // long-lived MJPEG stream
+        });
+        res.setHeader('Content-Type', result.headers['content-type'] || 'multipart/x-mixed-replace; boundary=frame');
         res.setHeader('Cache-Control', 'no-cache');
-        mlRes.pipe(res);
-    });
-    proxy.on('error', (err) => {
-        res.status(502).end();
-    });
-    res.on('close', () => proxy.destroy());
-    proxy.end();
+        result.data.pipe(res);
+        result.data.on('error', () => { if (!res.writableEnded) res.end(); });
+        req.on('close', () => result.data.destroy());
+    } catch (err) {
+        if (!res.writableEnded) res.status(502).end();
+    }
 });
 
-router.post('/start-preview', (req, res) => {
-    const body = JSON.stringify(req.body);
-    const options = {
-        hostname: '127.0.0.1',
-        port: 8500,
-        path: '/start-preview',
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Content-Length': Buffer.byteLength(body),
-        },
-    };
-    const proxy = http.request(options, (mlRes) => {
-        let data = '';
-        mlRes.on('data', chunk => data += chunk);
-        mlRes.on('end', () => {
-            try { res.json(JSON.parse(data)); }
-            catch { res.json({ status: 'ok' }); }
-        });
-    });
-    proxy.on('error', (err) => {
+router.post('/start-preview', async (req, res) => {
+    try {
+        const result = await axios.post(`${ML_SERVICE_URL}/start-preview`, req.body, { timeout: 15000 });
+        res.json(result.data);
+    } catch (err) {
         console.error('start-preview proxy error:', err.message);
         res.status(502).json({ error: 'ML service unavailable' });
-    });
-    proxy.write(body);
-    proxy.end();
+    }
 });
 
 module.exports = router;
