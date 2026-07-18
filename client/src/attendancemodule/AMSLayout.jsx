@@ -11,11 +11,7 @@ const apiUrl = getEnvironment();
 
 const NAV = [
   { id: 'dashboard', route: '/attendance', label: 'Dashboard', exact: true },
-  {
-    id: 'rtsp',
-    route: '/attendance/groundtruth/rtsp',
-    label: 'Ground Truth Capture',
-  },
+  { id: 'rtsp', route: '/attendance/groundtruth/rtsp', label: 'Ground Truth Capture' },
   {
     id: 'assign',
     route: '/attendance/groundtruth/assign',
@@ -33,11 +29,7 @@ const NAV = [
     label: 'Class Verification',
   },
   { id: 'cameras', route: '/cameras', label: 'Camera Registry', exact: true },
-  {
-    id: 'embeddings',
-    route: '/attendance/embeddings',
-    label: 'Subject Embeddings',
-  },
+  { id: 'embeddings', route: '/attendance/embeddings', label: 'Subject Embeddings' },
   { id: 'preview', route: '/cameras/preview', label: 'Live Preview' },
   { id: 'record', route: '/attendance/record-stream', label: 'Record Stream' },
   {
@@ -45,21 +37,9 @@ const NAV = [
     route: '/attendance/confidence',
     label: 'Confidence Monitor',
   },
-  {
-    id: 'institute',
-    route: '/attendance/institute-identification',
-    label: 'Institute Identification',
-  },
-  {
-    id: 'erpOverrides',
-    route: '/attendance/erp-overrides',
-    label: 'ERP Overrides',
-  },
-  {
-    id: 'erpSync',
-    route: '/attendance/edit-session-dates?tab=erpControls',
-    label: 'ERP Sync',
-  },
+  { id: 'institute', route: '/attendance/institute-identification', label: 'Institute Identification' },
+  { id: 'erpOverrides', route: '/attendance/erp-overrides', label: 'ERP Overrides' },
+  { id: 'erpSync', route: '/attendance/edit-session-dates?tab=erpControls', label: 'ERP Sync' },
   { id: 'manual', route: '/ams-manual', label: 'Help & Manual', newTab: true },
 ];
 
@@ -257,11 +237,7 @@ export default function AMSLayout() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        window.open(
-                          item.route,
-                          '_blank',
-                          'noopener,noreferrer',
-                        );
+                        window.open(item.route, '_blank', 'noopener,noreferrer');
                       }}
                       title={`Open ${item.label} in new tab`}
                       className="ams-nav-newtab-btn"
