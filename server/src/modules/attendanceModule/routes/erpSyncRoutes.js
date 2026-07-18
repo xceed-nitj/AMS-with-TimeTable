@@ -9,11 +9,15 @@
 const express = require('express');
 const router  = express.Router();
 const { listSubjects, fetchRolls, fetchRollsBulk, getSettings, updateSettings } = require('../controllers/erpSyncController');
+const { runNow } = require('../controllers/erpAutoSyncScheduler');
 
 router.get('/subjects', listSubjects);
 router.post('/fetch-rolls', fetchRolls);
 router.post('/fetch-rolls-bulk', fetchRollsBulk);
 router.get('/settings', getSettings);
 router.patch('/settings', updateSettings);
+// Manual trigger for the nightly roster-sync job — same runErpAutoSync() the
+// 02:00 cron calls, runs institute-wide (all subjects, not one department).
+router.post('/run-now', runNow);
 
 module.exports = router;

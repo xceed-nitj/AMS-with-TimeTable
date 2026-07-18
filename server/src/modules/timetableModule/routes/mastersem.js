@@ -4,6 +4,8 @@ const MastersemController = require("../controllers/mastersemprofile");
 const mastersemController = new MastersemController();
 
 const ttadminRoute=require("../../usermanagement/ttadminroute")
+const { checkRole } = require("../../checkRole.middleware");
+const deleteAccess = checkRole(['ITTC', 'DTTI']);
 
 
 // mastersemRouter.use(["/","/:id"], customMiddleware);
@@ -70,7 +72,7 @@ mastersemRouter.put('/:id',ttadminRoute, async (req, res) => {
   }
 });
 
-mastersemRouter.delete("/:id",ttadminRoute, async (req, res) => {
+mastersemRouter.delete("/:id",deleteAccess, async (req, res) => {
   try {
     const semesterId = req.params.id;
     await mastersemController.deleteSemester(semesterId);

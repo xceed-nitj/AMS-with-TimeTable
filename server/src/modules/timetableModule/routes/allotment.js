@@ -2,8 +2,11 @@ const express = require("express");
 const allotmentRouter = express.Router();
 const AllotmentController = require("../controllers/allotmentprofile");
 const allotmentController = new AllotmentController();
+const { checkRole } = require("../../checkRole.middleware");
 
-allotmentRouter.post("/", async (req, res) => {
+const allotmentWriteAccess = checkRole(['admin', 'ITTC', 'DTTI']);
+
+allotmentRouter.post("/", allotmentWriteAccess, async (req, res) => {
     try {
       await allotmentController.AddAllotment(req, res);
     } catch (e) {
@@ -49,7 +52,7 @@ allotmentRouter.post("/", async (req, res) => {
     }
   });
 
-  allotmentRouter.put('/session/:sessionId', async (req, res) => {
+  allotmentRouter.put('/session/:sessionId', allotmentWriteAccess, async (req, res) => {
     try {
       const sessionId = req.params.sessionId;
       const newSession = req.body.session;
@@ -63,7 +66,7 @@ allotmentRouter.post("/", async (req, res) => {
     }
   });
 
-  allotmentRouter.put('/:id', async (req, res) => {
+  allotmentRouter.put('/:id', allotmentWriteAccess, async (req, res) => {
       try {
         const allotmentID = req.params.id;
         const updatedId = req.body;
@@ -78,7 +81,7 @@ allotmentRouter.post("/", async (req, res) => {
       }
     });
 
- allotmentRouter.post("/set-current-session", async (req, res) => {
+ allotmentRouter.post("/set-current-session", allotmentWriteAccess, async (req, res) => {
   await allotmentController.setCurrentSession(req, res);
 });
 
@@ -86,7 +89,7 @@ allotmentRouter.get("/current-status", async (req, res) => {
   await allotmentController.getCurrentStatus(req, res);
 });
 
-    allotmentRouter.delete("/session/:session", async (req, res) => {
+    allotmentRouter.delete("/session/:session", allotmentWriteAccess, async (req, res) => {
       try {
         const session = req.params.session; 
         await allotmentController.deleteBySession(session);
@@ -98,7 +101,7 @@ allotmentRouter.get("/current-status", async (req, res) => {
       }
     });
     
-    allotmentRouter.delete("/:id", async (req, res) => {
+    allotmentRouter.delete("/:id", allotmentWriteAccess, async (req, res) => {
       try {
         const allotmentID = req.params.id;
         await allotmentController.deleteId(allotmentID);

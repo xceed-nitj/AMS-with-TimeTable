@@ -5,6 +5,26 @@ import "quill/dist/quill.snow.css";
 import QuillBetterTable from "quill-better-table";
 import "quill-better-table/dist/quill-better-table.css";
 
+// One source of truth for the font/size formats: Quill's whitelists, the
+// toolbar dropdowns and the picker-label CSS are all generated from these.
+// Font names must be single-token families only — browsers quote multi-word
+// names (e.g. "Times New Roman") when reading style.fontFamily back, which
+// fails Quill's whitelist check and silently drops the format.
+const FONT_WHITELIST = [
+  // sans-serif
+  "Arial", "Helvetica", "Verdana", "Tahoma", "Calibri", "Candara", "Corbel",
+  // serif
+  "Georgia", "Cambria", "Garamond", "Palatino", "Times", "Baskerville", "Constantia",
+  // display
+  "Impact", "Rockwell", "Futura", "Optima",
+  // monospace + script
+  "Consolas", "Monaco", "Courier", "monospace", "cursive",
+];
+const SIZE_WHITELIST = [
+  "8px", "9px", "10px", "11px", "12px", "14px", "16px", "18px", "20px", "22px",
+  "24px", "26px", "28px", "32px", "36px", "40px", "48px", "56px", "64px", "72px",
+];
+
 const QuillEditor = forwardRef(
   (
     {
@@ -27,6 +47,11 @@ const QuillEditor = forwardRef(
     const fileInputRef = useRef(null);
     const quillRef = useRef(null);
     const isPastingRef = useRef(false);
+    // Parents pass a fresh onToggleHtml every render; route calls through a
+    // ref so the setup effect never has to re-run (re-runs used to destroy
+    // the image resizer — including in the middle of a drag).
+    const onToggleHtmlRef = useRef(onToggleHtml);
+    useEffect(() => { onToggleHtmlRef.current = onToggleHtml; });
 
     // ---------- helpers ----------
     const safeParse = (s) => { try { return JSON.parse(s); } catch { return null; } };
@@ -151,26 +176,34 @@ const QuillEditor = forwardRef(
         this.start = null;
         this.ratio = 1;
 
-        this.onClick = this.onClick.bind(this);
+        this.onDown = this.onDown.bind(this);
         this.onScroll = this.reposition.bind(this);
         this.onTextChange = this.reposition.bind(this);
 
-        quill.root.addEventListener("click", this.onClick,true);
+        // mousedown in the CAPTURE phase: inside quill-better-table cells the
+        // table draws its own selection overlay on mousedown, so a later
+        // "click" event no longer targets the IMG — capture runs first.
+        quill.root.addEventListener("mousedown", this.onDown, true);
         quill.root.addEventListener("scroll", this.onScroll, { passive: true });
+        window.addEventListener("resize", this.onScroll);
         quill.on("text-change", this.onTextChange);
       }
 
       destroy() {
         this.removeOverlay();
-        this.quill.root.removeEventListener("click", this.onClick);
+        this.quill.root.removeEventListener("mousedown", this.onDown, true);
         this.quill.root.removeEventListener("scroll", this.onScroll);
+        window.removeEventListener("resize", this.onScroll);
         this.quill.off("text-change", this.onTextChange);
       }
 
-      onClick(e) {
+      onDown(e) {
         const target = e.target;
         if (target && target.tagName === "IMG") {
-          if (this.img === target) return;
+          // Keep quill-better-table's column/row resize tool from hijacking
+          // the mousedown when the image sits inside a table cell.
+          e.stopPropagation();
+          if (this.img === target) { this.reposition(); return; }
           this.select(target);
         } else if (!this.overlay || !this.overlay.contains(target)) {
           this.deselect();
@@ -195,7 +228,10 @@ const QuillEditor = forwardRef(
 
       createOverlay() {
         this.removeOverlay();
-        const container = this.quill.root;
+        // IMPORTANT: append to .ql-container (not the contentEditable .ql-editor):
+        // Quill 2's MutationObserver deletes foreign nodes inside the editing
+        // root instantly, so an overlay placed there never becomes visible.
+        const container = this.quill.container || this.quill.root.parentNode;
         const ov = document.createElement("div");
         ov.className = "ql-ir-lite";
         ov.style.position = "absolute";
@@ -204,21 +240,33 @@ const QuillEditor = forwardRef(
         ov.style.boxSizing = "border-box";
         ov.style.border = "1px dashed rgba(0,0,0,.35)";
 
-        // single SE handle
+        // single SE drag handle — free dynamic sizing
         const h = document.createElement("div");
         h.className = "ql-ir-lite-handle";
         h.style.position = "absolute";
-        h.style.right = "-6px";
-        h.style.bottom = "-6px";
-        h.style.width = "12px";
-        h.style.height = "12px";
-        h.style.background = "#fff";
-        h.style.border = "1px solid rgba(0,0,0,.4)";
+        h.style.right = "-8px";
+        h.style.bottom = "-8px";
+        h.style.width = "16px";
+        h.style.height = "16px";
+        h.style.borderRadius = "50%";
+        h.style.background = "#3b82f6";
+        h.style.border = "2px solid #fff";
+        h.style.boxShadow = "0 1px 4px rgba(0,0,0,.4)";
         h.style.cursor = "se-resize";
         h.style.pointerEvents = "auto";
 
-        h.addEventListener("mousedown", (ev) => this.startDrag(ev));
+        h.addEventListener("mousedown", (ev) => { ev.stopPropagation(); this.startDrag(ev); });
         ov.appendChild(h);
+
+        // Live size badge (updates while dragging)
+        const badge = document.createElement("div");
+        badge.className = "ql-ir-lite-size";
+        badge.style.cssText =
+          "position:absolute;top:-24px;left:0;background:#1e293b;color:#fff;font-size:11px;" +
+          "padding:2px 8px;border-radius:6px;white-space:nowrap;pointer-events:none;font-family:sans-serif;";
+        ov.appendChild(badge);
+        this.badge = badge;
+
         container.appendChild(ov);
         this.overlay = ov;
       }
@@ -233,6 +281,10 @@ const QuillEditor = forwardRef(
       startDrag(e) {
         e.preventDefault();
         if (!this.img) return;
+        // Mute change propagation while dragging — Quill's mutation observer
+        // fires on every inline style change and the resulting parent state
+        // updates used to tear the editor (and this overlay) down mid-drag.
+        this.quill.__irDragging = true;
         const rect = this.img.getBoundingClientRect();
         const rootRect = this.quill.root.getBoundingClientRect();
 
@@ -265,35 +317,60 @@ const QuillEditor = forwardRef(
           newH = Math.max(20, this.start.imgH + dy);
         }
 
-        // apply to DOM
+        // While dragging: update inline styles ONLY. Writing to the Quill blot
+        // here fires a full editor update per mousemove — that's what caused
+        // the flicker. The size is persisted once, on mouse release.
         this.img.style.width = `${Math.round(newW)}px`;
         this.img.style.height = `${Math.round(newH)}px`;
 
-        // immediately persist to blot formats (so Delta saves)
-        applySizeToBlot(this.img, { width: newW, height: newH });
-
-        // reposition overlay box
-        this.reposition();
+        // Sync the overlay at most once per frame.
+        if (!this._raf) {
+          this._raf = requestAnimationFrame(() => {
+            this._raf = null;
+            this.reposition();
+          });
+        }
       }
 
       endDrag() {
         document.removeEventListener("mousemove", this.onMove);
         document.removeEventListener("mouseup", this.onUp);
         this.start = null;
+        if (this._raf) {
+          cancelAnimationFrame(this._raf);
+          this._raf = null;
+        }
+        // Un-mute BEFORE the final write so the saved size reaches the parent.
+        this.quill.__irDragging = false;
+        // Persist the final size into the blot once, so the Delta saves it.
+        if (this.img) {
+          const rect = this.img.getBoundingClientRect();
+          applySizeToBlot(this.img, {
+            width: Math.round(rect.width),
+            height: Math.round(rect.height),
+          });
+          requestAnimationFrame(() => this.reposition());
+        }
       }
 
       reposition() {
         if (!this.overlay || !this.img) return;
         const imgRect = this.img.getBoundingClientRect();
-        const rootRect = this.quill.root.getBoundingClientRect();
+        // Position relative to .ql-container — bounding rects already reflect
+        // any internal editor scrolling, so no scroll offsets are added.
+        const refEl = this.quill.container || this.quill.root.parentNode;
+        const refRect = refEl.getBoundingClientRect();
 
-        const left = imgRect.left - rootRect.left + this.quill.root.scrollLeft;
-        const top = imgRect.top - rootRect.top + this.quill.root.scrollTop;
+        const left = imgRect.left - refRect.left;
+        const top = imgRect.top - refRect.top;
 
         this.overlay.style.left = `${left}px`;
         this.overlay.style.top = `${top}px`;
         this.overlay.style.width = `${imgRect.width}px`;
         this.overlay.style.height = `${imgRect.height}px`;
+        if (this.badge) {
+          this.badge.textContent = `${Math.round(imgRect.width)} × ${Math.round(imgRect.height)}`;
+        }
       }
     }
 
@@ -379,12 +456,47 @@ const QuillEditor = forwardRef(
     }), []);
 
     useEffect(() => {
-      if (quillRef.current) return;
+      // This effect re-runs whenever `onToggleHtml` changes identity (parents
+      // pass a fresh callback each render) and on StrictMode remounts. The
+      // cleanup below destroys the image resizer and removes the injected
+      // styles while the Quill instance itself is kept — so on re-runs we must
+      // RE-ATTACH them instead of returning with a dead resizer.
+      if (quillRef.current) {
+        const q = quillRef.current;
+        if (!q.__imageResizeLite) {
+          q.__imageResizeLite = new ImageResizeLite(q, { keepRatio: true });
+        }
+        if (!document.head.querySelector('[data-quill-fixes="1"]')) {
+          document.head.appendChild(buildQuillFixesStyle());
+        }
+        return () => {
+          try { q.__imageResizeLite?.destroy(); } catch {}
+          q.__imageResizeLite = null;
+          document.head.querySelector('[data-quill-fixes="1"]')?.remove();
+        };
+      }
 
       // ✅ Register modules/blots
       Quill.register({ "modules/better-table": QuillBetterTable }, true);
       Quill.register("modules/imageResizeLite", ImageResizeLite); // inline module
       registerImageBlot();                                        // custom image blot (persist w/h)
+
+      // Quill's default align format writes ql-align-* classes, which only
+      // render correctly inside elements wearing quill's own .ql-editor CSS.
+      // Previews and the public conference site render the saved HTML outside
+      // that scope, so center/right/justify silently had no visual effect
+      // there. The style-based attributor writes inline `text-align` instead,
+      // which works anywhere.
+      const AlignStyle = Quill.import("attributors/style/align");
+      Quill.register(AlignStyle, true);
+
+      // Font size / family as inline styles too, for the same reason.
+      const SizeStyle = Quill.import("attributors/style/size");
+      SizeStyle.whitelist = SIZE_WHITELIST;
+      Quill.register(SizeStyle, true);
+      const FontStyle = Quill.import("attributors/style/font");
+      FontStyle.whitelist = FONT_WHITELIST;
+      Quill.register(FontStyle, true);
 
       // Sanitize links
       const Link = Quill.import("formats/link");
@@ -463,7 +575,7 @@ const QuillEditor = forwardRef(
         }
       };
 
-      const toggleHtmlHandler = () => typeof onToggleHtml === "function" && onToggleHtml();
+      const toggleHtmlHandler = () => typeof onToggleHtmlRef.current === "function" && onToggleHtmlRef.current();
 
       // --- create editor
       const q = new Quill(containerRef.current, {
@@ -491,10 +603,8 @@ const QuillEditor = forwardRef(
               },
             },
           },
-          // ✅ NEW: enable inline image resizer (works in/out of tables)
-          imageResizeLite: {
-            keepRatio: true,
-          },
+          // Note: the inline image resizer is instantiated manually below
+          // (q.__imageResizeLite) — not via modules, to avoid double overlays.
           keyboard: {
             bindings: {
               ...QuillBetterTable.keyboardBindings,
@@ -556,28 +666,10 @@ const QuillEditor = forwardRef(
       });
 
       // --- Styles (overlay + tables)
-      const style = document.createElement("style");
-      style.setAttribute("data-quill-fixes", "1");
-      style.textContent =
-        `.ql-tooltip{z-index:9999}
-         .ql-container{position:relative;}
-         .ql-editor{position:relative;} /* ensure resize overlay positions correctly */
-         .ql-editor ul{list-style:disc;padding-left:1.5em;}
-         .ql-editor ol{list-style:decimal;padding-left:1.5em;}
-         .ql-editor table{table-layout:fixed;width:100%;border-collapse:collapse;}
-         .ql-editor td,.ql-editor th{vertical-align:top;border:1px solid #ccc;padding:8px;}
-         .ql-editor img{max-width:100%;height:auto;display:block;}
-         .ql-better-table .qlbt-cell-data{overflow:visible;} /* let resize handles show in cells */
-         .ql-editor table img{max-width:100%;height:auto;display:block;margin:2px 0;}
-         .ql-editor table p{margin:0;padding:0;}
-         .ql-editor .ql-table-cell-line{margin:0;}
-         /* inline resizer overlay */
-         .ql-ir-lite{z-index:10000;}
-         .ql-ir-lite-handle{width:12px;height:12px;border:1px solid rgba(0,0,0,.4);background:#fff;}`;
-      document.head.appendChild(style);
+      document.head.appendChild(buildQuillFixesStyle());
 
       q.on("text-change", () => {
-        if (isPastingRef.current) return;
+        if (isPastingRef.current || q.__irDragging) return;
         onChangeDelta?.(q.getContents());
         onChange?.(q.root.innerHTML);
       });
@@ -590,10 +682,69 @@ const QuillEditor = forwardRef(
 
       return () => {
         try { quillRef.current?.__imageResizeLite?.destroy(); } catch {}
+        if (quillRef.current) quillRef.current.__imageResizeLite = null;
         document.head.querySelector('[data-quill-fixes="1"]')?.remove();
       };
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [onToggleHtml]);
+    }, []);
+
+    // Builds the injected stylesheet — kept as a function so effect re-runs
+    // (StrictMode remounts, changed callbacks) can re-create it after cleanup.
+    function buildQuillFixesStyle() {
+      const style = document.createElement("style");
+      style.setAttribute("data-quill-fixes", "1");
+      style.textContent =
+        `.ql-tooltip{z-index:9999}
+         .ql-container{position:relative;}
+         .ql-editor{position:relative;} /* ensure resize overlay positions correctly */
+         /* Quill 2 renders BOTH bullet and numbered lists as <ol>, with the
+            marker type in each <li>'s data-list attribute. Deterministic
+            markers: kill the browser's native <ol> numbering AND Quill's own
+            .ql-ui marker spans, then draw exactly ONE marker per item via
+            ::before — no doubled bullet-over-number regardless of what other
+            stylesheets or sanitizers do. */
+         .ql-editor ol,.ql-editor ul{list-style:none;padding-left:1.5em;counter-reset:list-0;}
+         .ql-editor li[data-list]{list-style:none;position:relative;}
+         .ql-editor li[data-list]::marker{content:none;} /* beats list-style overrides from other stylesheets */
+         .ql-editor li[data-list]:not([data-list=checked]):not([data-list=unchecked]) > .ql-ui{display:none;}
+         .ql-editor li[data-list]:not([data-list=checked]):not([data-list=unchecked])::before{display:inline-block;margin-left:-1.5em;margin-right:.3em;text-align:right;white-space:nowrap;width:1.2em;}
+         .ql-editor li[data-list=bullet]::before{content:'\\2022';}
+         .ql-editor li[data-list=tick]::before{content:'\\2713';}
+         .ql-editor li[data-list=star]::before{content:'\\2605';}
+         .ql-editor li[data-list=arrow]::before{content:'\\27A4';}
+         .ql-editor li[data-list=diamond]::before{content:'\\25C6';}
+         .ql-editor li[data-list=ordered]{counter-increment:list-0;}
+         .ql-editor li[data-list=ordered]::before{content:counter(list-0) '. ';}
+         /* Legacy content saved as plain lists (no data-list attributes)
+            keeps native markers. */
+         .ql-editor ul li:not([data-list]){list-style-type:disc;}
+         .ql-editor ol li:not([data-list]){list-style-type:decimal;}
+         /* Font/size picker labels — Snow's CSS only labels its stock values,
+            so custom whitelists would render blank pickers. attr(data-value)
+            shows whatever value is configured; no data-value = the default. */
+         .ql-snow .ql-picker.ql-size .ql-picker-label::before,.ql-snow .ql-picker.ql-size .ql-picker-item::before{content:'Normal';}
+         .ql-snow .ql-picker.ql-size .ql-picker-label[data-value]::before,.ql-snow .ql-picker.ql-size .ql-picker-item[data-value]::before{content:attr(data-value);}
+         .ql-snow .ql-picker.ql-font .ql-picker-label::before,.ql-snow .ql-picker.ql-font .ql-picker-item::before{content:'Default';}
+         .ql-snow .ql-picker.ql-font .ql-picker-label[data-value]::before,.ql-snow .ql-picker.ql-font .ql-picker-item[data-value]::before{content:attr(data-value);}
+         /* preview each dropdown entry in its own typeface (generated) */
+         ${FONT_WHITELIST.map((f) => `.ql-snow .ql-picker.ql-font .ql-picker-item[data-value=${f}]::before{font-family:${f};}`).join("\n         ")}
+         /* long pickers scroll instead of running off-screen */
+         .ql-snow .ql-picker.ql-font .ql-picker-options,.ql-snow .ql-picker.ql-size .ql-picker-options{max-height:240px;overflow-y:auto;}
+         /* Links must stay visible in previews — Chakra's global reset makes
+            them inherit color with no underline. */
+         .ql-editor a{color:#2563eb !important;text-decoration:underline !important;}
+         .ql-editor table{table-layout:fixed;width:100%;border-collapse:collapse;}
+         .ql-editor td,.ql-editor th{vertical-align:top;border:1px solid #ccc;padding:8px;}
+         .ql-editor img{max-width:100%;height:auto;display:block;}
+         .ql-better-table .qlbt-cell-data{overflow:visible;} /* let resize handles show in cells */
+         .ql-editor table img{max-width:100%;height:auto;display:block;margin:2px 0;}
+         .ql-editor table p{margin:0;padding:0;}
+         .ql-editor .ql-table-cell-line{margin:0;}
+         /* inline resizer overlay */
+         .ql-ir-lite{z-index:10000;}
+         .ql-ir-lite-handle{width:12px;height:12px;border:1px solid rgba(0,0,0,.4);background:#fff;}`;
+      return style;
+    }
 
     // sync incoming Delta
     useEffect(() => {
@@ -638,6 +789,19 @@ const QuillEditor = forwardRef(
             </select>
           </span>
           <span className="ql-formats">
+            {/* Options come from the whitelists so they always match. The
+                default <option> has no value attribute so the picker shows the
+                fallback label from the injected CSS. */}
+            <select className="ql-font" defaultValue="">
+              <option />
+              {FONT_WHITELIST.map((f) => <option key={f} value={f} />)}
+            </select>
+            <select className="ql-size" defaultValue="">
+              <option />
+              {SIZE_WHITELIST.map((s) => <option key={s} value={s} />)}
+            </select>
+          </span>
+          <span className="ql-formats">
             <button className="ql-bold" />
             <button className="ql-italic" />
             <button className="ql-underline" />
@@ -656,8 +820,33 @@ const QuillEditor = forwardRef(
             <button className="ql-code-block" />
           </span>
           <span className="ql-formats">
-            <button className="ql-list" value="ordered" />
             <button className="ql-list" value="bullet" />
+            {/* Custom symbol lists — Quill stores the value in data-list and the
+                injected stylesheet draws the matching marker. Snow only injects
+                icons for values it knows, so the SVG content below survives.
+                Glyphs are SVG <text> with ql-fill so Snow colors them like its
+                own icons (gray, blue on hover/active) — plain text stays
+                unpainted and invisible. */}
+            <button className="ql-list" value="tick" title="Tick list" type="button">
+              <svg viewBox="0 0 18 18" width="18" height="18">
+                <text x="9" y="14" textAnchor="middle" fontSize="14" className="ql-fill">✓</text>
+              </svg>
+            </button>
+            <button className="ql-list" value="star" title="Star list" type="button">
+              <svg viewBox="0 0 18 18" width="18" height="18">
+                <text x="9" y="14" textAnchor="middle" fontSize="13" className="ql-fill">★</text>
+              </svg>
+            </button>
+            <button className="ql-list" value="arrow" title="Arrow list" type="button">
+              <svg viewBox="0 0 18 18" width="18" height="18">
+                <text x="9" y="13" textAnchor="middle" fontSize="11" className="ql-fill">➤</text>
+              </svg>
+            </button>
+            <button className="ql-list" value="diamond" title="Diamond list" type="button">
+              <svg viewBox="0 0 18 18" width="18" height="18">
+                <text x="9" y="13" textAnchor="middle" fontSize="11" className="ql-fill">◆</text>
+              </svg>
+            </button>
             <button className="ql-indent" value="-1" />
             <button className="ql-indent" value="+1" />
           </span>

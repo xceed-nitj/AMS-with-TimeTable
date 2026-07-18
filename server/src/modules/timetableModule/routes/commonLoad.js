@@ -3,6 +3,8 @@ const commonLoadRouter = express.Router();
 const CommonLoadController = require("../controllers/commonLoadprofile");
 const commonLoadController = new CommonLoadController();
 const protectRoute =require("../../usermanagement/privateroute")
+const { checkRole } = require("../../checkRole.middleware");
+const deleteAccess = checkRole(['ITTC', 'DTTI']);
 
 
 commonLoadRouter.post("/",protectRoute, async (req, res) => {
@@ -83,7 +85,7 @@ commonLoadRouter.put('/:id',protectRoute, async (req, res) => {
   }
 });
 
-commonLoadRouter.delete("/:id",protectRoute, async (req, res) => {
+commonLoadRouter.delete("/:id",deleteAccess, async (req, res) => {
   try {
     const commonLoadID = req.params.id;
     await commonLoadController.deleteCommonLoad(commonLoadID);

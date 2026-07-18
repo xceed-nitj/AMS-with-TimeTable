@@ -124,4 +124,17 @@ function startErpAutoSyncScheduler() {
   console.log("[ErpAutoSync] Scheduler registered — runs nightly 02:00");
 }
 
-module.exports = { startErpAutoSyncScheduler, runErpAutoSync };
+// POST /erp-sync/run-now — manual trigger for the nightly roster-sync job,
+// runs the exact same runErpAutoSync() the 02:00 cron calls.
+async function runNow(req, res) {
+  try {
+    await runErpAutoSync();
+    const ErpSyncSettings = require("../../../models/attendanceModule/erpSyncSettings");
+    const settings = await ErpSyncSettings.getSettings();
+    res.json({ lastRunAt: settings.lastRunAt, lastRunStats: settings.lastRunStats });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+module.exports = { startErpAutoSyncScheduler, runErpAutoSync, runNow };

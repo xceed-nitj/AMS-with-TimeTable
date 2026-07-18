@@ -368,6 +368,17 @@ function CMDashboard() {
         Add New Event
       </Button>
 
+      <Button
+        colorScheme="gray"
+        variant="outline"
+        onClick={() => window.open('/certificate-manual', '_blank', 'noopener,noreferrer')}
+        mb={4}
+        mr={3}
+        float="right"
+      >
+        Help &amp; Manual
+      </Button>
+
       <Header title="List of Events" />
 
       {eventsLoading ? (

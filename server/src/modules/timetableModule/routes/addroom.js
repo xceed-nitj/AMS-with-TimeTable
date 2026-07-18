@@ -3,6 +3,8 @@ const addRoomRouter = express.Router();
 const AddRoomController = require("../controllers/addroomprofile");
 const addRoomController = new AddRoomController();
 const protectRoute =require("../../usermanagement/privateroute")
+const { checkRole } = require("../../checkRole.middleware");
+const deleteAccess = checkRole(['ITTC', 'DTTI']);
 
 addRoomRouter.post("/",protectRoute, async (req, res) => {
     try {
@@ -61,7 +63,7 @@ addRoomRouter.post("/",protectRoute, async (req, res) => {
       }
     });
 
-    addRoomRouter.delete("/:id",protectRoute, async (req, res) => {
+    addRoomRouter.delete("/:id",deleteAccess, async (req, res) => {
       try {
         const roomID = req.params.id;
         await addRoomController.deleteId(roomID);
@@ -73,7 +75,7 @@ addRoomRouter.post("/",protectRoute, async (req, res) => {
       }
     });
 
-    addRoomRouter.delete("/deletebycode/:code",protectRoute, async (req, res) => {
+    addRoomRouter.delete("/deletebycode/:code",deleteAccess, async (req, res) => {
       try {
         const code = req.params.code;
         await addRoomController.deleteRoomByCode(code);

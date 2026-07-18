@@ -11,3 +11,4 @@ result.json
 *.pyc
 .insightface/
 .tmp/
+models/

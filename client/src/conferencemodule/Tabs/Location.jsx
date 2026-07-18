@@ -374,7 +374,7 @@ const Location = () => {
 
     
     return (
-    <main className='tw-py-10 tw-min-h-screen tw-flex tw-justify-center'>
+    <main className='tw-py-10 tw-min-h-screen tw-flex tw-justify-center tw-bg-slate-100'>
         <div className="tw-w-full tw-max-w-full tw-px-2">
             <div className="tw-flex tw-flex-col lg:tw-flex-row tw-gap-8">
                 <div className="tw-w-full lg:tw-w-1/2">

@@ -1,29 +1,25 @@
-import React, { useState, useEffect ,useRef} from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from 'axios';
 import { useParams } from "react-router-dom";
 import LoadingIcon from "../components/LoadingIcon";
 import getEnvironment from "../../getenvironment";
-import { Container } from "@chakra-ui/react";
+import JoditEditor from "../components/RichTextEditor";
 import {
-    FormControl, FormErrorMessage, FormLabel, Center, Heading,
-    Input, Button, Select
+    FormControl, FormLabel, Input, Button, Select,
+    Table, Tbody, Td, Thead, Tr, Badge, Center,
 } from '@chakra-ui/react';
-import JoditEditor from 'jodit-react';
-
-import { CustomTh, CustomLink, CustomBlueButton } from '../utils/customStyles'
+import { FaTrophy, FaPlus, FaSave } from "react-icons/fa";
 import {
-    Table,
-    TableContainer,
-    Tbody,
-    Td,
-    Th,
-    Thead,
-    Tr,
-} from "@chakra-ui/react";
+    PageShell, PageHeader, FormCard, FieldGrid, Span2,
+    TableCard, ThemedTh, WrapTd, RowActions, EmptyRow, DeleteModal,
+} from "../components/ui";
+
+const ACCENT = "yellow";
+
 const Awards = () => {
     const params = useParams();
-  const apiUrl = getEnvironment();
-  const ref = useRef(null);
+    const apiUrl = getEnvironment();
+    const ref = useRef(null);
 
     const IdConf = params.confid;
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
@@ -47,7 +43,7 @@ const Awards = () => {
     const [data, setData] = useState([]);
     const [refresh, setRefresh] = useState(0);
 
-    const {  title1, title2, description, link,sequence } = formData;
+    const { title1, title2, description, link, sequence } = formData;
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -77,11 +73,8 @@ const Awards = () => {
         });
     };
     const handleSubmit = (e) => {
-        // e.preventDefault();
-
         axios.post(`${apiUrl}/conferencemodule/awards`, formData, {
             withCredentials: true
-
         })
             .then(res => {
                 setData([...data, res.data]);
@@ -97,7 +90,6 @@ const Awards = () => {
     const handleUpdate = () => {
         axios.put(`${apiUrl}/conferencemodule/awards/${editID}`, formData, {
             withCredentials: true
-
         })
             .then(res => {
                 setFormData(initialData);
@@ -116,9 +108,8 @@ const Awards = () => {
         axios.delete(`${apiUrl}/conferencemodule/awards/${deleteItemId}`, { withCredentials: true })
             .then(res => {
                 console.log('DELETED RECORD::::', res);
-                               setShowDeleteConfirmation(false);  
-                 setRefresh(refresh + 1);
-          
+                setShowDeleteConfirmation(false);
+                setRefresh(refresh + 1);
                 setFormData(initialData);
             })
             .catch(err => console.log(err));
@@ -129,7 +120,6 @@ const Awards = () => {
 
         axios.get(`${apiUrl}/conferencemodule/awards/${editIDNotState}`, {
             withCredentials: true
-
         })
             .then(res => {
                 setFormData(res.data);
@@ -141,7 +131,6 @@ const Awards = () => {
         setLoading(true);
         axios.get(`${apiUrl}/conferencemodule/awards/conference/${IdConf}`, {
             withCredentials: true
-
         })
             .then(res => {
                 setData(res.data);
@@ -155,201 +144,172 @@ const Awards = () => {
     }, [refresh]);
 
     return (
-        <main className='tw-py-10  lg:tw-pl-72 tw-min-h-screen'>
-            
-            <Container maxW='5xl'>
-                <Heading as="h1" size="xl" mt="6" mb="6">
-                    Create a New Award
-                </Heading>
+        <PageShell>
+            <PageHeader
+                icon={FaTrophy}
+                title="Awards"
+                subtitle="Conference awards, prizes and recognitions."
+                accent={ACCENT}
+            />
 
-
-                <FormControl isRequired={true} mb='3' >
-                    <FormLabel >Title-1 :</FormLabel>
-                    <Input
-                        type="text"
-                        name="title1"
-                        value={title1}
-                        onChange={handleChange}
-                        placeholder="Title-1"
-                        mb='2.5'
-                    />
-                </FormControl>
-                <FormControl isRequired>
-
-                    <FormLabel>Title-2:</FormLabel>
-                    <Input
-
-                        type="text"
-                        name="title2"
-                        value={title2}
-                        onChange={handleChange}
-                        placeholder="Title-2"
-                        mb='2.5'
-                    />
-
-                </FormControl>
-                <FormControl isRequired={true} mb='3' >
-                    <FormLabel >Description :</FormLabel>
-                    <JoditEditor
-                        ref={ref}
-                        value={description}
-                        name="description"
-                        onBlur={handleEditorChange}
-                        classname='tw-mb-5'
-                    />
-                </FormControl>
-                <FormControl isRequired={true} mb='3' >
-                    <FormLabel > Link  :</FormLabel>
-                    <Input
-                        type="text"
-                        name="link"
-                        value={link}
-                        onChange={handleChange}
-                        placeholder="Link"
-                        mb='2.5'
-                    />
-                </FormControl>
-
-                <FormControl isRequired={true}  >
-
-                    <FormLabel >Sequence :</FormLabel>
-                    <Input
-
-                        type="number"
-                        name="sequence"
-                        value={sequence}
-                        onChange={handleChange}
-                        placeholder="sequence"
-                        mb='2.5'
-                   />
-                   </FormControl>
-                <FormControl isRequired={true} mb='3' >
-                    <FormLabel >Featured:</FormLabel>
-                    <Select
-                        name="featured"
-                        value={formData.featured}
-                        onChange={handleChange}
+            <FormCard
+                title={editID ? 'Update Award' : 'Add a New Award'}
+                accent={ACCENT}
+                isEditing={!!editID}
+                actions={
+                    <Button
+                        colorScheme={ACCENT}
+                        size="lg"
+                        px={10}
+                        leftIcon={editID ? <FaSave /> : <FaPlus />}
+                        type={editID ? "button" : "submit"}
+                        onClick={() => { editID ? handleUpdate() : handleSubmit() }}
                     >
-                        <option value={true}>Yes</option>
-                        <option value={false}>No</option>
-                    </Select>
-                </FormControl>
-                <FormControl isRequired={true} mb='3' >
-                    <FormLabel >Hidden:</FormLabel>
-                    <Select
-                        name="hidden"
-                        value={formData.hidden}
-                        onChange={handleChange}
-                    >
-                        <option value={true}>Yes</option>
-                        <option value={false}>No</option>
-                    </Select>
-                </FormControl>
-                <FormControl isRequired={true} mb='3' >
-                    <FormLabel >New:</FormLabel>
-                    <Select
-                        name="new"
-                        value={formData.new}
-                        onChange={handleChange}
-                    >
-                        <option value={true}>Yes</option>
-                        <option value={false}>No</option>
-                    </Select>
-                </FormControl>
-
-                <Center>
-              
-                    <Button colorScheme="blue" type={editID ? "button" : "submit"} onClick={() => { editID ? handleUpdate() : handleSubmit() }}>
                         {editID ? 'Update' : 'Add'}
                     </Button>
-
-            </Center>
-                <Heading as="h1" size="xl" mt="6" mb="6">
-                    Existing Awards </Heading>
-                {!loading ? (
-
-                    <TableContainer>
-                        <Table
-                            variant='striped'
-                            size="md"
-                            mt="1"
+                }
+            >
+                <FieldGrid>
+                    <FormControl isRequired={true} mb='3'>
+                        <FormLabel>Title-1 :</FormLabel>
+                        <Input
+                            type="text"
+                            name="title1"
+                            value={title1}
+                            onChange={handleChange}
+                            placeholder="Title-1"
+                            mb='2.5'
+                        />
+                    </FormControl>
+                    <FormControl isRequired>
+                        <FormLabel>Title-2:</FormLabel>
+                        <Input
+                            type="text"
+                            name="title2"
+                            value={title2}
+                            onChange={handleChange}
+                            placeholder="Title-2"
+                            mb='2.5'
+                        />
+                    </FormControl>
+                    <Span2>
+                        <FormControl isRequired={true} mb='3'>
+                            <FormLabel>Description :</FormLabel>
+                            <JoditEditor
+                                ref={ref}
+                                value={description}
+                                name="description"
+                                onBlur={handleEditorChange}
+                                classname='tw-mb-5'
+                            />
+                        </FormControl>
+                    </Span2>
+                    <FormControl isRequired={true} mb='3'>
+                        <FormLabel>Link :</FormLabel>
+                        <Input
+                            type="text"
+                            name="link"
+                            value={link}
+                            onChange={handleChange}
+                            placeholder="Link"
+                            mb='2.5'
+                        />
+                    </FormControl>
+                    <FormControl isRequired={true}>
+                        <FormLabel>Sequence :</FormLabel>
+                        <Input
+                            type="number"
+                            name="sequence"
+                            value={sequence}
+                            onChange={handleChange}
+                            placeholder="sequence"
+                            mb='2.5'
+                        />
+                    </FormControl>
+                    <FormControl isRequired={true} mb='3'>
+                        <FormLabel>Featured:</FormLabel>
+                        <Select
+                            name="featured"
+                            value={formData.featured}
+                            onChange={handleChange}
                         >
-                            <Thead>
-                                <Tr>
-                                    <CustomTh> Title-1</CustomTh>
-                                    <CustomTh>Title-2</CustomTh>
-                                    <CustomTh>Description</CustomTh>
-                                    <CustomTh>Link</CustomTh>
-                                    <CustomTh>Sequence</CustomTh>
-                                    <CustomTh>Featured</CustomTh>
-                                    <CustomTh>New</CustomTh>
-                                    <CustomTh>Hidden</CustomTh>
+                            <option value={true}>Yes</option>
+                            <option value={false}>No</option>
+                        </Select>
+                    </FormControl>
+                    <FormControl isRequired={true} mb='3'>
+                        <FormLabel>Hidden:</FormLabel>
+                        <Select
+                            name="hidden"
+                            value={formData.hidden}
+                            onChange={handleChange}
+                        >
+                            <option value={true}>Yes</option>
+                            <option value={false}>No</option>
+                        </Select>
+                    </FormControl>
+                    <FormControl isRequired={true} mb='3'>
+                        <FormLabel>New:</FormLabel>
+                        <Select
+                            name="new"
+                            value={formData.new}
+                            onChange={handleChange}
+                        >
+                            <option value={true}>Yes</option>
+                            <option value={false}>No</option>
+                        </Select>
+                    </FormControl>
+                </FieldGrid>
+            </FormCard>
 
+            {!loading ? (
+                <TableCard title="Existing Awards" count={data.length} accent={ACCENT}>
+                    <Table variant='striped' size="md">
+                        <Thead>
+                            <Tr>
+                                <ThemedTh accent={ACCENT}>Title-1</ThemedTh>
+                                <ThemedTh accent={ACCENT}>Title-2</ThemedTh>
+                                <ThemedTh accent={ACCENT}>Description</ThemedTh>
+                                <ThemedTh accent={ACCENT}>Link</ThemedTh>
+                                <ThemedTh accent={ACCENT}>Sequence</ThemedTh>
+                                <ThemedTh accent={ACCENT}>Featured</ThemedTh>
+                                <ThemedTh accent={ACCENT}>New</ThemedTh>
+                                <ThemedTh accent={ACCENT}>Hidden</ThemedTh>
+                                <ThemedTh accent={ACCENT} position={'sticky'} right={'0'}>Action</ThemedTh>
+                            </Tr>
+                        </Thead>
+                        <Tbody>
+                            {data.length > 0 ? (data.map((item) => (
+                                <Tr key={item._id}>
+                                    <WrapTd>{item.title1}</WrapTd>
+                                    <WrapTd>{item.title2}</WrapTd>
+                                    <WrapTd>{item.description}</WrapTd>
+                                    <WrapTd>{item.link}</WrapTd>
+                                    <WrapTd><Center>{item.sequence}</Center></WrapTd>
+                                    <WrapTd><Center><Badge colorScheme={item.featured ? "green" : "gray"}>{item.featured ? "Yes" : "No"}</Badge></Center></WrapTd>
+                                    <WrapTd><Center><Badge colorScheme={item.new ? "blue" : "gray"}>{item.new ? "Yes" : "No"}</Badge></Center></WrapTd>
+                                    <WrapTd><Center><Badge colorScheme={item.hidden ? "red" : "gray"}>{item.hidden ? "Yes" : "No"}</Badge></Center></WrapTd>
+                                    <Td position={'sticky'} right={'0'} bg="white">
+                                        <RowActions
+                                            onEdit={() => { handleEdit(item._id); setEditID(item._id); }}
+                                            onDelete={() => handleDelete(item._id)}
+                                        />
+                                    </Td>
+                                </Tr>))) :
+                                <EmptyRow colSpan={9} message="No awards yet — add your first award above." />
+                            }
+                        </Tbody>
+                    </Table>
+                </TableCard>
+            ) : <Center py={10}><LoadingIcon /></Center>}
 
-
-                                    <CustomTh position={'sticky'} right={'0'}>Action</CustomTh>
-                                </Tr>
-                            </Thead>
-                            <Tbody>
-                                {data.length > 0 ? (data.map((item) => (
-                                    <Tr key={item._id}>
-                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.title1}</Td>
-                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.title2}</Td>
-                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.description}</Td>
-                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.link}</Td>
-
-                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}><Center>{item.sequence}</Center></Td>
-                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}><Center>{item.featured?"Yes":"No"}</Center></Td>
-                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}><Center>{item.new ?"Yes":"No"}</Center></Td>
-                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}><Center>{item.hidden?"Yes":"No"}</Center></Td>
-
-                                        <Td position={'sticky'} right={'0'}><Center>
-                                            <Button colorScheme="red" onClick={() => handleDelete(item._id)}>Delete </Button>
-                                            <Button colorScheme="teal" onClick={() => {
-                                                handleEdit(item._id);
-                                                setEditID(item._id);
-                                            }}>Edit </Button>
-                                        </Center></Td>
-
-                                    </Tr>))) :
-                                    (
-                                        <Tr>
-                                            <Td colSpan="6" className="tw-p-1 tw-text-center">
-                                                <Center>No data available</Center></Td>
-                                        </Tr>
-                                    )
-                                }
-                            </Tbody>
-                        </Table>
-                    </TableContainer>
-                ) : <LoadingIcon />}
-            </Container>
-
-            {showDeleteConfirmation && (
-                <div className="tw-fixed tw-inset-0 tw-bg-black tw-bg-opacity-50 tw-flex tw-items-center tw-justify-center">
-                    <div className="tw-bg-white tw-rounded tw-p-8 tw-w-96">
-                        <p className="tw-text-lg tw-font-semibold tw-text-center tw-mb-4">
-                            Are you sure you want to delete?
-                        </p>
-                        <div className="tw-flex tw-justify-center">
-                            <Button
-                                colorScheme="red"
-                                onClick={confirmDelete}
-                                mr={4}
-                            >
-                                Yes, Delete
-                            </Button>
-                            <Button
-                                colorScheme="blue"
-                                onClick={() => setShowDeleteConfirmation(false)}
-                            >
-                                Cancel
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </main>
+            <DeleteModal
+                isOpen={showDeleteConfirmation}
+                onCancel={() => setShowDeleteConfirmation(false)}
+                onConfirm={confirmDelete}
+                label="this award"
+            />
+        </PageShell>
     );
 };
 

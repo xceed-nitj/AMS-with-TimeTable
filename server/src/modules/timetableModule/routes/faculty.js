@@ -5,6 +5,8 @@ const facultyController = new FacultyController();
 
 const ttadminRoute=require("../../usermanagement/ttadminroute")
 const protectRoute =require("../../usermanagement/privateroute")
+const { checkRole } = require("../../checkRole.middleware");
+const deleteAccess = checkRole(['ITTC', 'DTTI']);
 
 
 facultyRouter.post("/",protectRoute, async (req, res) => {
@@ -88,7 +90,7 @@ facultyRouter.post("/",protectRoute, async (req, res) => {
       }
     });
 
-    facultyRouter.delete("/:id",protectRoute, async (req, res) => {
+    facultyRouter.delete("/:id",deleteAccess, async (req, res) => {
       try {
         const facultyId = req.params.id;
         await facultyController.deleteId(facultyId);

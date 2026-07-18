@@ -3,6 +3,8 @@ const TableRouter = express.Router();
 const TableController = require("../controllers/timetableprofile");
 const tableController = new TableController();
 const protectRoute = require("../../usermanagement/privateroute");
+const { checkRole } = require("../../checkRole.middleware");
+const deleteAccess = checkRole(['ITTC', 'DTTI']);
 
 TableRouter.get("/", protectRoute, async (req, res) => {
   try {
@@ -49,7 +51,7 @@ TableRouter.put("/:id", protectRoute, async (req, res) => {
   }
 });
 
-TableRouter.delete("/:id", protectRoute, async (req, res) => {
+TableRouter.delete("/:id", deleteAccess, async (req, res) => {
   try {
     const tableId = req.params.id;
     await tableController.deleteId(tableId);
@@ -131,7 +133,7 @@ TableRouter.get("/getallcodes/:session", async (req, res) => {
   }
 });
 
-TableRouter.delete("/deletebycode/:code", protectRoute, async (req, res) => {
+TableRouter.delete("/deletebycode/:code", deleteAccess, async (req, res) => {
   try {
     const code = req.params.code;
     await tableController.deleteTableByCode(code);

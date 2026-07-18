@@ -1,9 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import DOMPurify from "dompurify";
-import Quill from "quill";
-import "quill/dist/quill.snow.css";
-import QuillBetterTable from "quill-better-table";
-import "quill-better-table/dist/quill-better-table.css";
+import QuillEditor from "../components/QuillEditor";
 import axios from 'axios';
 import { useParams } from "react-router-dom";
 import LoadingIcon from "../components/LoadingIcon";
@@ -13,14 +10,13 @@ import { Container } from "@chakra-ui/react";
 import formatDate from "../utils/formatDate";
 import { Flex, Box, FormControl, FormErrorMessage, FormLabel, Center, Heading, Input, Button, useBreakpointValue, Textarea, Select, VStack, HStack, Text, useToast, Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody, ModalCloseButton, useDisclosure } from '@chakra-ui/react';
 import { CustomTh, CustomLink, CustomBlueButton } from '../utils/customStyles'
+import { FaHome, FaPlus, FaFileImport } from "react-icons/fa";
+import { PageHeader, DeleteModal } from "../components/ui";
 
 const HomeConf = () => {
     const navigate = useNavigate();
-    const editorRefs = useRef([]);
-    const quillInstances = useRef([]);
-    const isQuillRegistered = useRef(false);
-    const isUpdatingDescription = useRef(false);
-    const initializedTabs = useRef(new Set());
+    // Imperative API of the shared QuillEditor (setHTML/getHTML/insertTable).
+    const editorApiRef = useRef(null);
 
     const params = useParams();
     const apiUrl = getEnvironment();
@@ -40,18 +36,6 @@ const HomeConf = () => {
         "confName": "",
         "confStartDate": "",
         "confEndDate": "",
-        "youtubeLink": "",
-        "instaLink": "",
-        "facebookLink": "",
-        "twitterLink": "",
-        "logo": "",
-        "shortName": "",
-        "abstractLink" : "",
-        "paperLink" : "",
-        "regLink" : "",
-        "flyerLink" : "",
-        "brochureLink" : "",
-        "posterLink": "",
     }
     const [formData, setFormData] = useState(initialData);
     const [about, setAbout] = useState([{ title: "", description: "" }]);
@@ -73,8 +57,7 @@ const HomeConf = () => {
     const [loadingImport, setLoadingImport] = useState(false);
     const [importConferenceNames, setImportConferenceNames] = useState({});
 
-    const { confName, youtubeLink, instaLink, facebookLink, twitterLink, logo, shortName,abstractLink,paperLink,
-     regLink,flyerLink,brochureLink,posterLink } = formData;
+    const { confName } = formData;
     
      const confStartDate = formData.confStartDate ? new Date(formData.confStartDate).toLocaleDateString('en-CA') : null;
      const confEndDate = formData.confEndDate ? new Date(formData.confEndDate).toLocaleDateString('en-CA') : null;
@@ -119,14 +102,47 @@ const HomeConf = () => {
         }
     };
 
-    const handleApplyImport = () => {
+    const handleApplyImport = async () => {
         if (!importHomeData) return;
-        const { _id, confId, __v, ...rest } = importHomeData;
+        const { _id, confId, __v, about: importedAboutRaw, ...rest } = importHomeData;
         setFormData(prev => ({ ...prev, ...rest, confId: IdConf }));
+
+        // Also import the About sections from the source conference.
+        let aboutImported = false;
+        try {
+            let importedAbout = importedAboutRaw;
+            if (!importedAbout || importedAbout.length === 0) {
+                const res = await axios.get(`${apiUrl}/conferencemodule/home/about/${selectedImportConf}`, { withCredentials: true });
+                importedAbout = res.data;
+            }
+            const cleaned = (importedAbout || [])
+                .map(({ title, description }) => ({ title: title || "", description: description || "" }))
+                .filter(s => s.title || s.description);
+            if (cleaned.length > 0) {
+                setAbout(cleaned);
+                setShowAboutSection(false);
+                setActiveAboutTab(null);
+                aboutImported = true;
+                // Persist right away when this conference already has a home record;
+                // otherwise the sections stay in the editor until saved.
+                if (editID) {
+                    await axios.put(`${apiUrl}/conferencemodule/home/about/${IdConf}`, { about: cleaned }, { withCredentials: true });
+                }
+            }
+        } catch (err) {
+            console.error('Error importing about sections:', err);
+        }
+
         onImportClose();
         setSelectedImportConf("");
         setImportHomeData(null);
-        toast({ title: 'Imported!', description: 'Conference details have been filled from the selected conference. Review and save.', status: 'success', duration: 3000, isClosable: true });
+        toast({
+            title: 'Imported!',
+            description: aboutImported
+                ? 'Conference details and About sections have been imported. Review and save.'
+                : 'Conference details have been filled from the selected conference. Review and save.',
+            status: 'success', duration: 3000, isClosable: true,
+        });
     };
 
     const handleOpenImport = () => {
@@ -260,11 +276,11 @@ const HomeConf = () => {
     };
 
     const handleShowHtml = () => {
-        if (activeAboutTab !== null && quillInstances.current[activeAboutTab]) {
-            const html = quillInstances.current[activeAboutTab].getHTML();
+        if (activeAboutTab !== null && editorApiRef.current) {
+            const html = editorApiRef.current.getHTML();
             setHtmlContent(html);
             setEditableHtmlContent(html);
-            setShowHtml(!showHtml);
+            setShowHtml(prev => !prev);
         }
     };
 
@@ -273,12 +289,12 @@ const HomeConf = () => {
     };
 
     const applyHtmlChanges = () => {
-        if (activeAboutTab !== null && quillInstances.current[activeAboutTab]) {
+        if (activeAboutTab !== null && editorApiRef.current) {
             try {
                 const parsedHtml = parseHtmlTables(editableHtmlContent);
-                
-                quillInstances.current[activeAboutTab].setHTML(parsedHtml);
-                
+
+                editorApiRef.current.setHTML(parsedHtml);
+
                 const newAbout = [...about];
                 newAbout[activeAboutTab].description = parsedHtml;
                 setAbout(newAbout);
@@ -331,14 +347,7 @@ const HomeConf = () => {
             
             const newAbout = about.filter((_, index) => index !== indexToRemove);
             setAbout(newAbout);
-            
-            if (quillInstances.current[indexToRemove]) {
-                quillInstances.current[indexToRemove] = null;
-            }
-            quillInstances.current = quillInstances.current.filter((_, index) => index !== indexToRemove);
-            editorRefs.current = editorRefs.current.filter((_, index) => index !== indexToRemove);
-            initializedTabs.current.delete(indexToRemove);
-            
+
             if (activeAboutTab >= newAbout.length) {
                 setActiveAboutTab(newAbout.length - 1);
             } else if (activeAboutTab > indexToRemove) {
@@ -354,22 +363,16 @@ const HomeConf = () => {
     };
 
     const handleDescriptionChange = (value, index) => {
-        if (isUpdatingDescription.current) return;
-        
-        isUpdatingDescription.current = true;
-        const newAboutIns = [...about];
-        newAboutIns[index].description = value;
-        console.log('Description updated for index:', index, 'Value:', value);
-        setAbout(newAboutIns);
-        
+        setAbout(prev => {
+            const next = [...prev];
+            next[index] = { ...next[index], description: value };
+            return next;
+        });
+
         if (showHtml && activeAboutTab === index) {
             setHtmlContent(value);
             setEditableHtmlContent(value);
         }
-        
-        setTimeout(() => {
-            isUpdatingDescription.current = false;
-        }, 100);
     };
 
     const fetchAboutSections = async () => {
@@ -424,122 +427,6 @@ const HomeConf = () => {
         }
     };
 
-    useEffect(() => {
-    if (!isQuillRegistered.current) {
-        try {
-            Quill.register(
-                {
-                    "modules/better-table": QuillBetterTable,
-                },
-                true
-            );
-            isQuillRegistered.current = true;
-        } catch (error) {
-            console.log("Quill modules already registered");
-        }
-    }
-
-    const initializeQuill = (index) => {
-        if (!editorRefs.current[index] || !about[index] || aboutLoading) {
-            return;
-        }
-
-        console.log("Initializing Quill for index:", index);
-        console.log("About data for index:", about[index]);
-        console.log("Description:", about[index]?.description);
-
-        editorRefs.current[index].innerHTML = "";
-
-        const modules = {
-            toolbar: [
-                [{ header: [1, 2, 3, false] }],
-                ["bold", "italic", "underline", "strike"],
-                [{ color: [] }, { background: [] }],
-                [{ script: "sub" }, { script: "super" }],
-                ["blockquote", "code-block"],
-                [{ list: "ordered" }, { list: "bullet" }],
-                [{ indent: "-1" }, { indent: "+1" }],
-                [{ align: [] }],
-                ["link", "image", "video"],
-                ["clean"],
-            ],
-            clipboard: { matchVisual: false },
-            "better-table": {
-                operationMenu: {
-                    items: {
-                        insertColumnRight: { text: "Insert Column Right" },
-                        insertColumnLeft: { text: "Insert Column Left" },
-                        insertRowUp: { text: "Insert Row Above" },
-                        insertRowDown: { text: "Insert Row Below" },
-                        mergeCells: { text: "Merge Cells" },
-                        unmergeCells: { text: "Unmerge Cells" },
-                        deleteColumn: { text: "Delete Column" },
-                        deleteRow: { text: "Delete Row" },
-                        deleteTable: { text: "Delete Table" },
-                    },
-                },
-            },
-            keyboard: { bindings: QuillBetterTable.keyboardBindings },
-        };
-
-        quillInstances.current[index] = new Quill(editorRefs.current[index], {
-            theme: "snow",
-            modules,
-            placeholder: "Start writing here...",
-        });
-
-        quillInstances.current[index].setHTML = (html) => {
-            quillInstances.current[index].root.innerHTML = html;
-        };
-
-        quillInstances.current[index].getHTML = () => {
-            return quillInstances.current[index].root.innerHTML;
-        };
-
-        const description = about[index]?.description || "";
-        console.log("Setting description:", description);
-        quillInstances.current[index].setHTML(description);
-
-        quillInstances.current[index].on("text-change", () => {
-            console.log("Current HTML content:", quillInstances.current[index].getHTML());
-            if (!isUpdatingDescription.current) {
-                handleDescriptionChange(quillInstances.current[index].getHTML(), index);
-            }
-        });
-
-        console.log("Quill initialized for index:", index);
-    };
-
-    const reinitializeQuillIfNeeded = (index) => {
-        if (!quillInstances.current[index]) {
-            console.log("Reinitializing Quill for index:", index);
-            initializeQuill(index);
-        }
-    };
-
-    const timeoutId = setTimeout(() => {
-        if (!aboutLoading && about && about[activeAboutTab] && showAboutSection) {
-            reinitializeQuillIfNeeded(activeAboutTab);
-        }
-    }, 300);
-
-    return () => {
-        clearTimeout(timeoutId);
-
-        if (quillInstances.current[activeAboutTab]) {
-            quillInstances.current[activeAboutTab].off("text-change");
-            quillInstances.current[activeAboutTab] = null;
-        }
-    };
-}, [activeAboutTab, aboutLoading, showAboutSection]);
-
-    const insertTable = (index) => {
-        if (quillInstances.current[index]) {
-            const tableModule = quillInstances.current[index].getModule("better-table");
-            tableModule.insertTable(3, 3);
-        }
-    };
-
     const updateConferenceAndAbout = async () => {
         try {
             const conferenceResponse = await axios.put(`${apiUrl}/conferencemodule/home/${editID}`, formData, {
@@ -580,13 +467,6 @@ const HomeConf = () => {
                     console.log(formData);
                 });
         }
-    };
-    
-    const handleEditorChange = (value, fieldName) => {
-        setFormData({
-            ...formData,
-            [fieldName]: value,
-        });
     };
     
     const handleUpdate = () => {
@@ -650,11 +530,9 @@ const HomeConf = () => {
             mb={6}
         >
             <Container maxW='full'>
-                <Center>
-                    <Heading as="h1" size="xl" mt="2" mb="6" color="#3B82F6" textDecoration="underline">
-                        Live Preview
-                    </Heading>
-                </Center>
+                <Heading as="h2" size="md" mt="2" mb="6" color="blue.800" pb={2} borderBottom="3px solid" borderBottomColor="blue.400" display="inline-block">
+                    Live Preview
+                </Heading>
                 
                 <Box bg="white" p={4} borderRadius="md" boxShadow="sm">
                     <Heading as="h2" size="lg" mb={4} color="gray.700">
@@ -667,7 +545,7 @@ const HomeConf = () => {
                                 {about[activeAboutTab].title || `About Section ${activeAboutTab + 1}`}
                             </Heading>
                             <Box
-                                className="tw-prose tw-max-w-none tw-min-h-[100px] tw-p-2 tw-border tw-rounded tw-bg-gray-50"
+                                className="ql-editor tw-max-w-none tw-min-h-[100px] tw-p-2 tw-border tw-rounded tw-bg-gray-50"
                                 dangerouslySetInnerHTML={{
                                     __html: DOMPurify.sanitize(about[activeAboutTab].description || '<p class="tw-text-gray-400 tw-italic">Start typing in the description editor to see the live preview here...</p>')
                                 }}
@@ -725,19 +603,35 @@ const HomeConf = () => {
     }
 
     return (
-        <main className="tw-p-5 tw-min-h-screen">
+        <main className="tw-p-5 tw-min-h-screen tw-bg-slate-100">
+            <PageHeader
+                icon={FaHome}
+                title="Conference Home"
+                subtitle="Conference name, dates and the About sections shown on the site."
+                accent="blue"
+                variant="outline"
+            >
+                <HStack spacing={2}>
+                    <Button colorScheme="blue" variant="outline" size="sm" leftIcon={<FaPlus />} onClick={addNewAbout}>
+                        Add New About
+                    </Button>
+                    <Button colorScheme="green" size="sm" leftIcon={<FaFileImport />} onClick={handleOpenImport}>
+                        Import from Conference
+                    </Button>
+                </HStack>
+            </PageHeader>
             <Flex direction="column">
-                <Flex direction={{ base: "column", md: "row" }}>
+                <Flex direction={{ base: "column", md: "row" }} gap={4} align="stretch">
                     {!isMobile && (
                         <Box
-                            width="15%" 
+                            width="15%"
                             minWidth="180px"
                             maxWidth="250px"
-                            bg="gray.100"
+                            bg="white"
                             p={4}
-                            borderRadius="none"
+                            borderRadius="2xl"
                             boxShadow="md"
-                            height="100vh" 
+                            height="100vh"
                             position="sticky"
                             top={0}
                             display="flex"
@@ -745,16 +639,6 @@ const HomeConf = () => {
                             alignItems="flex-start"
                             overflowY="auto"
                         >
-                            <Heading as="h2" size="md" mb={4}>
-                                Add Items
-                            </Heading>
-                            <Button colorScheme="blue" onClick={addNewAbout} mb="2" width="100%" size="sm">
-                                Add New About
-                            </Button>
-                            <Button colorScheme="green" onClick={handleOpenImport} mb="4" width="100%" size="sm">
-                                Import from Conference
-                            </Button>
-                            
                             {/* Back to Form Button */}
                             {showAboutSection && (
                                 <Button colorScheme="gray" onClick={handleBackToForm} mb="4" width="100%" size="sm">
@@ -812,7 +696,7 @@ const HomeConf = () => {
                     {/* Main Content */}
                     <Flex flex="1" width={{ base: "100%", md: "85%" }} direction={{ base: "column", lg: "row" }}>
                         {/* Form Section */}
-                        <Box width={{ base: "100%", lg: "50%" }} p={4} overflowY="auto">
+                        <Box width={{ base: "100%", lg: "50%" }} p={4} overflowY="auto" bg="white" borderRadius="2xl" boxShadow="md">
                             <Container maxW='full'>
                                 <HStack justify="space-between" align="center" mb={4}>
                                     <Box>
@@ -825,11 +709,9 @@ const HomeConf = () => {
                                         Import from Conference
                                     </Button>
                                 </HStack>
-                                <Center>
-                                    <Heading as="h1" size="xl" mt="2" mb="6" color="#3B82F6" textDecoration="underline">
-                                        About Conference
-                                    </Heading>
-                                </Center>
+                                <Heading as="h2" size="md" mt="2" mb="6" color="blue.800" pb={2} borderBottom="3px solid" borderBottomColor="blue.400" display="inline-block">
+                                    About Conference
+                                </Heading>
 
                                 <form onSubmit={handleSubmit}>
                                     
@@ -914,133 +796,7 @@ const HomeConf = () => {
                                                 </Box>
                                             )}
 
-                                            
-                                        <FormControl isRequired={false} mb='3' >
-                                                <FormLabel >You Tube Link :</FormLabel>
-                                                <Input
-                                                    type="text"
-                                                    name="youtubeLink"
-                                                    value={youtubeLink}
-                                                    onChange={handleChange}
-                                                    placeholder="YouTube Link"
-                                                    mb='2.5'
-                                                />
-                                            </FormControl>
-                                            
-                                            
-                                            <FormControl isRequired={false} mb='3' >
-                                                <FormLabel >Instagram Link :</FormLabel>
-                                                <Input
-                                                    type="text"
-                                                    name="instaLink"
-                                                    value={instaLink}
-                                                    onChange={handleChange}
-                                                    placeholder="Instagram Link"
-                                                    mb='2.5'
-                                                />
-                                            </FormControl>
-                                            <FormControl isRequired={false} mb='3' >
-                                                <FormLabel >FaceBook Link:</FormLabel>
-                                                <Input
-                                                    type="text"
-                                                    name="facebookLink"
-                                                    value={facebookLink}
-                                                    onChange={handleChange}
-                                                    placeholder="FaceBook Link"
-                                                    mb='2.5'
-                                                />
-                                            </FormControl>
 
-                                            <FormControl isRequired={false} mb='3' >
-                                                <FormLabel >Twitter Link:</FormLabel>
-                                                <Input
-                                                    type="text"
-                                                    name="twitterLink"
-                                                    value={twitterLink}
-                                                    onChange={handleChange}
-                                                    placeholder="Twitter Link"
-                                                    mb='2.5'
-                                                />
-                                            </FormControl>
-                                            <FormControl isRequired={false} mb='3' >
-                                                <FormLabel >Logo:</FormLabel>
-                                                <Input
-                                                    type="text"
-                                                    name="logo"
-                                                    value={logo}
-                                                    onChange={handleChange}
-                                                    placeholder="Logo"
-                                                    mb='2.5'
-                                                />
-                                            </FormControl>
-                                            <FormControl isRequired={false} mb='3' >
-                                                <FormLabel >Short Name of Conference :</FormLabel>
-                                                <Input
-                                                    type="text"
-                                                    name="shortName"
-                                                    value={shortName}
-                                                    onChange={handleChange}
-                                                    placeholder="Short Name"
-                                                    mb='2.5'
-                                                />
-                                            </FormControl>
-                                            <FormControl isRequired={false} mb='3' >
-                                                <FormLabel >Abstract Link :</FormLabel>
-                                                <Input
-                                                    type="text"
-                                                    name="abstractLink"
-                                                    value={abstractLink}
-                                                    onChange={handleChange}
-                                                    placeholder="Abstract Link"
-                                                    mb='2.5'
-                                                />
-                                            </FormControl>
-                                            <FormControl isRequired={false} mb='3' >
-                                                <FormLabel >Registration Link :</FormLabel>
-                                                <Input
-                                                    type="text"
-                                                    name="regLink"
-                                                    value={regLink}
-                                                    onChange={handleChange}
-                                                    placeholder="Registration Link"
-                                                    mb='2.5'
-                                                />
-                                            </FormControl>
-                                            <FormControl isRequired={false} mb='3' >
-                                                <FormLabel >Flyer Link of Conference :</FormLabel>
-                                                <Input
-                                                    type="text"
-                                                    name="flyerLink"
-                                                    value={flyerLink}
-                                                    onChange={handleChange}
-                                                    placeholder="Flyer Link"
-                                                    mb='2.5'
-                                                />
-                                            </FormControl>
-                                            <FormControl isRequired={false} mb='3' >
-                                                <FormLabel >Brochure Link of Conference :</FormLabel>
-                                                <Input
-                                                    type="text"
-                                                    name="brochureLink"
-                                                    value={brochureLink}
-                                                    onChange={handleChange}
-                                                    placeholder="Brochure Link"
-                                                    mb='2.5'
-                                                />
-                                            </FormControl>
-                                            <FormControl isRequired={false} mb='3' >
-                                                <FormLabel >Poster Link :</FormLabel>
-                                                <Input
-                                                    type="text"
-                                                    name="posterLink"
-                                                    value={posterLink}
-                                                    onChange={handleChange}
-                                                    placeholder="Poster Link"
-                                                    mb='2.5'
-                                                />
-                                            </FormControl>
-                                        
-                                   
                                             <Center>
                                                 <Button colorScheme="blue" type="submit">
                                                     {editID ? 'Update Conference Info' : 'Add Conference Info'}
@@ -1077,36 +833,21 @@ const HomeConf = () => {
                                             </FormControl>
                                             <FormControl mb='3'>
                                                 <p>Description:</p>
-                                                <div style={{ marginBottom: "10px" }}>
-                                                    <Button
-                                                        colorScheme="blue"
-                                                        size="sm"
-                                                        onClick={() => insertTable(activeAboutTab)}
-                                                        mr={2}
-                                                    >
-                                                        Insert Table
-                                                    </Button>
-                                                    <Button
-                                                        colorScheme="purple"
-                                                        size="sm"
-                                                        onClick={handleShowHtml}
-                                                        mr={2}
-                                                    >
-                                                        {showHtml ? 'Hide HTML' : 'Show HTML'}
-                                                    </Button>
-                                                </div>
-                                                <div
-                                                    ref={(el) => (editorRefs.current[activeAboutTab] = el)}
-                                                    style={{
-                                                        height: "200px",
-                                                        width: "100%",
-                                                        border: "1px solid #ccc",
-                                                        borderRadius: "5px",
-                                                        marginBottom: "20px",
-                                                        background: "#fff"
-                                                    }}
-                                                ></div>
-                                                
+                                                {/* Shared editor — its toolbar includes the
+                                                    insert-table and HTML-view buttons. Keyed by
+                                                    tab (parent div) so switching tabs remounts
+                                                    it with that tab's content. */}
+                                                <Box mb={4}>
+                                                    <QuillEditor
+                                                        ref={editorApiRef}
+                                                        value={about[activeAboutTab]?.description || ""}
+                                                        onChange={(html) => handleDescriptionChange(html, activeAboutTab)}
+                                                        onToggleHtml={handleShowHtml}
+                                                        placeholder="Start writing here..."
+                                                        height={300}
+                                                    />
+                                                </Box>
+
                                                 {/* HTML Display Area */}
                                                 {showHtml && (
                                                     <Box
@@ -1190,13 +931,15 @@ const HomeConf = () => {
                         </Box>
 
                         {/* Desktop Live Preview Section*/}
-                        <Box 
-                            width={{ base: "100%", lg: "50%" }} 
-                            p={4} 
-                            bg="gray.50" 
-                            overflowY="auto" 
-                            height={{ lg: "100vh" }} 
-                            position={{ lg: "sticky" }} 
+                        <Box
+                            width={{ base: "100%", lg: "50%" }}
+                            p={4}
+                            bg="white"
+                            borderRadius="2xl"
+                            boxShadow="md"
+                            overflowY="auto"
+                            height={{ lg: "100vh" }}
+                            position={{ lg: "sticky" }}
                             top={0}
                             display={{ base: "none", lg: "block" }}
                         >
@@ -1207,35 +950,17 @@ const HomeConf = () => {
             </Flex>
 
             {/* Delete Confirmation Modal */}
-            {showDeleteConfirmation && (
-                <div className="tw-fixed tw-inset-0 tw-bg-black tw-bg-opacity-50 tw-flex tw-items-center tw-justify-center">
-                    <div className="tw-bg-white tw-rounded tw-p-8 tw-w-96">
-                        <p className="tw-text-lg tw-font-semibold tw-text-center tw-mb-4">
-                            Are you sure you want to delete?
-                        </p>
-                        <div className="tw-flex tw-justify-center">
-                            <Button
-                                colorScheme="red"
-                                onClick={confirmDelete}
-                                mr={4}
-                            >
-                                Yes, Delete
-                            </Button>
-                            <Button
-                                colorScheme="blue"
-                                onClick={() => setShowDeleteConfirmation(false)}
-                            >
-                                Cancel
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <DeleteModal
+                isOpen={showDeleteConfirmation}
+                onCancel={() => setShowDeleteConfirmation(false)}
+                onConfirm={confirmDelete}
+                label="this entry"
+            />
 
             {/* Import from Conference Modal */}
             <Modal isOpen={isImportOpen} onClose={onImportClose} size="xl">
                 <ModalOverlay />
-                <ModalContent>
+                <ModalContent mt="90px" mb="6">
                     <ModalHeader>Import Conference Details from Another Conference</ModalHeader>
                     <ModalCloseButton />
                     <ModalBody>
@@ -1260,10 +985,10 @@ const HomeConf = () => {
                                         <Text fontSize="sm"><b>Name:</b> {importHomeData.confName}</Text>
                                         <Text fontSize="sm"><b>Start Date:</b> {importHomeData.confStartDate ? new Date(importHomeData.confStartDate).toLocaleDateString() : '-'}</Text>
                                         <Text fontSize="sm"><b>End Date:</b> {importHomeData.confEndDate ? new Date(importHomeData.confEndDate).toLocaleDateString() : '-'}</Text>
-                                        <Text fontSize="sm"><b>Short Name:</b> {importHomeData.shortName || '-'}</Text>
+                                        <Text fontSize="sm"><b>About sections:</b> {importHomeData.about?.length || 0}</Text>
                                     </VStack>
                                     <Text fontSize="xs" color="gray.500" mt={3}>
-                                        All conference details (name, dates, links, etc.) will be filled in. You can review and edit before saving.
+                                        The conference name, dates and About sections will be imported. You can review and edit before saving.
                                     </Text>
                                 </Box>
                             )}
@@ -1279,33 +1004,15 @@ const HomeConf = () => {
             </Modal>
 
             {/* About Delete Confirmation Modal */}
-            {showAboutDeleteConfirmation && (
-                <div className="tw-fixed tw-inset-0 tw-bg-black tw-bg-opacity-50 tw-flex tw-items-center tw-justify-center">
-                    <div className="tw-bg-white tw-rounded tw-p-8 tw-w-96">
-                        <p className="tw-text-lg tw-font-semibold tw-text-center tw-mb-4">
-                            Are you sure you want to delete this about section?
-                        </p>
-                        <div className="tw-flex tw-justify-center">
-                            <Button
-                                colorScheme="red"
-                                onClick={confirmDeleteAbout}
-                                mr={4}
-                            >
-                                Yes, Delete
-                            </Button>
-                            <Button
-                                colorScheme="blue"
-                                onClick={() => {
-                                    setShowAboutDeleteConfirmation(false);
-                                    setDeleteAboutIndex(null);
-                                }}
-                            >
-                                Cancel
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            )}     
+            <DeleteModal
+                isOpen={showAboutDeleteConfirmation}
+                onCancel={() => {
+                    setShowAboutDeleteConfirmation(false);
+                    setDeleteAboutIndex(null);
+                }}
+                onConfirm={confirmDeleteAbout}
+                label="this about section"
+            />
         </main>
     );
 };

@@ -75,13 +75,13 @@ const DEMO_REPORT = {
   summary: { present: 42, absent: 5, totalStudents: 47 },
   finalReport: [
     {
-      rollNo: '21CS014', autoFinalStatus: 'A', finalStatus: 'P', isOverridden: true,
+      rollNo: '21CS014', autoFinalStatus: 'A', finalStatus: 'A', erpOverriddenStatus: 'P', isOverridden: true,
       avgConfidence: 0.71, confidenceZone: 'medium', firstSeenSec: 45,
       facultyRemark: 'Student came late, matched on second check',
       coordinatorRemark: '', coordinatorVerified: false,
     },
     {
-      rollNo: '21CS027', autoFinalStatus: 'P', finalStatus: 'A', isOverridden: true,
+      rollNo: '21CS027', autoFinalStatus: 'P', finalStatus: 'P', erpOverriddenStatus: 'A', isOverridden: true,
       avgConfidence: 0.34, confidenceZone: 'low', firstSeenSec: 12,
       facultyRemark: 'Left the room, marked absent manually',
       coordinatorRemark: 'Student came late', coordinatorVerified: true,
@@ -359,10 +359,12 @@ function StudentCard({ s, runs, primaryModel, primaryFallback, frameLink, saveCo
         <span style={{ fontWeight: 700, fontFamily: theme.fontMono, fontSize: 15 }}>{s.rollNo}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <span style={{ fontSize: 9, fontWeight: 700, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Model</span>
-          <StatusChip code={s.autoFinalStatus} />
+          <StatusChip code={s.autoFinalStatus || s.finalStatus} />
           <span style={{ color: theme.textMuted }}>→</span>
           <span style={{ fontSize: 9, fontWeight: 700, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>ERP</span>
-          <StatusChip code={s.finalStatus} />
+          {/* ERP's correction lives in its own field — finalStatus is no
+              longer mutated; legacy rows fall back to finalStatus. */}
+          <StatusChip code={s.erpOverriddenStatus || s.finalStatus} />
         </div>
         <span
           style={{

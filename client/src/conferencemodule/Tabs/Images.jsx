@@ -1,424 +1,427 @@
-
 import React, { useState, useEffect } from "react";
 import axios from 'axios';
 import { useParams } from "react-router-dom";
 import getEnvironment from "../../getenvironment";
+import LoadingIcon from "../components/LoadingIcon";
 import {
-  FormControl, FormLabel, Input, Button, Select, Box,
-  Heading, Center, Container, Flex, useBreakpointValue
+    FormControl, FormLabel, Input, Button, Select, Badge, Center,
+    Box, Flex, Text, SimpleGrid, HStack, Icon, Tooltip, Image, useToast,
+    Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, ModalCloseButton,
 } from '@chakra-ui/react';
+import {
+    FaImages, FaPlus, FaSave, FaEdit, FaTrashAlt, FaStar, FaHashtag, FaUpload, FaImage,
+} from "react-icons/fa";
+import {
+    PageShell, PageHeader, FieldGrid, Span2, DeleteModal, CardGridSkeleton,
+} from "../components/ui";
 
-const LoadingIcon = () => (
-  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-);
+const ACCENT = "teal";
 
 const Images = () => {
-  const params = useParams();
-  const IdConf = params.confid;
-  const apiUrl = getEnvironment();
+    const params = useParams();
+    const IdConf = params.confid;
+    const apiUrl = getEnvironment();
+    const toast = useToast();
 
-  const isMobile = useBreakpointValue({ base: true, lg: false });
-  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
-  const [deleteItemIndex, setDeleteItemIndex] = useState(null);
+    const initialData = {
+        confId: IdConf,
+        name: "",
+        imgLink: "",
+        feature: true,
+        sequence: "",
+    };
 
-  const initialData = {
-    confId: IdConf,
-    name: "",
-    imgLink: "",
-    feature: true,
-    sequence: "",
-  };
+    const [formData, setFormData] = useState(initialData);
+    const [editID, setEditID] = useState(null);
+    const [data, setData] = useState([]);
+    const [refresh, setRefresh] = useState(0);
+    const [loading, setLoading] = useState(false);
+    const [isFormOpen, setIsFormOpen] = useState(false);
+    const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+    const [deleteItemId, setDeleteItemId] = useState(null);
+    const [imageFile, setImageFile] = useState(null);
+    const [uploadingImage, setUploadingImage] = useState(false);
 
-  const [existingImages, setExistingImages] = useState([]);
-  const [loading, setLoading] = useState(false);
+    const { name, imgLink, sequence } = formData;
 
-  useEffect(() => {
-    setLoading(true);
-    axios.get(`${apiUrl}/conferencemodule/images/conference/${IdConf}`, {
-      withCredentials: true
-    })
-      .then(res => setExistingImages(res.data))
-      .catch(err => console.log(err))
-      .finally(() => setLoading(false));
-  }, [IdConf, apiUrl]);
+    // Older records may store a server-relative path (e.g. /uploads/...):
+    // resolve those against the API server, not the frontend origin.
+    const resolveImgSrc = (link) => {
+        if (!link) return "";
+        if (/^https?:\/\//i.test(link)) return link;
+        return `${apiUrl}${link.startsWith("/") ? "" : "/"}${link}`;
+    };
 
-  const handleAddNewImage = () => {
-    const newImage = { ...initialData, isNew: true, tempId: Date.now() };
-    setExistingImages([newImage, ...existingImages]);
-  };
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        if (name === "sequence") {
+            setFormData({ ...formData, [name]: parseInt(value) });
+        } else if (name === "feature") {
+            setFormData({ ...formData, [name]: value === "true" });
+        } else {
+            setFormData({ ...formData, [name]: value });
+        }
+    };
 
-  const handleImageChange = (index, field, value) => {
-    const updatedImages = [...existingImages];
-    if (field === "sequence") {
-      updatedImages[index][field] = parseInt(value);
-    } else if (field === "feature") {
-      updatedImages[index][field] = value === "true";
-    } else {
-      updatedImages[index][field] = value;
-    }
-    setExistingImages(updatedImages);
-  };
+    // Uploads the chosen image via the shared file-upload backend and stores
+    // the returned link in the existing imgLink field — no new backend fields.
+    const handleImageUpload = async () => {
+        if (!imageFile) {
+            toast({ title: "No image selected", status: "error", duration: 2000, isClosable: true });
+            return;
+        }
+        setUploadingImage(true);
+        const uploadData = new FormData();
+        uploadData.append("file", imageFile);
+        uploadData.append("url", window.location.origin);
+        try {
+            const response = await fetch(`${apiUrl}/user/getUser/upload`, {
+                method: "POST",
+                body: uploadData,
+                credentials: "include",
+            });
+            if (response.ok) {
+                const result = await response.json();
+                setFormData((prev) => ({ ...prev, imgLink: result.link }));
+                setImageFile(null);
+                toast({ title: "Image uploaded", description: "The image link has been filled in.", status: "success", duration: 2000, isClosable: true });
+            } else {
+                toast({ title: "Image upload failed", status: "error", duration: 2000, isClosable: true });
+            }
+        } catch (error) {
+            console.error("Error uploading image:", error);
+            toast({ title: "Image upload failed", status: "error", duration: 2000, isClosable: true });
+        } finally {
+            setUploadingImage(false);
+        }
+    };
 
-  const handleSaveImage = (index) => {
-    const imageData = existingImages[index];
-    if (imageData.isNew) {
-      const { isNew, tempId, ...dataToSend } = imageData;
-      axios.post(`${apiUrl}/conferencemodule/images`, dataToSend, {
-        withCredentials: true
-      })
-        .then(res => {
-          const updatedImages = [...existingImages];
-          updatedImages[index] = res.data;
-          setExistingImages(updatedImages);
+    const openAddModal = () => {
+        setFormData(initialData);
+        setEditID(null);
+        setImageFile(null);
+        setIsFormOpen(true);
+    };
+
+    const closeFormModal = () => {
+        setIsFormOpen(false);
+        setFormData(initialData);
+        setEditID(null);
+        setImageFile(null);
+    };
+
+    const handleSubmit = () => {
+        axios.post(`${apiUrl}/conferencemodule/images`, formData, {
+            withCredentials: true
         })
-        .catch(err => console.log(err));
-    } else {
-      axios.put(`${apiUrl}/conferencemodule/images/${imageData._id}`, imageData, {
-        withCredentials: true
-      }).catch(err => console.log(err));
-    }
-  };
+            .then(() => {
+                setFormData(initialData);
+                setIsFormOpen(false);
+                setRefresh(r => r + 1);
+            })
+            .catch(err => {
+                console.log(err);
+                console.log(formData);
+            });
+    };
 
-  const handleDeleteClick = (index) => {
-    setDeleteItemIndex(index);
-    setShowDeleteConfirmation(true);
-  };
-
-  const confirmDelete = () => {
-    if (deleteItemIndex !== null) {
-      const imageData = existingImages[deleteItemIndex];
-      if (imageData.isNew) {
-        const updatedImages = existingImages.filter((_, i) => i !== deleteItemIndex);
-        setExistingImages(updatedImages);
-      } else {
-        axios.delete(`${apiUrl}/conferencemodule/images/${imageData._id}`, {
-          withCredentials: true
+    const handleUpdate = () => {
+        axios.put(`${apiUrl}/conferencemodule/images/${editID}`, formData, {
+            withCredentials: true
         })
-          .then(() => {
-            const updatedImages = existingImages.filter((_, i) => i !== deleteItemIndex);
-            setExistingImages(updatedImages);
-          })
-          .catch(err => console.log(err));
-      }
-    }
-    setShowDeleteConfirmation(false);
-    setDeleteItemIndex(null);
-  };
+            .then(() => {
+                setFormData(initialData);
+                setEditID(null);
+                setIsFormOpen(false);
+                setRefresh(r => r + 1);
+            })
+            .catch(err => console.log(err));
+    };
 
-  const cancelDelete = () => {
-    setShowDeleteConfirmation(false);
-    setDeleteItemIndex(null);
-  };
+    const handleEdit = (item) => {
+        setFormData({
+            confId: item.confId || IdConf,
+            name: item.name || "",
+            imgLink: item.imgLink || "",
+            feature: item.feature !== undefined ? item.feature : true,
+            sequence: item.sequence ?? "",
+        });
+        setEditID(item._id);
+        setIsFormOpen(true);
+    };
 
-  if (loading) {
+    const handleDelete = (deleteID) => {
+        setDeleteItemId(deleteID);
+        setShowDeleteConfirmation(true);
+    };
+
+    const confirmDelete = () => {
+        axios.delete(`${apiUrl}/conferencemodule/images/${deleteItemId}`, {
+            withCredentials: true
+        })
+            .then(() => {
+                setShowDeleteConfirmation(false);
+                setRefresh(r => r + 1);
+            })
+            .catch(err => console.log(err));
+    };
+
+    useEffect(() => {
+        setLoading(true);
+        axios.get(`${apiUrl}/conferencemodule/images/conference/${IdConf}`, {
+            withCredentials: true
+        })
+            .then(res => setData(res.data))
+            .catch(err => console.log(err))
+            .finally(() => setLoading(false));
+    }, [refresh, IdConf, apiUrl]);
+
+    // Cards are arranged by the order (sequence) value.
+    const sortedData = [...data].sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0));
+
     return (
-      <main className='py-10 min-h-screen flex justify-center items-center'>
-        <LoadingIcon />
-      </main>
-    );
-  }
-
-  return (
-    <Flex direction="column" py={10} minH="100vh">
-      <Flex direction={{ base: "column", md: "row" }}>
-        {/* Sidebar */}
-        {!isMobile && (
-          <Box
-            ml={4}
-            mt={-4}
-            width="15%"
-            minWidth="180px"
-            maxWidth="250px"
-            bg="gray.100"
-            p={4}
-            borderRadius="none"
-            boxShadow="md"
-            height="70vh"
-            position="sticky"
-            top={0}
-            display="flex"
-            flexDirection="column"
-            alignItems="flex-start"
-            overflowY="auto"
-          >
-            <Heading as="h2" size="md" mb={4}>
-              Add Items
-            </Heading>
-            <Button colorScheme="blue" onClick={handleAddNewImage} mb="4" width="100%" size="sm">
-              Add New Image
-            </Button>
-            
-            {/* Image Previews Section */}
-            <Box width="100%" mt={4}>
-              <Heading
-                as="h3"
-                size="sm"
-                mb={4}
-                textAlign="left"
-                color="black"
-                borderBottom="1px solid #CBD5E0"
-                pb={2}
-              >
-                Image Previews
-              </Heading>
-
-              {existingImages.length === 0 ? (
-                <Box p={4} textAlign="center" bg="gray.50" rounded="lg">
-                  <Box mb={2} fontSize="2xl">🖼️</Box>
-                  <Box fontSize="xs" color="gray.500">
-                    Previews will appear here
-                  </Box>
-                </Box>
-              ) : (
-                existingImages.map((image, index) => (
-                  <Box
-                    key={`preview-${image._id || image.tempId}`}
-                    mb={4}
-                    p={3}
-                    borderWidth="1px"
-                    rounded="lg"
-                    bg="white"
-                    boxShadow="sm"
-                  >
-                    <Heading as="h4" size="xs" color="blue.600" mb={2}>
-                      {image.name || `Image ${index + 1}`}
-                    </Heading>
-
-                    {image.imgLink ? (
-                      <Box>
-                        <Box
-                          mb={2}
-                          textAlign="center"
-                          bg="gray.100"
-                          rounded="lg"
-                          p={2}
-                          minH="100px"
-                          display="flex"
-                          alignItems="center"
-                          justifyContent="center"
-                        >
-                          <img
-                            src={image.imgLink}
-                            alt={image.name || "Preview"}
-                            style={{
-                              maxWidth: "100%",
-                              maxHeight: "120px",
-                              objectFit: "contain",
-                              borderRadius: "4px",
-                              boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
-                            }}
-                            onError={(e) => {
-                              e.target.style.display = 'none';
-                              e.target.nextSibling.style.display = 'flex';
-                            }}
-                          />
-                          <Flex
-                            direction="column"
-                            align="center"
-                            justify="center"
-                            color="gray.400"
-                            minH="100px"
-                            display="none"
-                          >
-                            <Box mb={1} fontSize="lg">❌</Box>
-                            <Box fontSize="xs">Failed to load</Box>
-                          </Flex>
-                        </Box>
-                      </Box>
-                    ) : (
-                      <Flex
-                        direction="column"
-                        align="center"
-                        justify="center"
-                        py={4}
-                        color="gray.400"
-                        bg="gray.50"
-                        rounded="lg"
-                      >
-                        <Box mb={1} fontSize="lg">🖼️</Box>
-                        <Box fontSize="xs">No URL</Box>
-                      </Flex>
-                    )}
-                  </Box>
-                ))
-              )}
-            </Box>
-          </Box>
-        )}
-
-        {/* Main Content*/}
-        <Box flex="1" px={4}>
-          <Container maxW="full">
-            <Box maxH="calc(100vh - 300px)" overflowY="auto" pr={4}>
-              <Heading as="h1" size="xl" mb={4} color="gray.800" textAlign="center" style={{
-                              color: "#14B8A6", 
-                              textDecoration: "underline"
-                          }}>
-                Images
-              </Heading>
-              
-              {existingImages.length === 0 ? (
-                <Box p={12} textAlign="center" bg="gray.50" rounded="lg">
-                  <Heading as="h3" size="md" color="gray.500" mb={4}>
-                    No images yet
-                  </Heading>
-                  <Button colorScheme="blue" onClick={handleAddNewImage}>
-                    Add Your First Image
-                  </Button>
-                </Box>
-              ) : (
-                existingImages.map((image, index) => (
-                  <Box key={image._id || image.tempId} mb={6} p={6} borderWidth="1px" rounded="lg" bg="gray.50" boxShadow="md">
-                    <Flex justify="space-between" align="center" mb={4}>
-                      <Heading as="h3" size="md" color="blue.600">
-                        Image {index + 1}
-                      </Heading>
-                      <Flex gap={2}>
-                        <Button 
-                          colorScheme="blue" 
-                          size="sm"
-                          onClick={() => handleSaveImage(index)}
-                        >
-                          {image.isNew ? "Save" : "Update"}
-                        </Button>
-                        <Button 
-                          colorScheme="red" 
-                          size="sm"
-                          onClick={() => handleDeleteClick(index)}
-                        >
-                          Delete
-                        </Button>
-                      </Flex>
-                    </Flex>
-
-                    <FormControl isRequired mb={3}>
-                      <FormLabel fontSize="sm" fontWeight="medium">Name *</FormLabel>
-                      <Input
-                        type="text"
-                        value={image.name || ""}
-                        onChange={(e) => handleImageChange(index, 'name', e.target.value)}
-                        placeholder="Enter image name"
-                      />
-                    </FormControl>
-
-                    <FormControl isRequired mb={3}>
-                      <FormLabel fontSize="sm" fontWeight="medium">Image Link *</FormLabel>
-                      <Input
-                        type="url"
-                        value={image.imgLink || ""}
-                        onChange={(e) => handleImageChange(index, 'imgLink', e.target.value)}
-                        placeholder="https://example.com/image.jpg"
-                      />
-                    </FormControl>
-
-                    <FormControl mb={3}>
-                      <FormLabel fontSize="sm" fontWeight="medium">Sequence</FormLabel>
-                      <Input
-                        type="number"
-                        value={image.sequence || ""}
-                        onChange={(e) => handleImageChange(index, 'sequence', e.target.value)}
-                        placeholder="Display order"
-                      />
-                    </FormControl>
-
-                    <FormControl mb={4}>
-                      <FormLabel fontSize="sm" fontWeight="medium">Featured</FormLabel>
-                      <Select
-                        value={image.feature?.toString()}
-                        onChange={(e) => handleImageChange(index, 'feature', e.target.value)}
-                      >
-                        <option value="true">Yes</option>
-                        <option value="false">No</option>
-                      </Select>
-                    </FormControl>
-
-                    {/* Mobile Image Preview */}
-                    {isMobile && (
-                      <Box mt={4} p={4} bg="gray.100" rounded="lg">
-                        <Heading as="h4" size="sm" mb={3} color="gray.700">
-                          Preview
-                        </Heading>
-                        {image.imgLink ? (
-                          <Box>
-                            <Box mb={3} textAlign="center" bg="white" rounded="lg" p={3} minH="150px" display="flex" alignItems="center" justifyContent="center">
-                              <img
-                                src={image.imgLink}
-                                alt={image.name || "Preview"}
-                                style={{ 
-                                  maxWidth: "100%", 
-                                  maxHeight: "200px", 
-                                  objectFit: "contain", 
-                                  borderRadius: "6px",
-                                  boxShadow: "0 1px 2px rgba(0,0,0,0.1)" 
-                                }}
-                                onError={(e) => {
-                                  e.target.style.display = 'none';
-                                  e.target.nextSibling.style.display = 'flex';
-                                }}
-                              />
-                              <Flex 
-                                direction="column" 
-                                align="center" 
-                                justify="center" 
-                                color="gray.400" 
-                                minH="150px"
-                                display="none"
-                              >
-                                <Box mb={2} fontSize="2xl">❌</Box>
-                                <Box fontSize="xs">Failed to load</Box>
-                              </Flex>
-                            </Box>
-                          </Box>
-                        ) : (
-                          <Flex direction="column" align="center" justify="center" py={8} color="gray.400" bg="white" rounded="lg">
-                            <Box mb={2} fontSize="2xl">🖼️</Box>
-                            <Box fontSize="xs">No image URL provided</Box>
-                          </Flex>
-                        )}
-                      </Box>
-                    )}
-                  </Box>
-                ))
-              )}
-            </Box>
-
-            {isMobile && (
-              <Center mt={8}>
-                <Button colorScheme="blue" onClick={handleAddNewImage}>
-                  Add New Image
+        <PageShell>
+            <PageHeader
+                icon={FaImages}
+                title="Images"
+                subtitle="Gallery and banner images shown on the conference site."
+                accent={ACCENT}
+                variant="outline"
+            >
+                <Button colorScheme={ACCENT} leftIcon={<FaPlus />} onClick={openAddModal}>
+                    Add Image
                 </Button>
-              </Center>
-            )}
-          </Container>
-        </Box>
-      </Flex>
-      
-      {/* Delete Confirmation Dialog */}
-      {showDeleteConfirmation && (
-        <div className="tw-fixed tw-inset-0 tw-bg-black tw-bg-opacity-50 tw-flex tw-items-center tw-justify-center tw-z-50">
-          <div className="tw-bg-white tw-rounded tw-p-8 tw-w-96">
-            <p className="tw-text-lg tw-font-semibold tw-text-center tw-mb-4">
-              Are you sure you want to delete this image?
-            </p>
-            <div className="tw-flex tw-justify-center tw-gap-4">
-              <Button
-                colorScheme="red"
-                onClick={confirmDelete}
-              >
-                Yes, Delete
-              </Button>
-              <Button
-                colorScheme="blue"
-                onClick={cancelDelete}
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-    </Flex>
-  );
+            </PageHeader>
+
+            {!loading ? (
+                sortedData.length > 0 ? (
+                    <SimpleGrid columns={{ base: 1, md: 2, xl: 3 }} spacing={5}>
+                        {sortedData.map((item) => (
+                            <Box
+                                key={item._id}
+                                bg="white"
+                                borderRadius="2xl"
+                                boxShadow="md"
+                                overflow="hidden"
+                                transition="all 0.2s"
+                                _hover={{ transform: "translateY(-3px)", boxShadow: "lg" }}
+                                border="1px solid"
+                                borderColor={`${ACCENT}.100`}
+                                borderTop="4px solid"
+                                borderTopColor={`${ACCENT}.400`}
+                            >
+                                {/* Image preview */}
+                                <Box position="relative" h="170px" bg={`${ACCENT}.50`}>
+                                    <Center h="170px" color={`${ACCENT}.300`} flexDirection="column" gap={2}>
+                                        <Icon as={FaImage} fontSize="34px" />
+                                        <Text fontSize="xs">No preview</Text>
+                                    </Center>
+                                    {item.imgLink && (
+                                        <img
+                                            src={resolveImgSrc(item.imgLink)}
+                                            alt={item.name}
+                                            style={{
+                                                position: "absolute", top: 0, left: 0,
+                                                width: "100%", height: "170px",
+                                                objectFit: "cover", zIndex: 1,
+                                            }}
+                                            onError={(e) => { e.target.style.display = "none"; }}
+                                        />
+                                    )}
+                                </Box>
+
+                                <Box p={4}>
+                                    <Flex justify="space-between" align="flex-start" gap={2} mb={2}>
+                                        <Text fontWeight="bold" fontSize="md" noOfLines={2}>
+                                            {item.name || "Untitled image"}
+                                        </Text>
+                                        <Tooltip label="Order value" hasArrow>
+                                            <Badge
+                                                colorScheme={ACCENT}
+                                                borderRadius="full"
+                                                px={2.5} py={1}
+                                                display="inline-flex"
+                                                alignItems="center"
+                                                gap={1}
+                                                flexShrink={0}
+                                            >
+                                                <Icon as={FaHashtag} boxSize="9px" />{item.sequence ?? "—"}
+                                            </Badge>
+                                        </Tooltip>
+                                    </Flex>
+
+                                    <HStack spacing={1.5} mb={4} flexWrap="wrap">
+                                        {item.feature ? (
+                                            <Badge colorScheme="purple" fontSize="0.65em" display="inline-flex" alignItems="center" gap={1}>
+                                                <Icon as={FaStar} boxSize="9px" /> Featured
+                                            </Badge>
+                                        ) : (
+                                            <Badge colorScheme="gray" fontSize="0.65em">Not featured</Badge>
+                                        )}
+                                    </HStack>
+
+                                    <Flex gap={2}>
+                                        <Button
+                                            size="sm"
+                                            colorScheme="teal"
+                                            flex="1"
+                                            leftIcon={<FaEdit />}
+                                            onClick={() => handleEdit(item)}
+                                        >
+                                            Edit
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            colorScheme="red"
+                                            variant="outline"
+                                            flex="1"
+                                            leftIcon={<FaTrashAlt />}
+                                            onClick={() => handleDelete(item._id)}
+                                        >
+                                            Delete
+                                        </Button>
+                                    </Flex>
+                                </Box>
+                            </Box>
+                        ))}
+                    </SimpleGrid>
+                ) : (
+                    <Center py={16} flexDirection="column" gap={3} bg="white" borderRadius="2xl" boxShadow="md" color="gray.400">
+                        <Icon as={FaImages} fontSize="36px" />
+                        <Text>No images yet.</Text>
+                        <Button colorScheme={ACCENT} leftIcon={<FaPlus />} onClick={openAddModal}>
+                            Add your first image
+                        </Button>
+                    </Center>
+                )
+            ) : <CardGridSkeleton withImage />}
+
+            {/* Add / Edit modal */}
+            <Modal isOpen={isFormOpen} onClose={closeFormModal} size="2xl" scrollBehavior="inside">
+                <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(3px)" />
+                <ModalContent borderRadius="2xl" overflow="hidden" mt="90px" mb="6" maxH="calc(100vh - 120px)">
+                    <ModalHeader
+                        color={`${ACCENT}.700`}
+                        bg="white"
+                        borderBottom="3px solid"
+                        borderBottomColor={`${ACCENT}.400`}
+                        display="flex"
+                        alignItems="center"
+                        gap={3}
+                    >
+                        <Icon as={FaImages} color={`${ACCENT}.500`} />
+                        {editID ? 'Update Image' : 'Add a New Image'}
+                    </ModalHeader>
+                    <ModalCloseButton />
+                    <ModalBody py={5}>
+                        <FieldGrid>
+                            <FormControl isRequired>
+                                <FormLabel>Name:</FormLabel>
+                                <Input
+                                    type="text"
+                                    name="name"
+                                    value={name}
+                                    onChange={handleChange}
+                                    placeholder="Enter image name"
+                                    mb='2.5'
+                                />
+                            </FormControl>
+                            <FormControl>
+                                <FormLabel>Order (Sequence):</FormLabel>
+                                <Input
+                                    type="number"
+                                    name="sequence"
+                                    value={sequence}
+                                    onChange={handleChange}
+                                    placeholder="Display order"
+                                    mb='2.5'
+                                />
+                            </FormControl>
+                            <Span2>
+                                <FormControl isRequired>
+                                    <FormLabel>Image :</FormLabel>
+                                    <Flex gap={3} align="flex-start" wrap="wrap">
+                                        <Box flex="1" minW="240px">
+                                            <HStack mb={2}>
+                                                <Input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={(e) => setImageFile(e.target.files[0])}
+                                                    pt="4px"
+                                                />
+                                                <Button
+                                                    colorScheme={ACCENT}
+                                                    leftIcon={<FaUpload />}
+                                                    onClick={handleImageUpload}
+                                                    isLoading={uploadingImage}
+                                                    loadingText="Uploading"
+                                                    flexShrink={0}
+                                                >
+                                                    Upload
+                                                </Button>
+                                            </HStack>
+                                            <Input
+                                                type="text"
+                                                name="imgLink"
+                                                value={imgLink}
+                                                onChange={handleChange}
+                                                placeholder="…or paste an image link directly"
+                                            />
+                                        </Box>
+                                        {imgLink && (
+                                            <Image
+                                                src={resolveImgSrc(imgLink)}
+                                                alt="Image preview"
+                                                boxSize="84px"
+                                                borderRadius="xl"
+                                                objectFit="cover"
+                                                border="1px solid"
+                                                borderColor="gray.200"
+                                                fallback={
+                                                    <Center boxSize="84px" borderRadius="xl" bg="gray.50" color="gray.400" border="1px solid" borderColor="gray.200">
+                                                        <Icon as={FaImage} fontSize="28px" />
+                                                    </Center>
+                                                }
+                                            />
+                                        )}
+                                    </Flex>
+                                </FormControl>
+                            </Span2>
+                            <FormControl>
+                                <FormLabel>Featured:</FormLabel>
+                                <Select
+                                    name="feature"
+                                    value={formData.feature?.toString()}
+                                    onChange={handleChange}
+                                >
+                                    <option value="true">Yes</option>
+                                    <option value="false">No</option>
+                                </Select>
+                            </FormControl>
+                        </FieldGrid>
+                    </ModalBody>
+                    <ModalFooter bg="gray.50" gap={3}>
+                        <Button variant="ghost" onClick={closeFormModal}>Cancel</Button>
+                        <Button
+                            colorScheme={ACCENT}
+                            px={8}
+                            leftIcon={editID ? <FaSave /> : <FaPlus />}
+                            onClick={() => { editID ? handleUpdate() : handleSubmit() }}
+                        >
+                            {editID ? 'Update' : 'Add'}
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
+
+            <DeleteModal
+                isOpen={showDeleteConfirmation}
+                onCancel={() => setShowDeleteConfirmation(false)}
+                onConfirm={confirmDelete}
+                label="this image"
+            />
+        </PageShell>
+    );
 };
 
 export default Images;

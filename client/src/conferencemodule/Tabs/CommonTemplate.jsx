@@ -12,23 +12,14 @@ import {
   Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalBody,
   ModalCloseButton, useDisclosure
 } from "@chakra-ui/react";
+import { FaFileAlt, FaPlus, FaFileImport } from "react-icons/fa";
+import { PageHeader, DeleteModal } from "../components/ui";
 
 const LivePreviewSection = ({ title, html }) => {
   return (
     <Box p={4}>
-      <Heading
-        as="h1"
-        size="xl"
-        textAlign="center"
-        mb={6}
-        color="tw-bg-slate-100"
-        textDecoration="underline"
-      >
+      <Heading as="h2" size="md" mb={6} color="cyan.800" pb={2} borderBottom="3px solid" borderBottomColor="cyan.400" display="inline-block">
         Live Preview
-      </Heading>
-
-      <Heading as="h3" size="lg" mb={4} color="gray.800">
-        Page Preview
       </Heading>
 
       <Box
@@ -103,6 +94,7 @@ const CommonTemplate = () => {
   const [formData, setFormData] = useState(initialData);
   const [editID, setEditID] = useState();
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [data, setData] = useState([]);
   const [refresh, setRefresh] = useState(0);
 
@@ -362,11 +354,11 @@ const CommonTemplate = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     // ✅ Get both HTML and Delta before saving
     const currentDelta = editorApiRef.current?.getDelta();
     const currentHtml = editorApiRef.current?.getHTML();
-    
+
     const submitData = {
       ...formData,
       description: currentHtml || formData.description,
@@ -375,6 +367,7 @@ const CommonTemplate = () => {
 
     console.log("Submitting:", submitData);
 
+    setSaving(true);
     axios
       .post(`${apiUrl}/conferencemodule/commontemplate`, submitData, {
         withCredentials: true,
@@ -386,14 +379,18 @@ const CommonTemplate = () => {
         setRefresh((p) => p + 1);
         toast({ title: "Page added", status: "success", duration: 2000, isClosable: true });
       })
-      .catch((err) => console.log(err));
+      .catch((err) => {
+        console.log(err);
+        toast({ title: "Failed to add page", description: err?.response?.data?.error || err.message, status: "error", duration: 4000, isClosable: true });
+      })
+      .finally(() => setSaving(false));
   };
 
   const handleUpdate = () => {
     // ✅ Get both HTML and Delta before updating
     const currentDelta = editorApiRef.current?.getDelta();
     const currentHtml = editorApiRef.current?.getHTML();
-    
+
     const updateData = {
       ...formData,
       description: currentHtml || formData.description,
@@ -402,6 +399,7 @@ const CommonTemplate = () => {
 
     console.log("Updating:", updateData);
 
+    setSaving(true);
     axios
       .put(`${apiUrl}/conferencemodule/commontemplate/${editID}`, updateData, {
         withCredentials: true,
@@ -412,7 +410,11 @@ const CommonTemplate = () => {
         setSelectedTemplate(updated);
         toast({ title: "Page updated", status: "success", duration: 2000, isClosable: true });
       })
-      .catch((err) => console.log(err));
+      .catch((err) => {
+        console.log(err);
+        toast({ title: "Failed to update page", description: err?.response?.data?.error || err.message, status: "error", duration: 4000, isClosable: true });
+      })
+      .finally(() => setSaving(false));
   };
 
   const handleDelete = (deleteID) => {
@@ -607,48 +609,44 @@ const CommonTemplate = () => {
   );
 
   return (
-    <main className="tw-p-5 tw-min-h-screen">
+    <main className="tw-p-5 tw-min-h-screen tw-bg-slate-100">
+      <PageHeader
+        icon={FaFileAlt}
+        title="Common Templates"
+        subtitle="ObjectId-addressable pages for the conference site — create, edit and link them anywhere."
+        accent="cyan"
+        variant="outline"
+      >
+        <HStack spacing={2}>
+          <Button colorScheme="cyan" size="sm" leftIcon={<FaPlus />} onClick={handleAddNewTemplate}>
+            Add New Page
+          </Button>
+          <Button colorScheme="green" size="sm" leftIcon={<FaFileImport />} onClick={handleOpenImport}>
+            Import data
+          </Button>
+          <Button
+            variant="outline"
+            colorScheme={showPreview ? "purple" : "blue"}
+            onClick={() => setShowPreview(v => !v)}
+            size="sm"
+            aria-pressed={showPreview}
+            isDisabled={isMobile}
+            title={isMobile ? "Preview panel is desktop-only" : ""}
+          >
+            {showPreview ? "Hide Preview" : "Show Preview"}
+          </Button>
+        </HStack>
+      </PageHeader>
       <Flex direction="column">
-        {/* Top bar: Import + Preview toggle */}
-        <Box mb={4}>
-          <HStack w="full" align="center">
-            {/* Left group */}
-            <HStack spacing={3}>
-              <Button colorScheme="orange" onClick={handleAddNewTemplate} mb="4" size="md">
-                Add New Page
-              </Button>
-              <Button colorScheme="green" onClick={handleOpenImport} mb="4" size="md">
-                Import data
-              </Button>
-            </HStack>
-
-            {/* Push the preview button to the right */}
-            <Spacer />
-
-            {/* Right-aligned Preview toggle */}
-            <Button
-              variant="outline"
-              colorScheme={showPreview ? "purple" : "blue"}
-              onClick={() => setShowPreview(v => !v)}
-              size="md"
-              aria-pressed={showPreview}
-              isDisabled={isMobile}
-              title={isMobile ? "Preview panel is desktop-only" : ""}
-            >
-              {showPreview ? "Hide Preview" : "Show Preview"}
-            </Button>
-          </HStack>
-        </Box>
-
-        <Flex direction={{ base: "column", md: "row" }}>
+        <Flex direction={{ base: "column", md: "row" }} gap={4} align="stretch">
           {!isMobile && (
             <Box
               width="15%"
               minWidth="180px"
               maxWidth="250px"
-              bg="gray.100"
+              bg="white"
               p={4}
-              borderRadius="none"
+              borderRadius="2xl"
               boxShadow="md"
               height="100vh"
               position="sticky"
@@ -671,13 +669,14 @@ const CommonTemplate = () => {
               height={showPreview ? "auto" : { base: "auto", lg: "100vh" }}
               position={showPreview ? "static" : { lg: "sticky" }}
               top={0}
+              bg="white"
+              borderRadius="2xl"
+              boxShadow="md"
             >
               <Container maxW="full">
-                <Center>
-                  <Heading as="h1" size="xl" mt="2" mb="6" color="tw-bg-slate-100" textDecoration="underline">
-                    {selectedTemplate ? `Edit Page Content` : "Create New Page"}
-                  </Heading>
-                </Center>
+                <Heading as="h2" size="md" mt="2" mb="6" color="cyan.800" pb={2} borderBottom="3px solid" borderBottomColor="cyan.400" display="inline-block">
+                  {selectedTemplate ? `Edit Page Content` : "Create New Page"}
+                </Heading>
 
                 {selectedTemplate && (
                   <Box bg="gray.50" border="1px solid" borderColor="gray.200" borderRadius="md" p={4} mb={6}>
@@ -794,7 +793,14 @@ const CommonTemplate = () => {
                   </FormControl>
 
                   <HStack spacing={4} justify="center" mt={6}>
-                    <Button colorScheme="blue" onClick={editID ? handleUpdate : handleSubmit} size="lg" type={editID ? "button" : "submit"}>
+                    <Button
+                      colorScheme="blue"
+                      onClick={editID ? handleUpdate : handleSubmit}
+                      size="lg"
+                      type={editID ? "button" : "submit"}
+                      isLoading={saving}
+                      loadingText={editID ? "Updating…" : "Saving…"}
+                    >
                       {editID ? "Update Page" : "Add Page"}
                     </Button>
                     {selectedTemplate && (
@@ -812,7 +818,9 @@ const CommonTemplate = () => {
               <Box
                 width={{ base: "100%", lg: "50%" }}
                 p={4}
-                bg="gray.50"
+                bg="white"
+                borderRadius="2xl"
+                boxShadow="md"
                 overflowY="auto"
                 height={{ lg: "100vh" }}
                 position={{ lg: "sticky" }}
@@ -829,7 +837,7 @@ const CommonTemplate = () => {
       {/* Import Modal */}
       <Modal isOpen={isImportOpen} onClose={onImportClose} size="xl">
         <ModalOverlay />
-        <ModalContent>
+        <ModalContent mt="90px" mb="6" maxH="calc(100vh - 120px)" overflowY="auto">
           <ModalHeader>Import Page from Another Conference</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
@@ -899,23 +907,12 @@ const CommonTemplate = () => {
       </Modal>
 
       {/* Delete Confirmation Modal */}
-      {showDeleteConfirmation && (
-        <div className="tw-fixed tw-inset-0 tw-bg-black tw-bg-opacity-50 tw-flex tw-items-center tw-justify-center">
-          <div className="tw-bg-white tw-rounded tw-p-8 tw-w-96">
-            <p className="tw-text-lg tw-font-semibold tw-text-center tw-mb-4">
-              Are you sure you want to delete this page?
-            </p>
-            <div className="tw-flex tw-justify-center">
-              <Button colorScheme="red" onClick={confirmDelete} mr={4}>
-                Yes, Delete
-              </Button>
-              <Button colorScheme="blue" onClick={() => setShowDeleteConfirmation(false)}>
-                Cancel
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DeleteModal
+        isOpen={showDeleteConfirmation}
+        onCancel={() => setShowDeleteConfirmation(false)}
+        onConfirm={confirmDelete}
+        label="this page"
+      />
     </main>
   );
 };

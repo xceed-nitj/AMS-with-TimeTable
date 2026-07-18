@@ -147,7 +147,7 @@ describe("PATCH /reports/:id/student/:rollNo (trusted service override)", () => 
     expect(student.finalStatus).toBe("P");
   });
 
-  it("updates a student's final status with the attendance service key", async () => {
+  it("records the override in separate fields without touching finalStatus or summary", async () => {
     const report = await AttendanceReport.create(baseReport());
     const res = await request(app)
       .patch(`${BASE}/${report._id}/student/21CS001`)
@@ -157,10 +157,13 @@ describe("PATCH /reports/:id/student/:rollNo (trusted service override)", () => 
 
     const updated = await AttendanceReport.findById(report._id);
     const student = updated.finalReport.find((s) => s.rollNo === "21CS001");
-    expect(student.finalStatus).toBe("A");
+    // Our own attendance data is never overwritten by an ERP override
+    expect(student.finalStatus).toBe("P");
+    expect(student.erpOverriddenStatus).toBe("A");
+    expect(student.erpOverriddenAt).toBeTruthy();
     expect(student.isOverridden).toBe(true);
-    expect(updated.summary.present).toBe(0);
-    expect(updated.summary.absent).toBe(1);
+    expect(updated.summary.present).toBe(1);
+    expect(updated.summary.absent).toBe(0);
   });
 
   it("returns 404 for an unknown report id", async () => {
@@ -200,6 +203,47 @@ describe("PATCH /reports/:id/student/:rollNo (trusted service override)", () => 
     const updated = await AttendanceReport.findById(report._id);
     const student = updated.finalReport.find((s) => s.rollNo === "21CS001");
     expect(student.facultyRemark).toBe("Student came late");
+  });
+});
+
+describe("PATCH /reports/period/:periodId/student/:rollNo (override by periodId)", () => {
+  it("records the override on the report matching the pushed periodId", async () => {
+    const report = await AttendanceReport.create(
+      baseReport({ periodId: "erp-period-abc-123" }),
+    );
+    const res = await request(app)
+      .patch(`${BASE}/period/erp-period-abc-123/student/21CS001`)
+      .set(serviceWriteHeader())
+      .send({ finalStatus: "A", remark: "Left early" });
+    expect(res.status).toBe(200);
+
+    const updated = await AttendanceReport.findById(report._id);
+    const student = updated.finalReport.find((s) => s.rollNo === "21CS001");
+    expect(student.erpOverriddenStatus).toBe("A");
+    expect(student.finalStatus).toBe("P");
+    expect(student.facultyRemark).toBe("Left early");
+  });
+
+  it("returns 404 for an unknown periodId", async () => {
+    await AttendanceReport.create(
+      baseReport({ periodId: "erp-period-abc-123" }),
+    );
+    const res = await request(app)
+      .patch(`${BASE}/period/no-such-period/student/21CS001`)
+      .set(serviceWriteHeader())
+      .send({ finalStatus: "A" });
+    expect(res.status).toBe(404);
+  });
+
+  it("rejects the call without the attendance service key", async () => {
+    await AttendanceReport.create(
+      baseReport({ periodId: "erp-period-abc-123" }),
+    );
+    const res = await request(app)
+      .patch(`${BASE}/period/erp-period-abc-123/student/21CS001`)
+      .set("Cookie", authCookie())
+      .send({ finalStatus: "A" });
+    expect(res.status).toBe(401);
   });
 });
 
@@ -279,6 +323,28 @@ describe("GET /reports/erp-overrides", () => {
     expect(override.facultyRemark).toBe("Student came late");
     expect(override.coordinatorRemark).toBe("");
     expect(override.coordinatorVerified).toBe(false);
+  });
+
+  it("maps from/to using the separate erpOverriddenStatus field on new-style rows", async () => {
+    await AttendanceReport.create(
+      overriddenReport({
+        finalReport: [
+          {
+            rollNo: "21CS001",
+            finalStatus: "P",          // untouched model decision
+            autoFinalStatus: "P",
+            erpOverriddenStatus: "A",  // ERP's correction, stored separately
+            isOverridden: true,
+          },
+        ],
+      }),
+    );
+
+    const res = await request(app).get(`${BASE}/erp-overrides`).set("Cookie", authCookie());
+    expect(res.status).toBe(200);
+    const [override] = res.body.items[0].overrides;
+    expect(override.from).toBe("P");
+    expect(override.to).toBe("A");
   });
 });
 

@@ -81,38 +81,3 @@ class HomeController {
 }
 
 module.exports = HomeController;
-function isValidHome(home) {
-  return (
-    home &&
-    typeof home === "object" &&
-    typeof home.id === "string" &&
-    typeof home.confId === "string" &&
-    typeof home.confName === "string" &&
-    home.confStartDate instanceof Date &&
-    home.confEndDate instanceof Date &&
-    (typeof home.logo === "string" ||
-      home.logo === null ||
-      home.logo === undefined) &&
-    (typeof home.shortName === "string" ||
-      home.shortName === null ||
-      home.shortName === undefined) &&
-    typeof home.aboutConf === "string" &&
-    (typeof home.aboutIns === "string" ||
-      home.aboutIns === null ||
-      home.aboutIns === undefined) &&
-    (typeof home.youtubeLink === "string" ||
-      home.youtubeLink === null ||
-      home.youtubeLink === undefined) &&
-    (typeof home.instaLink === "string" ||
-      home.instaLink === null ||
-      home.instaLink === undefined) &&
-    (typeof home.facebookLink === "string" ||
-      home.facebookLink === null ||
-      home.facebookLink === undefined) &&
-    (typeof home.twitterLink === "string" ||
-      home.twitterLink === null ||
-      home.twitterLink === undefined) &&
-    home.createdAt instanceof Date &&
-    home.updatedAt instanceof Date
-  );
-}

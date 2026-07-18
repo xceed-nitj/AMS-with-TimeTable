@@ -1,26 +1,29 @@
-import React, { useState, useEffect,useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from 'axios';
 import { useParams } from "react-router-dom";
 import LoadingIcon from "../components/LoadingIcon";
 import getEnvironment from "../../getenvironment";
-import { Container } from "@chakra-ui/react";
+import JoditEditor from "../components/RichTextEditor";
 import {
-    FormControl, FormLabel, Center, Heading,
-    Input, Button, Select
+    FormControl, FormLabel, Input, Button, Select,
+    Table, Tbody, Td, Thead, Tr, Center,
 } from '@chakra-ui/react';
-import JoditEditor from 'jodit-react';
+import { FaBed, FaPlus, FaSave } from "react-icons/fa";
+import {
+    PageShell, PageHeader, FormCard, FieldGrid, Span2,
+    TableCard, ThemedTh, WrapTd, RowActions, EmptyRow, DeleteModal,
+} from "../components/ui";
 
-import { CustomTh } from '../utils/customStyles'
-import {Table,TableContainer,Tbody,Td,Thead,Tr,} from "@chakra-ui/react";
+const ACCENT = "teal";
+
 const Accomodation = () => {
     const params = useParams();
-const IdConf = params.confid;
+    const IdConf = params.confid;
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
-    const [deleteItemId, setDeleteItemId] = useState(null);    const apiUrl = getEnvironment();
+    const [deleteItemId, setDeleteItemId] = useState(null);
+    const apiUrl = getEnvironment();
     const ref = useRef(null);
 
-
-    // Define your initial data here
     const initialData = {
         "confId": IdConf,
         "title": "",
@@ -51,14 +54,12 @@ const IdConf = params.confid;
                 [name]: value === "true",
             });
         }
-
         else {
             setFormData({
                 ...formData,
                 [name]: value,
             });
         }
-
     };
 
     const handleEditorChange = (value, fieldName) => {
@@ -67,34 +68,28 @@ const IdConf = params.confid;
             [fieldName]: value,
         });
     };
-    
-    const handleSubmit = (e) => {
-        // e.preventDefault();
 
+    const handleSubmit = (e) => {
         axios.post(`${apiUrl}/conferencemodule/accomodation`, formData, {
             withCredentials: true
-
         })
             .then(res => {
                 setData([...data, res.data]);
-                setFormData(initialData); // Reset the form data to initialData
+                setFormData(initialData);
                 setRefresh(refresh + 1);
             })
             .catch(err => {
                 console.log(err);
                 console.log(formData);
             });
-
     };
 
     const handleUpdate = () => {
-
         axios.put(`${apiUrl}/conferencemodule/accomodation/${editID}`, formData, {
             withCredentials: true
-
         })
             .then(res => {
-                setFormData(initialData); // Reset the form data to initialData
+                setFormData(initialData);
                 setRefresh(refresh + 1);
                 setEditID(null)
             })
@@ -107,16 +102,13 @@ const IdConf = params.confid;
     };
 
     const confirmDelete = () => {
-
         axios.delete(`${apiUrl}/conferencemodule/accomodation/${deleteItemId}`, {
             withCredentials: true
-
         })
             .then(res => {
                 console.log('DELETED RECORD::::', res);
-                               setShowDeleteConfirmation(false);  
-                 setRefresh(refresh + 1);
-          
+                setShowDeleteConfirmation(false);
+                setRefresh(refresh + 1);
                 setFormData(initialData);
             })
             .catch(err => console.log(err));
@@ -126,9 +118,7 @@ const IdConf = params.confid;
         window.scrollTo(0, 0);
         axios.get(`${apiUrl}/conferencemodule/accomodation/${editIDNotState}`, {
             withCredentials: true
-
         })
-
             .then(res => {
                 setFormData(res.data);
             })
@@ -139,7 +129,6 @@ const IdConf = params.confid;
         setLoading(true)
         axios.get(`${apiUrl}/conferencemodule/accomodation/conf/${IdConf}`, {
             withCredentials: true
-
         })
             .then(res => {
                 setData(res.data);
@@ -149,143 +138,118 @@ const IdConf = params.confid;
     }, [refresh]);
 
     return (
-        <main className='tw-py-10 lg:tw-pl-72 tw-min-h-screen'>
+        <PageShell>
+            <PageHeader
+                icon={FaBed}
+                title="Accommodation"
+                subtitle="Accommodation options and details for conference attendees."
+                accent={ACCENT}
+            />
 
-            <Container maxW='5xl'>
-                <Heading as="h1" size="xl" mt="6" mb="6">
-                    Add Accomodation
-                </Heading>
-
-
-                <FormControl isRequired={true} mb='3' >
-                    <FormLabel >Title :</FormLabel>
-                    <Input
-                        type="text"
-                        name="title"
-                        value={title}
-                        onChange={handleChange}
-                        placeholder="Title"
-                        mb='2.5'
-                    />
-                </FormControl>
-                
-                <FormControl isRequired={true} mb='3' >
-                    <FormLabel >Description :</FormLabel>
-                    
-                    <JoditEditor
-                        ref={ref}
-                        value={description}
-                        name="description"
-                        onBlur={(value) => handleEditorChange(value, "description")}
-                        classname='tw-mb-5'
-                    />
-                </FormControl>
-                <FormControl isRequired={true}  >
-
-                    <FormLabel >Sequence :</FormLabel>
-                    <Input
-
-                        type="number"
-                        name="sequence"
-                        value={sequence}
-                        onChange={handleChange}
-                        placeholder="sequence"
-                        mb='2.5'
-                   />
-                   </FormControl>
-                <FormControl isRequired={true} mb='3' >
-                    <FormLabel >Feature:</FormLabel>
-                    <Select
-                        name="feature"
-                        value={formData.featured}
-                        onChange={handleChange}
+            <FormCard
+                title={editID ? 'Update Accomodation' : 'Add Accomodation'}
+                accent={ACCENT}
+                isEditing={!!editID}
+                actions={
+                    <Button
+                        colorScheme={ACCENT}
+                        size="lg"
+                        px={10}
+                        leftIcon={editID ? <FaSave /> : <FaPlus />}
+                        type={editID ? "button" : "submit"}
+                        onClick={() => { editID ? handleUpdate() : handleSubmit() }}
                     >
-                        <option value={true}>Yes</option>
-                        <option value={false}>No</option>
-                    </Select>
-                </FormControl>
-
-                <Center>
-              
-                    <Button colorScheme="blue" type={editID ? "button" : "submit"} onClick={() => { editID ? handleUpdate() : handleSubmit() }}>
                         {editID ? 'Update' : 'Add'}
                     </Button>
-
-            </Center>
-                <Heading as="h1" size="xl" mt="6" mb="6">
-                    Added Accomodations</Heading>
-                {!loading ? (
-
-                    <TableContainer>
-                        <Table
-                            variant='striped'
-                            size="md"
-                            mt="1"
+                }
+            >
+                <FieldGrid>
+                    <FormControl isRequired={true} mb='3'>
+                        <FormLabel>Title :</FormLabel>
+                        <Input
+                            type="text"
+                            name="title"
+                            value={title}
+                            onChange={handleChange}
+                            placeholder="Title"
+                            mb='2.5'
+                        />
+                    </FormControl>
+                    <FormControl isRequired={true}>
+                        <FormLabel>Sequence :</FormLabel>
+                        <Input
+                            type="number"
+                            name="sequence"
+                            value={sequence}
+                            onChange={handleChange}
+                            placeholder="sequence"
+                            mb='2.5'
+                        />
+                    </FormControl>
+                    <Span2>
+                        <FormControl isRequired={true} mb='3'>
+                            <FormLabel>Description :</FormLabel>
+                            <JoditEditor
+                                ref={ref}
+                                value={description}
+                                name="description"
+                                onBlur={(value) => handleEditorChange(value, "description")}
+                                classname='tw-mb-5'
+                            />
+                        </FormControl>
+                    </Span2>
+                    <FormControl isRequired={true} mb='3'>
+                        <FormLabel>Feature:</FormLabel>
+                        <Select
+                            name="feature"
+                            value={formData.featured}
+                            onChange={handleChange}
                         >
-                            <Thead>
-                                <Tr>
-                                    <CustomTh> Title</CustomTh>
-                                    <CustomTh>Description</CustomTh>
-                                    <CustomTh>Sequence</CustomTh>
+                            <option value={true}>Yes</option>
+                            <option value={false}>No</option>
+                        </Select>
+                    </FormControl>
+                </FieldGrid>
+            </FormCard>
 
-                                    <CustomTh position={'sticky'} right={'0'}>Action</CustomTh>
-                                </Tr>
-                            </Thead>
-                            <Tbody>
-                                {data.length > 0 ? (data.map((item) => (
-                                    <Tr key={item._id}>
-                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.title}</Td>
-                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.description}</Td>
-                                        <Td sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>{item.sequence}</Td>
+            {!loading ? (
+                <TableCard title="Added Accomodations" count={data.length} accent={ACCENT}>
+                    <Table variant='striped' size="md">
+                        <Thead>
+                            <Tr>
+                                <ThemedTh accent={ACCENT}>Title</ThemedTh>
+                                <ThemedTh accent={ACCENT}>Description</ThemedTh>
+                                <ThemedTh accent={ACCENT}>Sequence</ThemedTh>
+                                <ThemedTh accent={ACCENT} position={'sticky'} right={'0'}>Action</ThemedTh>
+                            </Tr>
+                        </Thead>
+                        <Tbody>
+                            {data.length > 0 ? (data.map((item) => (
+                                <Tr key={item._id}>
+                                    <WrapTd>{item.title}</WrapTd>
+                                    <WrapTd>{item.description}</WrapTd>
+                                    <WrapTd>{item.sequence}</WrapTd>
+                                    <Td position={'sticky'} right={'0'} bg="white">
+                                        <RowActions
+                                            onEdit={() => { handleEdit(item._id); setEditID(item._id); }}
+                                            onDelete={() => handleDelete(item._id)}
+                                        />
+                                    </Td>
+                                </Tr>))) :
+                                <EmptyRow colSpan={4} message="No accommodation entries yet — add your first one above." />
+                            }
+                        </Tbody>
+                    </Table>
+                </TableCard>
+            ) : <Center py={10}><LoadingIcon /></Center>}
 
-                                        <Td position={'sticky'} right={'0'} sx={{ maxWidth: '200px', whiteSpace: 'normal', wordWrap: 'break-word' }}>
-                                            <Button colorScheme="red" onClick={() => handleDelete(item._id)}>Delete </Button>
-                                            <Button colorScheme="teal" onClick={() => {
-                                                handleEdit(item._id);
-                                                setEditID(item._id);
-                                            }}>Edit </Button>
-                                        </Td>
-
-                                    </Tr>))) :
-                                    (
-                                        <Tr>
-                                            <Td colSpan="5" className="tw-p-1 tw-text-center">
-                                                <Center>No data available</Center></Td>
-                                        </Tr>
-                                    )
-                                }
-                            </Tbody>
-                        </Table>
-                    </TableContainer>
-                )
-
-                    : <LoadingIcon />
-                } </Container>
- 
-            {showDeleteConfirmation && (
-                <div className="tw-fixed tw-inset-0 tw-bg-black tw-bg-opacity-50 tw-flex tw-items-center tw-justify-center">
-                    <div className="tw-bg-white tw-rounded tw-p-8 tw-w-96">
-                        <p className="tw-text-lg tw-font-semibold tw-text-center tw-mb-4">
-                            Are you sure you want to delete?
-                        </p>
-                        <div className="tw-flex tw-justify-center">
-                            <Button
-                                colorScheme="red"
-                                onClick={confirmDelete}
-                                mr={4}
-                            >
-                                Yes, Delete
-                            </Button>
-                            <Button
-                                colorScheme="blue"
-                                onClick={() => setShowDeleteConfirmation(false)}
-                            >
-                                Cancel
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            )}        </main>
+            <DeleteModal
+                isOpen={showDeleteConfirmation}
+                onCancel={() => setShowDeleteConfirmation(false)}
+                onConfirm={confirmDelete}
+                label="this accommodation"
+            />
+        </PageShell>
     );
 };
 

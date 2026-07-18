@@ -4,6 +4,7 @@ const conferenceSchema = new mongoose.Schema({
   _id: mongoose.Schema.Types.ObjectId,
   email: { type: String, unique: true },
   name: String,
+  navbarMode: { type: String, enum: ["static", "dynamic"], default: "static" },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });

@@ -3,14 +3,17 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const router = express.Router();
+const { checkRole } = require("../checkRole.middleware");
 
 const {addPlatform,getPlatform,updatePlatform,deletePlatform,getPlatformById,addModule, getModules, getModuleById, updateModule, deleteModule,} = require('../platform/controller');
 
-router.post("/add", addPlatform);
+const platformWriteAccess = checkRole(['admin']);
+
+router.post("/add", platformWriteAccess, addPlatform);
 router.get("/getplatform", getPlatform);
 router.get("/get/:id", getPlatformById);
-router.patch("/update/:id", updatePlatform);
-router.delete("/delete/:id", deletePlatform);
+router.patch("/update/:id", platformWriteAccess, updatePlatform);
+router.delete("/delete/:id", platformWriteAccess, deletePlatform);
 
 const uploadDir = path.join(__dirname, '..', 'uploads');
 if (!fs.existsSync(uploadDir)) {
@@ -29,11 +32,11 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Define module routes
-router.post('/add-module', upload.array('contributorImages', 10), addModule);
+router.post('/add-module', platformWriteAccess, upload.array('contributorImages', 10), addModule);
 router.get("/get-modules", getModules);
 router.get("/get-modules/:id", getModuleById);
-router.put("/update-module/:id", updateModule);
-router.delete("/delete-module/:id", deleteModule);
+router.put("/update-module/:id", platformWriteAccess, updateModule);
+router.delete("/delete-module/:id", platformWriteAccess, deleteModule);
 
 
 module.exports = router;

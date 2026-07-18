@@ -819,7 +819,7 @@ const AMS_DEVS_BY_YEAR = {
             { name: 'Anmoldeep Kaur',     github: 'anmolkaur92',     count: 27              },
             { name: 'Mukal Markanda',     github: 'CodewithMukal',   count: 22              },
             { name: 'Pallvi Saini',       github: null,               count: 19              },
-            { name: 'Karan Gupta',        github: 'guptakaran0720',  count: 16              },
+            { name: 'Karan Gupta',        github: 'guptakaran20',  count: 16              },
             { name: 'Amit Mallick',       github: 'amit837-design',  count: 11, prs: 4      },
             { name: 'Gulshan',            github: 'Gulshan-heap',    count: 10, prs: 1      },
             { name: 'Javin Chutani',      github: 'javin1106',       count: 9               },

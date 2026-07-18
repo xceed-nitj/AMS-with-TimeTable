@@ -91,6 +91,10 @@ import Images from './conferencemodule/Tabs/Images';
 import EventDates from './conferencemodule/Tabs/EventDates';
 import Participants from './conferencemodule/Tabs/Participants';
 import NavbarConf from './conferencemodule/Tabs/NavbarConf';
+import NavMenu from './conferencemodule/Tabs/NavMenu';
+import HomeLayout from './conferencemodule/Tabs/HomeLayout';
+import SpeakerLayout from './conferencemodule/Tabs/SpeakerLayout';
+import Customisation from './conferencemodule/Tabs/Customisation';
 import Location from './conferencemodule/Tabs/Location';
 import CommonTemplate from './conferencemodule/Tabs/CommonTemplate';
 import ConferencePage from './conferencemodule/Tabs/ConferencePage';
@@ -232,6 +236,8 @@ import NodeConsole from './attendancemodule/NodeConsole';
 import ReactConsole from './attendancemodule/ReactConsole';
 import AMSManual from './attendancemodule/manual';
 import TTManual from './timetableadmin/TTManual';
+import CertManual from './certificatemodule/CertManual';
+import ConfManual from './conferencemodule/ConfManual';
 
 
 // ─── Department Admin Module Imports ────────────────────────────
@@ -528,6 +534,7 @@ function App() {
           <Route index element={<HomeConf />} />
           <Route path="home" element={<HomeConf />} />
           <Route path="speakers" element={<Speaker />} />
+          <Route path="speakerlayout" element={<SpeakerLayout />} />
           <Route path="committee" element={<Committees />} />
           <Route path="sponsors" element={<Sponsors />} />
           <Route path="awards" element={<Awards />} />
@@ -538,6 +545,9 @@ function App() {
           <Route path="locations" element={<Location />} />
           <Route path="participants" element={<Participants />} />
           <Route path="navbar" element={<NavbarConf />} />
+          <Route path="navmenu" element={<NavMenu />} />
+          <Route path="homelayout" element={<HomeLayout />} />
+          <Route path="customisation" element={<Customisation />} />
           {/* <Route path="template" element={<CommonTemplate/>} /> */}
           <Route path="sponsorship-rates" element={<SponsorshipRate />} />
           <Route path="accommodation" element={<Accomodation />} />
@@ -664,6 +674,12 @@ function App() {
 
         {/* ─── TT Manual — public, no auth required ──────────────── */}
         <Route path="/tt-manual" element={<TTManual standalone />} />
+
+        {/* ─── Certificate Manual — public, no auth required ─────── */}
+        <Route path="/certificate-manual" element={<CertManual standalone />} />
+
+        {/* ─── Conference Manual — public, no auth required ──────── */}
+        <Route path="/conference-manual" element={<ConfManual standalone />} />
 
         {/* ─── Attendance Module Routes ──────────────────────────── */}
         <Route
