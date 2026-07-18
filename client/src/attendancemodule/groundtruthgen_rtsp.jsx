@@ -22,17 +22,19 @@ const fetch = (input, init = {}) => window.fetch(input, {
     ...init,
 });
 
-// ─── Add your cameras here ────────────────────────────────────────────────────
-const CAMERAS = [
-    { id: 'cam_main',    label: 'Main Hall — Front', url: 'rtsp://127.0.0.1:8554/live' },
-    { id: 'cam_side',    label: 'LT103L',  url: 'rtsp://admin:Admin%401234%23@10.10.177.249:554/video/live?channel=1&subtype=0&rtsp_transport=tcp'},
-    { id: 'cam_lab1',    label: 'LT103R',             url: 'rtsp://admin:Admin%401234%23@10.10.177.250:554/video/live?channel=1&subtype=0&rtsp_transport=tcp' },
-    { id: 'cam_lab2',    label: 'Lab 2',             url: 'rtsp://192.168.1.103:554/stream1' },
-    { id: 'cam_seminar', label: 'Seminar Hall',      url: 'rtsp://192.168.1.104:554/stream1' },
-];
+// ─── Single-camera mode's camera list is now fetched dynamically from the
+// camera registry (CAMERA_API), the same way Room Mode already does — see
+// `allCameras` state inside the component. This used to be a hardcoded
+// array here, which meant newly registered cameras never appeared in this
+// mode even though the issue requires new cameras to appear automatically.
 
 // ─── Combined-mode camera pair ────────────────────────────────────────────────
-const COMBINED_CAMERAS = ['cam_side', 'cam_lab1'];  // LT103L ↔ LT103R
+// These must match real `cameraId` values from the camera registry (the
+// same strings you'd see in the Room Mode camera list / camera registry
+// API responses) — previously this referenced fake IDs ('cam_side',
+// 'cam_lab1') that only matched the now-removed hardcoded CAMERAS array,
+// so combined mode would silently break once that array was removed.
+const COMBINED_CAMERAS = ['LT103-L', 'LT103-R'];    // LT103L ↔ LT103R
 const COMBINED_SWITCH_INTERVAL = 5 * 60;            // 5 minutes in seconds
 
 const TARGET_OPTIONS = [
@@ -211,7 +213,33 @@ export default function GroundTruthRTSP({ fixedDepartment = '', fixedRoomDepartm
     const { departments, deptLoading, deptError } = useDepartments();
     const { batchYears, batchYearsLoading } = useBatchYears();
     const [year,       setYear]       = useState('');
-    const [cameraId,   setCameraId]   = useState(CAMERAS[0].id);
+
+    // Single-camera mode's camera list — fetched from the same registry
+    // Room Mode already uses (CAMERA_API), so a newly added camera shows
+    // up here automatically too, with no code change needed.
+    const [allCameras,     setAllCameras]     = useState([]);
+    const [allCamerasLoad, setAllCamerasLoad] = useState(true);
+    const [cameraId,   setCameraId]   = useState('');
+
+    useEffect(() => {
+        let cancelled = false;
+        setAllCamerasLoad(true);
+        fetch(CAMERA_API)
+            .then((r) => r.json())
+            .then((data) => {
+                if (cancelled) return;
+                const list = (Array.isArray(data) ? data : []).map((cam) => ({
+                    id:    cam.cameraId || cam._id,
+                    label: `${cam.cameraId || 'Camera'}${cam.roomId ? ` — ${cam.roomId}` : ''}${cam.position ? ` (${cam.position})` : ''}`,
+                    url:   cam.streamUrl,
+                }));
+                setAllCameras(list);
+                setCameraId((prev) => prev || list[0]?.id || '');
+            })
+            .catch((err) => console.error('Failed to fetch cameras:', err))
+            .finally(() => { if (!cancelled) setAllCamerasLoad(false); });
+        return () => { cancelled = true; };
+    }, []);
 
     const [detSize,    setDetSize]    = useState(320);
     const [frameSkip,  setFrameSkip]  = useState(10);
@@ -423,7 +451,7 @@ export default function GroundTruthRTSP({ fixedDepartment = '', fixedRoomDepartm
         ? `${degree}_${department}_${year}`.toUpperCase()
         : null;
 
-    const selectedCamera = CAMERAS.find(c => c.id === cameraId);
+    const selectedCamera = allCameras.find(c => c.id === cameraId);
 
     const showToast = (msg, type = 'success') => {
         setToast({ msg, type });
@@ -723,7 +751,7 @@ export default function GroundTruthRTSP({ fixedDepartment = '', fixedRoomDepartm
 
             while (!combinedAbortRef.current) {
                 const camId = COMBINED_CAMERAS[idx % COMBINED_CAMERAS.length];
-                const cam   = CAMERAS.find(c => c.id === camId);
+                const cam   = allCameras.find(c => c.id === camId);
                 if (!cam) break;
 
                 setCombinedIdx(idx % COMBINED_CAMERAS.length);
@@ -790,7 +818,7 @@ export default function GroundTruthRTSP({ fixedDepartment = '', fixedRoomDepartm
     const switchSS = String(switchCountdown % 60).padStart(2, '0');
 
     const combinedActiveCam = combinedMode
-        ? CAMERAS.find(c => c.id === COMBINED_CAMERAS[combinedIdx])
+        ? allCameras.find(c => c.id === COMBINED_CAMERAS[combinedIdx])
         : null;
 
     const roomActiveCam = roomMode ? roomCameras[roomCamIdx] : null;
@@ -951,7 +979,7 @@ export default function GroundTruthRTSP({ fixedDepartment = '', fixedRoomDepartm
                 <div style={{ marginBottom: 20 }}>
                     <label style={styles.label}>Camera</label>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
-                        {CAMERAS.map(cam => (
+                        {allCameras.map(cam => (
                             <button key={cam.id} onClick={() => setCameraId(cam.id)} title={cam.url} style={{
                                 padding: '7px 16px', borderRadius: 6, cursor: 'pointer',
                                 fontSize: '13px', fontWeight: 600, border: '1px solid',
@@ -1147,7 +1175,7 @@ export default function GroundTruthRTSP({ fixedDepartment = '', fixedRoomDepartm
                             Combined Mode — {combinedActiveCam?.label}
                         </div>
                         <div style={{ fontSize: '11px', color: theme.textMuted, marginTop: 2 }}>
-                            Switching to {CAMERAS.find(c => c.id === COMBINED_CAMERAS[(combinedIdx + 1) % COMBINED_CAMERAS.length])?.label} in_
+                            Switching to {allCameras.find(c => c.id === COMBINED_CAMERAS[(combinedIdx + 1) % COMBINED_CAMERAS.length])?.label} in_
                             <span style={{ fontWeight: 700, color: '#f0c040', fontFamily: theme.fontMono }}>
                                 {switchMM}:{switchSS}
                             </span>

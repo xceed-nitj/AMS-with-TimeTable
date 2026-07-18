@@ -1,6 +1,7 @@
 # rtsp_routes.py
 
 import os
+import shutil
 import re
 import uuid
 import json
@@ -2082,6 +2083,7 @@ class RecordRequest(BaseModel):
 class StopRecordRequest(BaseModel):
     recordingId: str
 
+
 @router.post("/start-recording")
 def start_recording(req: RecordRequest):
     rec_id     = str(uuid.uuid4())
@@ -2091,6 +2093,14 @@ def start_recording(req: RecordRequest):
     out_path   = os.path.join(RECORDINGS_DIR, filename)
 
     fmt = req.format if req.format in ("video+audio", "video", "audio") else "video+audio"
+
+    if shutil.which("ffmpeg") is None:
+        raise HTTPException(
+            status_code=500,
+            detail="ffmpeg was not found on PATH for the python-ml-service process. "
+                "Install ffmpeg and ensure it's on PATH for the environment/venv "
+                "this service actually runs in, then restart the service.",
+        )
 
     cmd = ["ffmpeg", "-y", "-rtsp_transport", "tcp", "-i", req.rtspUrl]
 
@@ -2105,8 +2115,15 @@ def start_recording(req: RecordRequest):
         cmd += ["-t", str(req.durationSec)]
     cmd.append(out_path)
 
-    proc = subprocess.Popen(cmd, stdin=subprocess.PIPE,
-                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+        proc = subprocess.Popen(cmd, stdin=subprocess.PIPE,
+                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except FileNotFoundError:
+        raise HTTPException(
+            status_code=500,
+            detail="ffmpeg was not found when trying to start recording. "
+                "Install ffmpeg and ensure it's on PATH for this process, then restart the service.",
+        )
     with _rec_lock:
         _recordings[rec_id] = {
             "proc": proc, "path": out_path,

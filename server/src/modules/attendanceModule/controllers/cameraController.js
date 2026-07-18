@@ -569,6 +569,15 @@ function sendKnownError(res, error) {
     if (error.name === 'ValidationError' || error.name === 'CastError') {
         return res.status(400).json({ error: error.message });
     }
+    // Forward the real upstream status/message when this was an axios call
+    // to the ML service that came back with a non-2xx response, instead of
+    // flattening every such case to a generic 500 (which previously hid,
+    // e.g., a genuine 503/504 from the ML service behind an unhelpful
+    // "Request failed with status code 503" 500 response).
+    if (error.response) {
+        const detail = error.response.data?.detail || error.response.data?.error || error.response.data?.message;
+        return res.status(error.response.status || 500).json({ error: detail || error.message });
+    }
     return res.status(500).json({ error: error.message });
 }
 
