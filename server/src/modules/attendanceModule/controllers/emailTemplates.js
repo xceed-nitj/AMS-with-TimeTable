@@ -211,6 +211,49 @@ function embeddingProgressTemplate({ dept, semesterGroups }) {
   `;
 }
 
+// Scheduled uptime digest (8:30 / 13:30 IST on working days) — one table
+// covering every probed service, unlike serverDownTemplate which is a single
+// transition alert for one service. `results` rows: { name, target, status
+// ('up'|'down'|'not_configured'), error }.
+function uptimeDigestTemplate({ checkedAt, results }) {
+  const rowsHtml = results
+    .map((r) => {
+      const statusHtml =
+        r.status === 'up'
+          ? '<strong style="color:#2e7d32;">✅ Online</strong>'
+          : r.status === 'not_configured'
+            ? '<span style="color:#888;">Not configured</span>'
+            : '<strong style="color:#c62828;">⚠️ DOWN</strong>';
+      return `
+      <tr>
+        <td style="padding:4px 12px 4px 0;"><strong>${r.name}</strong></td>
+        <td style="padding:4px 12px 4px 0;">${r.target || '—'}</td>
+        <td style="padding:4px 12px 4px 0;">${statusHtml}</td>
+        <td style="padding:4px 12px 4px 0;color:#888;">${r.error || ''}</td>
+      </tr>`;
+    })
+    .join('');
+
+  return `
+    <h3>⚠️ Scheduled Status Check — Service(s) Down</h3>
+    <p>The twice-daily scheduled status check (8:30 AM / 1:30 PM on working days) found one or more services unreachable.</p>
+    <table style="border-collapse:collapse;font-size:14px;">
+      <thead>
+        <tr style="color:#888;text-align:left;">
+          <th style="padding:4px 12px 4px 0;">Service</th>
+          <th style="padding:4px 12px 4px 0;">Target</th>
+          <th style="padding:4px 12px 4px 0;">Status</th>
+          <th style="padding:4px 12px 4px 0;">Details</th>
+        </tr>
+      </thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>
+    <p><strong>Checked at:</strong> ${checkedAt}</p>
+    <hr/>
+    <p style="color:#888;font-size:12px;">This is an automated alert from iAMS. Do not reply to this email.</p>
+  `;
+}
+
 module.exports = {
   serverDownTemplate,
   serverRecoveredTemplate,
@@ -220,4 +263,5 @@ module.exports = {
   duplicateAttendanceTemplate,
   dailySummaryTemplate,
   embeddingProgressTemplate,
+  uptimeDigestTemplate,
 };

@@ -111,6 +111,26 @@ async function notifyErpRecovered() {
   );
 }
 
+// Scheduled twice-daily uptime digest (see uptimeDigestScheduler.js) — a
+// schedule-triggered mechanism, distinct from the edge-triggered
+// notifyServerDown/notifyErpDown path driven by healthRoutes.js transitions.
+// Reuses the serverDown recipient opt-in so admins configure recipients in
+// one place; no cooldownKey because the two fixed daily fires can never spam.
+async function notifyUptimeDigest({ results }) {
+  const downNames = results
+    .filter((r) => r.status === "down")
+    .map((r) => r.name)
+    .join(", ");
+  await sendAlert(
+    `⚠️ iAMS Scheduled Status Check: ${downNames} DOWN`,
+    templates.uptimeDigestTemplate({
+      checkedAt: new Date().toLocaleString(),
+      results,
+    }),
+    null, "serverDown", null
+  );
+}
+
 async function notifyNoReportSaved({ batch, subject, faculty, room, date, timeSlot, dept }) {
   await sendAlert(
     `⚠️ iAMS Alert: No report saved — ${subject || "Unknown subject"}`,
@@ -186,6 +206,7 @@ module.exports = {
   notifyServerRecovered,
   notifyErpDown,
   notifyErpRecovered,
+  notifyUptimeDigest,
   notifyNoReportSaved,
   notifyClassBunk,
   notifyLowConfidence,
