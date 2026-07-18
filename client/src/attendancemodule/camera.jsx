@@ -768,6 +768,7 @@ export default function Camera() {
                                             <a
                                                 className="camera-mini-btn"
                                                 title="Preview"
+                                                target='_blank'
                                                 href={`/camera/preview?cameraId=${encodeURIComponent(camera.cameraId)}`}
                                                 style={{ textDecoration: 'none' }}
                                             >
