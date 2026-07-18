@@ -250,6 +250,16 @@ mongoose
       startErpPushRetryScheduler();
       startErpNightlyRetryScheduler();
 
+      // ── Scheduled Uptime Digest ───────────────────────────────
+      // Twice a day (08:30 & 13:30 IST, Mon–Fri) probes the Client,
+      // Node server public URL, ERP, and H100 ML service, and emails one
+      // consolidated Server Down digest if any are unreachable. Distinct
+      // from the edge-triggered 30s health monitor in healthRoutes.js —
+      // recipients come from the same serverDown opt-in. Probe targets are
+      // CLIENT_HEALTH_URL / SERVER_HEALTH_URL (plus ML_SERVICE_URL / ERP_API_URL).
+      const { startUptimeDigestScheduler } = require('./modules/attendanceModule/controllers/uptimeDigestScheduler');
+      startUptimeDigestScheduler();
+
     });
     server.setTimeout(600000); // 10 min — prevents Node killing long SSE connections
     server.keepAliveTimeout = 620000;
