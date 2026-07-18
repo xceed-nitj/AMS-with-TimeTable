@@ -49,6 +49,12 @@ async function getHealthStatus() {
   try {
     const mlHealth = await mlClient.healthCheck();
     response.services.ml.status = "online";
+    // Recovery: only mail if we had previously alerted that it went down.
+    if (prevMlStatus === "offline" && !mlAlertInProgress) {
+      mlAlertInProgress = true;
+      await alertNotifier.notifyServerRecovered("ML Service");
+      mlAlertInProgress = false;
+    }
     prevMlStatus = "online";
     response.services.ml.latency = Date.now() - mlStart;
     // Per-model ONNX/index availability on the ML machine (H100) — surfaced
@@ -81,6 +87,12 @@ async function getHealthStatus() {
       await axios.get(ERP_API_URL, { timeout: 5000, validateStatus: () => true });
       response.services.erp.status = "online";
       response.services.erp.latency = Date.now() - erpStart;
+      // Recovery: only mail if we had previously alerted that it went down.
+      if (prevErpStatus === "offline" && !erpAlertInProgress) {
+        erpAlertInProgress = true;
+        await alertNotifier.notifyErpRecovered();
+        erpAlertInProgress = false;
+      }
       prevErpStatus = "online";
     } catch (error) {
       response.services.erp.status = "offline";

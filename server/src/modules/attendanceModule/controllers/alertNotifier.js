@@ -84,6 +84,14 @@ async function notifyServerDown(serviceName, details = "") {
   );
 }
 
+async function notifyServerRecovered(serviceName) {
+  await sendAlert(
+    `✅ iAMS Alert: ${serviceName} is back up`,
+    templates.serverRecoveredTemplate(serviceName),
+    null, "serverDown", null
+  );
+}
+
 // Separate alertKey from notifyServerDown (ML/camera) so recipients can be
 // configured independently in the Email Notifications tab — a dept
 // coordinator may want ML-down alerts but not ERP-down, or vice versa.
@@ -91,6 +99,14 @@ async function notifyErpDown(details = "") {
   await sendAlert(
     `⚠️ iAMS Alert: ERP Server is down`,
     templates.serverDownTemplate("ERP Server", details),
+    null, "erpDown", null
+  );
+}
+
+async function notifyErpRecovered() {
+  await sendAlert(
+    `✅ iAMS Alert: ERP Server is back up`,
+    templates.serverRecoveredTemplate("ERP Server"),
     null, "erpDown", null
   );
 }
@@ -147,15 +163,36 @@ async function notifyEmbeddingProgress({ dept, semesterGroups }) {
   );
 }
 
+function setupServerLifecycleAlerts() {
+  // Notify that the server is up
+  notifyServerRecovered("iAMS Node Server").catch(err => console.error("Startup alert failed:", err));
+
+  const gracefulShutdown = async (signal) => {
+    console.log(`\n[Server] Received ${signal}. Shutting down gracefully...`);
+    try {
+      await notifyServerDown("iAMS Node Server", `Shutting down due to ${signal}`);
+    } catch (err) {
+      console.error("Failed to send shutdown alert:", err);
+    }
+    process.exit(0);
+  };
+
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+}
+
 module.exports = {
   notifyServerDown,
+  notifyServerRecovered,
   notifyErpDown,
+  notifyErpRecovered,
   notifyNoReportSaved,
   notifyClassBunk,
   notifyLowConfidence,
   notifyDuplicateAttendance,
   notifyDailySummary,
   notifyEmbeddingProgress,
+  setupServerLifecycleAlerts,
   // Exposed for unit tests
   shouldSend,
   getRecipients,
