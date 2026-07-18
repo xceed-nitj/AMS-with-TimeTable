@@ -19,6 +19,7 @@ router.delete('/recording/schedule/:scheduleId', (req, res) => cameraController.
 // ── Static named routes ────────────────────────────────────────────────────
 router.post('/', (req, res) => cameraController.createCamera(req, res));
 router.get('/', (req, res) => cameraController.listCameras(req, res));
+router.get('/rooms', (req, res) => cameraController.listCameraRooms(req, res));
 router.get('/preview/stream', (req, res) => cameraController.proxyPreviewStream(req, res));
 router.post('/preview/stop', (req, res) => cameraController.stopPreview(req, res));
 router.get('/by-camera-id/:cameraId', (req, res) => cameraController.getCameraByCameraId(req, res));

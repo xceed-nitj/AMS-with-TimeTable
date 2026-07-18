@@ -63,6 +63,36 @@ describe("cameras CRUD", () => {
     expect(res.body[0].cameraId).toBe("CAM1");
   });
 
+  it("lists only distinct rooms that have registered cameras", async () => {
+    await Camera.create([
+      { ...cameraPayload(), building: "Block A" },
+      {
+        ...cameraPayload({
+          cameraId: "CAM2",
+          roomId: "R102",
+          position: "front-right",
+          streamUrl: "rtsp://example/cam2",
+          ipAddress: "10.0.0.2",
+        }),
+        building: "Block B",
+      },
+      {
+        ...cameraPayload({
+          cameraId: "CAM3",
+          position: "front-right",
+          streamUrl: "rtsp://example/cam3",
+          ipAddress: "10.0.0.3",
+        }),
+        building: "Block A",
+      },
+    ]);
+
+    const res = await request(app).get(`${BASE}/rooms`).set("Cookie", authCookie());
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ rooms: ["R101", "R102"] });
+  });
+
   it("updates a camera by id", async () => {
     await MasterRoom.create({ room: "R101", type: "classroom", building: "Block A" });
     const camera = await Camera.create({ ...cameraPayload(), building: "Block A" });

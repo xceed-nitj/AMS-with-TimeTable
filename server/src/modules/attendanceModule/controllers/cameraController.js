@@ -156,6 +156,20 @@ class CameraController {
         }
     }
 
+    async listCameraRooms(req, res) {
+        try {
+            const roomIds = await Camera.distinct('roomId');
+            const rooms = roomIds
+                .map((roomId) => String(roomId || '').trim().toUpperCase())
+                .filter(Boolean)
+                .sort((a, b) => a.localeCompare(b));
+
+            return res.json({ rooms });
+        } catch (error) {
+            return sendKnownError(res, error);
+        }
+    }
+
     async getCameraById(req, res) {
         try {
             const { id } = req.params;
