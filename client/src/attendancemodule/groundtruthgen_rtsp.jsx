@@ -2,7 +2,7 @@
 // Live RTSP stream ground truth acquisition — select camera, start/stop,
 // auto-stops when every detected person has reached the target image count.
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import getEnvironment from '../getenvironment';
 import { API_BASE, DEGREES, theme, styles, cssReset } from './config';
 import { useDepartments } from './useDepartments';
@@ -10,31 +10,13 @@ import { useBatchYears } from './useBatchYears';
 
 const _apiUrl    = getEnvironment();
 const CAMERA_API = `${_apiUrl}/attendancemodule/cameras`;
-
-// ── Truth Microservice Endpoints Mapped Securely ──
-const TIMETABLE_API      = `${_apiUrl}/timetablemodule/timetable`;
-const CLASSTIMETABLE_API = `${_apiUrl}/timetablemodule/tt`;
-const MASTERSEM_API      = `${_apiUrl}/timetablemodule/mastersem`;
-const LOCK_API           = `${_apiUrl}/timetablemodule/lock`;
+const CAMERA_ROOMS_API = `${CAMERA_API}/rooms`;
 
 const fetch = (input, init = {}) => window.fetch(input, {
     credentials: 'include',
     ...init,
 });
 
-// ─── Single-camera mode's camera list is now fetched dynamically from the
-// camera registry (CAMERA_API), the same way Room Mode already does — see
-// `allCameras` state inside the component. This used to be a hardcoded
-// array here, which meant newly registered cameras never appeared in this
-// mode even though the issue requires new cameras to appear automatically.
-
-// ─── Combined-mode camera pair ────────────────────────────────────────────────
-// These must match real `cameraId` values from the camera registry (the
-// same strings you'd see in the Room Mode camera list / camera registry
-// API responses) — previously this referenced fake IDs ('cam_side',
-// 'cam_lab1') that only matched the now-removed hardcoded CAMERAS array,
-// so combined mode would silently break once that array was removed.
-const COMBINED_CAMERAS = ['LT103-L', 'LT103-R'];    // LT103L ↔ LT103R
 const COMBINED_SWITCH_INTERVAL = 5 * 60;            // 5 minutes in seconds
 
 const TARGET_OPTIONS = [
@@ -206,40 +188,14 @@ function extractSSEEvents(buffer) {
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
-export default function GroundTruthRTSP({ fixedDepartment = '', fixedRoomDepartment = '' }) {
+export default function GroundTruthRTSP({ fixedDepartment = '' }) {
     const [degree,     setDegree]     = useState('BTECH');
     const [degrees, setDegrees] = useState([]);
     const [department, setDepartment] = useState(fixedDepartment);
     const { departments, deptLoading, deptError } = useDepartments();
     const { batchYears, batchYearsLoading } = useBatchYears();
     const [year,       setYear]       = useState('');
-
-    // Single-camera mode's camera list — fetched from the same registry
-    // Room Mode already uses (CAMERA_API), so a newly added camera shows
-    // up here automatically too, with no code change needed.
-    const [allCameras,     setAllCameras]     = useState([]);
-    const [allCamerasLoad, setAllCamerasLoad] = useState(true);
     const [cameraId,   setCameraId]   = useState('');
-
-    useEffect(() => {
-        let cancelled = false;
-        setAllCamerasLoad(true);
-        fetch(CAMERA_API)
-            .then((r) => r.json())
-            .then((data) => {
-                if (cancelled) return;
-                const list = (Array.isArray(data) ? data : []).map((cam) => ({
-                    id:    cam.cameraId || cam._id,
-                    label: `${cam.cameraId || 'Camera'}${cam.roomId ? ` — ${cam.roomId}` : ''}${cam.position ? ` (${cam.position})` : ''}`,
-                    url:   cam.streamUrl,
-                }));
-                setAllCameras(list);
-                setCameraId((prev) => prev || list[0]?.id || '');
-            })
-            .catch((err) => console.error('Failed to fetch cameras:', err))
-            .finally(() => { if (!cancelled) setAllCamerasLoad(false); });
-        return () => { cancelled = true; };
-    }, []);
 
     const [detSize,    setDetSize]    = useState(320);
     const [frameSkip,  setFrameSkip]  = useState(10);
@@ -263,8 +219,9 @@ export default function GroundTruthRTSP({ fixedDepartment = '', fixedRoomDepartm
     const combinedTimerRef   = useRef(null);   
     const combinedAbortRef   = useRef(false);  
 
-    const [timetableRooms,    setTimetableRooms]    = useState([]);
-    const [allotmentLoading,  setAllotmentLoading]  = useState(false);
+    const [registeredRooms,   setRegisteredRooms]   = useState([]);
+    const [registeredCameras, setRegisteredCameras] = useState([]);
+    const [roomsLoading,      setRoomsLoading]      = useState(false);
     const [selectedRoom,      setSelectedRoom]      = useState('');
 
     const [roomCameras,   setRoomCameras]   = useState([]);   
@@ -311,122 +268,43 @@ export default function GroundTruthRTSP({ fixedDepartment = '', fixedRoomDepartm
         clearInterval(roomModeTimer.current);
     }, [clearRetry]);
 
-    // ── HARVEST ENTRIES DYNAMICALLY FROM ACTIVE SESSION ALLOTMENTS ──
+    // ── LOAD ONLY ROOMS THAT HAVE CAMERAS IN THE REGISTRY ────────────
     useEffect(() => {
-        const roomDepartment = fixedRoomDepartment || department;
-        if (!roomDepartment) { setTimetableRooms([]); return; }
-
-        const normDept = (d) =>
-            String(d || '').trim().toLowerCase().replace(/[\s_\-]+/g, '');
-
-        const targetNorm = normDept(roomDepartment);
-        const deptSpaces = roomDepartment.replace(/_/g, ' ');
-
         const run = async () => {
             try {
-                setAllotmentLoading(true);
-                console.log('[RoomFetch] Harvesting allotments for dept=%s', roomDepartment);
+                setRoomsLoading(true);
+                const [roomsResponse, camerasResponse] = await Promise.all([
+                    fetch(CAMERA_ROOMS_API),
+                    fetch(CAMERA_API),
+                ]);
+                const roomData = roomsResponse.ok ? await roomsResponse.json() : { rooms: [] };
+                const cameraData = camerasResponse.ok ? await camerasResponse.json() : [];
+                const cameras = (Array.isArray(cameraData) ? cameraData : [])
+                    .filter(camera => camera?.streamUrl)
+                    .map(camera => ({
+                        id: camera._id || camera.cameraId,
+                        label: `${camera.cameraId} — ${camera.roomId} (${camera.position})`,
+                        url: camera.streamUrl,
+                    }));
 
-                const sessData = await fetch(
-                    `${TIMETABLE_API}/sess/allsessanddept`
-                ).then(r => r.json());
-
-                const currentSess = (sessData?.uniqueSessions || []).find(s => s.currentSession === true);
-                if (!currentSess?.session) { setTimetableRooms([]); return; }
-
-                const allCodes = await fetch(
-                    `${TIMETABLE_API}/getallcodes/${encodeURIComponent(currentSess.session)}`
-                ).then(r => r.json());
-
-                const match = (Array.isArray(allCodes) ? allCodes : []).find(t => normDept(t.dept) === targetNorm);
-                const code = match?.code;
-                if (!code) { setTimetableRooms([]); return; }
-
-                const semData = await fetch(
-                    `${MASTERSEM_API}/dept/${encodeURIComponent(deptSpaces)}`
-                ).then(r => r.json());
-
-                const sems = (Array.isArray(semData) ? semData : []).map(s => s.sem).filter(Boolean);
-                if (sems.length === 0) { setTimetableRooms([]); return; }
-
-                const collectedEntries = [];
-                const sessionStartYear = parseInt(currentSess.session.split('-')[0]) || 2025;
-
-                const walk = (node, semDegree, calculatedBatchYear, semName) => {
-                    if (!node || typeof node !== 'object') return;
-                    if (Array.isArray(node)) { node.forEach(n => walk(n, semDegree, calculatedBatchYear, semName)); return; }
-                    if ('room' in node && node.room) {
-                        collectedEntries.push({
-                            roomName: String(node.room).trim().toUpperCase(),
-                            degree: semDegree,
-                            batchYear: calculatedBatchYear,
-                            sem: semName
-                        });
-                    }
-                    Object.values(node).forEach(n => walk(n, semDegree, calculatedBatchYear, semName));
-                };
-
-                await Promise.all(sems.map(async (sem) => {
-                    try {
-                        const semUpper = sem.toUpperCase();
-                        let semDegree = 'BTECH';
-                        if (semUpper.includes('M.TECH') || semUpper.includes('MTECH')) {
-                            semDegree = 'MTECH';
-                        } else if (semUpper.includes('PHD')) {
-                            semDegree = 'PHD';
-                        }
-
-                        const semNumMatch = semUpper.match(/\d+/);
-                        const semNum = semNumMatch ? parseInt(semNumMatch[0]) : 0;
-                        const yearOfStudy = semNum > 0 ? Math.ceil(semNum / 2) : 1;
-                        const calculatedBatchYear = String(sessionStartYear - (yearOfStudy - 1));
-
-                        const ttData = await fetch(
-                            `${CLASSTIMETABLE_API}/viewclasstt/${encodeURIComponent(code)}/${encodeURIComponent(sem)}`
-                        ).then(r => r.json());
-                        walk(ttData, semDegree, calculatedBatchYear, sem);
-
-                        const lockData = await fetch(
-                            `${LOCK_API}/lockclasstt/${encodeURIComponent(code)}/${encodeURIComponent(sem)}`
-                        ).then(r => r.json());
-                        walk(lockData, semDegree, calculatedBatchYear, sem);
-                    } catch (e) { console.warn('[RoomFetch] Bypassed segment exception:', sem, e); }
-                }));
-
-                setTimetableRooms(collectedEntries);
-            } catch (e) {
-                console.error('[RoomFetch] Matrix exception:', e);
-                setTimetableRooms([]);
+                setRegisteredRooms(Array.isArray(roomData.rooms) ? roomData.rooms : []);
+                setRegisteredCameras(cameras);
+                setCameraId(previous => (
+                    cameras.some(camera => camera.id === previous)
+                        ? previous
+                        : (cameras[0]?.id || '')
+                ));
+            } catch {
+                setRegisteredRooms([]);
+                setRegisteredCameras([]);
+                setCameraId('');
             } finally {
-                setAllotmentLoading(false);
+                setRoomsLoading(false);
             }
         };
 
         run();
-    }, [fixedRoomDepartment, department]);
-
-    // STABLE REFERENCE ALLOTMENT MEMOIZATION
-    const currentBatchRoomNames = useMemo(() => {
-        return Array.from(
-            new Set(
-                timetableRooms
-                    .filter(r => r.degree === degree && (year ? r.batchYear === year : true))
-                    .map(r => r.roomName)
-            )
-        ).sort();
-    }, [timetableRooms, degree, year]);
-    
-    const otherRooms = useMemo(() => {
-        const currentSet = new Set(currentBatchRoomNames);
-
-        return Array.from(
-          new Set(
-              timetableRooms
-                  .map(r => r.roomName)
-                  .filter(room => !currentSet.has(room))
-              )
-          ).sort();
-        }, [timetableRooms, currentBatchRoomNames]);
+    }, []);
 
     // Fetch cameras for the strictly selected allotment string
     useEffect(() => {
@@ -451,7 +329,7 @@ export default function GroundTruthRTSP({ fixedDepartment = '', fixedRoomDepartm
         ? `${degree}_${department}_${year}`.toUpperCase()
         : null;
 
-    const selectedCamera = allCameras.find(c => c.id === cameraId);
+    const selectedCamera = registeredCameras.find(c => c.id === cameraId);
 
     const showToast = (msg, type = 'success') => {
         setToast({ msg, type });
@@ -480,6 +358,7 @@ export default function GroundTruthRTSP({ fixedDepartment = '', fixedRoomDepartm
         if (!batchName) { showToast('Fill in Degree, Department and Year', 'error'); return; }
 
         const cam = overrideCamera || selectedCamera;
+        if (!cam) { showToast('Select a registered camera', 'error'); return; }
 
         clearRetry();
         setStatus('running');
@@ -747,15 +626,15 @@ export default function GroundTruthRTSP({ fixedDepartment = '', fixedRoomDepartm
         clearRetry();
 
         const runCycle = async (startIdx) => {
+            const combinedCameras = registeredCameras.slice(0, 2);
             let idx = startIdx;
 
             while (!combinedAbortRef.current) {
-                const camId = COMBINED_CAMERAS[idx % COMBINED_CAMERAS.length];
-                const cam   = allCameras.find(c => c.id === camId);
+                const cam = combinedCameras[idx % combinedCameras.length];
                 if (!cam) break;
 
-                setCombinedIdx(idx % COMBINED_CAMERAS.length);
-                setCameraId(camId);
+                setCombinedIdx(idx % combinedCameras.length);
+                setCameraId(cam.id);
                 addLog(`🔄 Combined mode — switching to ${cam.label}`, '#f0c040');
 
                 setSwitchCountdown(COMBINED_SWITCH_INTERVAL);
@@ -800,7 +679,7 @@ export default function GroundTruthRTSP({ fixedDepartment = '', fixedRoomDepartm
         };
 
         runCycle(0);
-    }, [batchName, addLog, clearRetry, stopStream]);
+    }, [batchName, registeredCameras, addLog, clearRetry, stopStream]);
 
     const isRunning   = status === 'running';
     const isStopping  = status === 'stopping';
@@ -818,7 +697,7 @@ export default function GroundTruthRTSP({ fixedDepartment = '', fixedRoomDepartm
     const switchSS = String(switchCountdown % 60).padStart(2, '0');
 
     const combinedActiveCam = combinedMode
-        ? allCameras.find(c => c.id === COMBINED_CAMERAS[combinedIdx])
+        ? registeredCameras[combinedIdx]
         : null;
 
     const roomActiveCam = roomMode ? roomCameras[roomCamIdx] : null;
@@ -901,7 +780,7 @@ export default function GroundTruthRTSP({ fixedDepartment = '', fixedRoomDepartm
                     <label style={styles.label}>
                         Room
                         <span style={{ marginLeft: 6, fontSize: '10px', color: theme.textMuted, fontWeight: 400, textTransform: 'none' }}>
-                            — optional: automatically sourced from active session timetable allotments
+                            — optional: rooms with registered cameras
                         </span>
                     </label>
                     
@@ -909,50 +788,12 @@ export default function GroundTruthRTSP({ fixedDepartment = '', fixedRoomDepartm
                         value={selectedRoom}
                         onChange={e => { setSelectedRoom(e.target.value); setRoomMode(false); }}
                         style={styles.select}
-                        disabled={allotmentLoading || isRunning || isStopping || anyMode}
+                        disabled={roomsLoading || isRunning || isStopping || anyMode}
                     >
-                        <option value="">{!allotmentLoading ? "— No room (manual selection below) —" : "Loading..."}</option>
-                        {allotmentLoading ? (
-                            <option disabled>⏳ Fetching active session allotments…</option>
-                        ) : (
-                            <>
-                                {/* ── 🌟 PERFECTLY CONTEXT-TARGETED OPTGROUP DROPDOWN ENGINE ── */}
-                                {currentBatchRoomNames.length > 0 ? (
-                                    <>
-                                      <optgroup label={`── Allotted to ${degree} ${year ? 'Batch ' + year : ''}  ──`}>
-                                          {currentBatchRoomNames.map(room => (
-                                              <option key={room} value={room}>
-                                                  {room}
-                                              </option>
-                                          ))}
-                                      </optgroup>
-                                      {
-                                        !fixedDepartment && otherRooms.length > 0 && (
-                                          <optgroup label={`── Other Rooms ──`}>
-                                          {otherRooms.map(room => (
-                                              <option key={room} value={room}>
-                                                  {room}
-                                              </option>
-                                          ))}
-                                          </optgroup>
-                                        )
-                                      }
-                                    </>
-                                ) : 
-                                // If no rooms are there in currentBatchRoomNames this means
-                                // that otherRooms contains all the rooms (otherRooms = timetableRooms - currentBatchRoomNames, so otherRooms is just Set of timetableRooms)
-                                // Hence we will show otherRooms for both Department and Admin
-                                (
-                                    <optgroup label={`── All Rooms ──`}>
-                                          {otherRooms.map(room => (
-                                              <option key={room} value={room}>
-                                                  {room}
-                                              </option>
-                                          ))}
-                                    </optgroup>
-                                )}
-                            </>
-                        )}
+                        <option value="">{roomsLoading ? 'Loading registered rooms…' : '— No room (manual selection below) —'}</option>
+                        {registeredRooms.map(room => (
+                            <option key={room} value={room}>{room}</option>
+                        ))}
                     </select>
 
                     {selectedRoom && (
@@ -979,7 +820,7 @@ export default function GroundTruthRTSP({ fixedDepartment = '', fixedRoomDepartm
                 <div style={{ marginBottom: 20 }}>
                     <label style={styles.label}>Camera</label>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
-                        {allCameras.map(cam => (
+                        {registeredCameras.map(cam => (
                             <button key={cam.id} onClick={() => setCameraId(cam.id)} title={cam.url} style={{
                                 padding: '7px 16px', borderRadius: 6, cursor: 'pointer',
                                 fontSize: '13px', fontWeight: 600, border: '1px solid',
@@ -991,6 +832,9 @@ export default function GroundTruthRTSP({ fixedDepartment = '', fixedRoomDepartm
                                 {cam.label}
                             </button>
                         ))}
+                        {!roomsLoading && registeredCameras.length === 0 && (
+                            <span style={{ color: theme.textMuted, fontSize: '12px' }}>No registered cameras found</span>
+                        )}
                     </div>
                     <div style={{ fontSize: '11px', color: theme.textMuted, marginTop: 5, fontFamily: theme.fontMono }}>
                         {selectedCamera?.url}
@@ -1083,6 +927,7 @@ export default function GroundTruthRTSP({ fixedDepartment = '', fixedRoomDepartm
                         }
                     }}
                     disabled={isRunning || isStopping || isRetrying || !batchName || anyMode
+                        || (!selectedRoom && !selectedCamera)
                         || (selectedRoom && roomCameras.length === 0 && !roomCamsLoad)}
                     style={{
                         ...styles.btnPrimary,
@@ -1110,10 +955,10 @@ export default function GroundTruthRTSP({ fixedDepartment = '', fixedRoomDepartm
                 {!selectedRoom && (
                 <button
                     onClick={handleStartCombined}
-                    disabled={isRunning || isStopping || isRetrying || !batchName || anyMode}
+                    disabled={isRunning || isStopping || isRetrying || !batchName || anyMode || registeredCameras.length < 2}
                     style={{
                         padding: '10px 24px', borderRadius: 8,
-                        cursor: (isRunning || isStopping || isRetrying || !batchName || anyMode) ? 'default' : 'pointer',
+                        cursor: (isRunning || isStopping || isRetrying || !batchName || anyMode || registeredCameras.length < 2) ? 'default' : 'pointer',
                         fontSize: '14px', fontWeight: 700,
                         border: 'none',
                         background: combinedMode
@@ -1139,7 +984,7 @@ export default function GroundTruthRTSP({ fixedDepartment = '', fixedRoomDepartm
                             }} />
                             Combined ({combinedActiveCam?.label}) {switchMM}:{switchSS}
                         </>
-                    ) : '🔄 Combined L ↔ R'}
+                    ) : '🔄 Combine First Two Cameras'}
                 </button>
                 )}
 
@@ -1175,7 +1020,7 @@ export default function GroundTruthRTSP({ fixedDepartment = '', fixedRoomDepartm
                             Combined Mode — {combinedActiveCam?.label}
                         </div>
                         <div style={{ fontSize: '11px', color: theme.textMuted, marginTop: 2 }}>
-                            Switching to {allCameras.find(c => c.id === COMBINED_CAMERAS[(combinedIdx + 1) % COMBINED_CAMERAS.length])?.label} in_
+                            Switching to {registeredCameras[(combinedIdx + 1) % Math.min(2, registeredCameras.length)]?.label} in_
                             <span style={{ fontWeight: 700, color: '#f0c040', fontFamily: theme.fontMono }}>
                                 {switchMM}:{switchSS}
                             </span>
