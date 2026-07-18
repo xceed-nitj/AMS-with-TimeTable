@@ -20,6 +20,7 @@ const rateLimit = require("express-rate-limit");
 require("./modules/attendanceModule/controllers/mlServiceAuth");
 const v1router = require("./routes");
 const { startAutoScheduler } = require('./modules/attendanceModule/controllers/autoAttendanceScheduler');
+const alertNotifier = require("./modules/attendanceModule/controllers/alertNotifier");
 
 process.on('uncaughtException',  (err) => console.error('UNCAUGHT EXCEPTION:', err));
 process.on('unhandledRejection', (err) => console.error('UNHANDLED REJECTION:', err));
@@ -195,6 +196,9 @@ mongoose
     const PORT = process.env.PORT || 8010;
     const server = app.listen(PORT, () => {
       console.log(`Server started on port ${PORT}`);
+      
+      // Register lifecycle alerts (startup & shutdown)
+      alertNotifier.setupServerLifecycleAlerts();
       
      // ── Auto Attendance Scheduler ─────────────────────────────
       // No args needed — rooms, periods, and run settings are now read

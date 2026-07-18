@@ -12,6 +12,16 @@ function serverDownTemplate(serviceName, details = '') {
   `;
 }
 
+function serverRecoveredTemplate(serviceName) {
+  return `
+    <h3>✅ ${serviceName} is Back Up</h3>
+    <p>The <strong>${serviceName}</strong> service is reachable again and has recovered.</p>
+    <p><strong>Time:</strong> ${new Date().toLocaleString()}</p>
+    <hr/>
+    <p style="color:#888;font-size:12px;">This is an automated alert from iAMS. Do not reply to this email.</p>
+  `;
+}
+
 function noReportSavedTemplate({ batch, subject, faculty, room, date, timeSlot }) {
   return `
     <h3>⚠️ No Report Saved</h3>
@@ -203,6 +213,7 @@ function embeddingProgressTemplate({ dept, semesterGroups }) {
 
 module.exports = {
   serverDownTemplate,
+  serverRecoveredTemplate,
   noReportSavedTemplate,
   classBunkTemplate,
   lowConfidenceTemplate,
