@@ -1,299 +1,344 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
+  Alert,
+  AlertIcon,
   Box,
-  Input,
   Button,
-  VStack,
   Checkbox,
-  Text,
-  Heading,
+  Container,
+  Divider,
+  Flex,
   FormControl,
+  FormHelperText,
   FormLabel,
+  Heading,
+  Icon,
+  IconButton,
+  Input,
   Select,
+  SimpleGrid,
+  Text,
+  useColorModeValue,
+  useToast,
 } from '@chakra-ui/react';
+import { FiArrowLeft, FiMail, FiUserPlus } from 'react-icons/fi';
 import getEnvironment from '../getenvironment';
 
-const RegistrationForm = () => {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    confirmPassword: '',
-    dept: '',
-    roles: [], // Set a default role or leave it empty
-  });
+const apiUrl = getEnvironment();
 
+const ROLE_GROUPS = [
+  {
+    group: 'Platform',
+    roles: [
+      { value: 'admin', label: 'XCEED Admin' },
+      { value: 'EO', label: 'Event Organiser' },
+      { value: 'CM', label: 'Event Certificate Manager' },
+      { value: 'PRM', label: 'Paper Review Manager' },
+    ],
+  },
+  {
+    group: 'Time Table',
+    roles: [
+      { value: 'ITTC', label: 'Institute Time Table Coordinator' },
+      { value: 'DTTI', label: 'Department Time Table Coordinator' },
+    ],
+  },
+  {
+    group: 'Attendance (IAMS)',
+    roles: [
+      { value: 'iams-admin', label: 'IAMS Admin' },
+      { value: 'iams-dept-admin', label: 'IAMS Department Admin' },
+    ],
+  },
+  {
+    group: 'Diabetics Module',
+    roles: [
+      { value: 'dm-admin', label: 'Admin' },
+      { value: 'doctor', label: 'Doctor' },
+      { value: 'patient', label: 'Patient' },
+    ],
+  },
+];
+
+const initialForm = {
+  email: '',
+  password: '',
+  confirmPassword: '',
+  dept: '',
+  roles: [],
+};
+
+const RegistrationForm = () => {
+  const navigate = useNavigate();
+  const toast = useToast();
+
+  const [formData, setFormData] = useState(initialForm);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [createdEmail, setCreatedEmail] = useState('');
   const [departments, setDepartments] = useState([]);
   const [departmentsLoading, setDepartmentsLoading] = useState(true);
   const [departmentError, setDepartmentError] = useState('');
 
-  const apiUrl = getEnvironment();
+  const pageBg = useColorModeValue('gray.50', 'gray.900');
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const border = useColorModeValue('gray.200', 'gray.700');
+  const subColor = useColorModeValue('gray.600', 'gray.400');
+  const groupColor = useColorModeValue('gray.500', 'gray.400');
+  const iconBg = useColorModeValue('teal.50', 'teal.900');
+  const iconColor = useColorModeValue('teal.600', 'teal.300');
 
   useEffect(() => {
     let cancelled = false;
-
-    const fetchDepartments = async () => {
+    (async () => {
       try {
         const response = await fetch(
           `${apiUrl}/timetablemodule/timetable/sess/allsessanddept`,
           { credentials: 'include' },
         );
-        if (!response.ok) {
-          throw new Error('Failed to load departments');
-        }
-
+        if (!response.ok) throw new Error('Failed to load departments');
         const data = await response.json();
-        const uniqueDepartments = Array.from(
-          new Set(
-            (data.uniqueDept || [])
-              .map((department) => department?.trim())
-              .filter(Boolean),
-          ),
+        const unique = Array.from(
+          new Set((data.uniqueDept || []).map((d) => d?.trim()).filter(Boolean)),
         ).sort((a, b) => a.localeCompare(b));
-
         if (!cancelled) {
-          setDepartments(uniqueDepartments);
-          setDepartmentError(
-            uniqueDepartments.length ? '' : 'No departments found in the timetable.',
-          );
+          setDepartments(unique);
+          setDepartmentError(unique.length ? '' : 'No departments found in the timetable.');
         }
-      } catch (fetchError) {
-        if (!cancelled) {
-          setDepartmentError(fetchError.message);
-        }
+      } catch (err) {
+        if (!cancelled) setDepartmentError(err.message);
       } finally {
-        if (!cancelled) {
-          setDepartmentsLoading(false);
-        }
+        if (!cancelled) setDepartmentsLoading(false);
       }
-    };
-
-    fetchDepartments();
+    })();
     return () => {
       cancelled = true;
     };
-  }, [apiUrl]);
+  }, []);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
+  const setField = (name, value) =>
+    setFormData((prev) => ({ ...prev, [name]: value }));
 
-    // If the input is a checkbox, handle it differently
-    if (e.target.type === 'checkbox') {
-      // If the checkbox is checked, add the role to the array; otherwise, remove it
-      setFormData((prevData) => ({
-        ...prevData,
-        roles: e.target.checked
-          ? [...prevData.roles, value]
-          : prevData.roles.filter((role) => role !== value),
-      }));
-    } else {
-      setFormData((prevData) => ({
-        ...prevData,
-        [name]: value,
-      }));
-    }
-  };
+  const toggleRole = (role, checked) =>
+    setFormData((prev) => ({
+      ...prev,
+      roles: checked
+        ? [...prev.roles, role]
+        : prev.roles.filter((r) => r !== role),
+    }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
 
-    // Validation: Check if passwords match
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match.');
-      setSuccess(''); // Clear success message on error
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+      setError('Enter a valid email address.');
       return;
     }
-
-    // Validation: Check if password is at least 6 characters
     if (formData.password.length < 6) {
       setError('Password should be a minimum of 6 characters.');
-      setSuccess(''); // Clear success message on error
       return;
     }
-
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+    if (formData.roles.length === 0) {
+      setError('Select at least one role.');
+      return;
+    }
     if (formData.roles.includes('iams-dept-admin') && !formData.dept) {
       setError('Department is required for an IAMS Department Admin.');
-      setSuccess('');
       return;
     }
 
+    setSubmitting(true);
     try {
       const response = await fetch(`${apiUrl}/auth/register`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...formData, email: formData.email.trim() }),
         credentials: 'include',
       });
-
       const data = await response.json();
-
       if (!response.ok) {
-        setError(data.message || 'Network response was not ok');
-        setSuccess(''); // Clear success message on error
-        return;
+        throw new Error(data.message || 'Registration failed');
       }
-
-      setError(''); // Clear error on successful response
-      setSuccess(data.message); // Set success message
-    } catch (error) {
-      setError('Error occurred while processing the request.');
-      setSuccess(''); // Clear success message on error
-      console.error('Error:', error);
+      setCreatedEmail(formData.email.trim());
+      toast({ title: 'User created', status: 'success', duration: 4000, isClosable: true });
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSubmitting(false);
     }
   };
 
+  const resetForm = () => {
+    setFormData(initialForm);
+    setCreatedEmail('');
+    setError('');
+  };
+
   return (
-    <Box p={4}>
-      <VStack spacing={4} align="stretch">
-        <Heading as="h1" size="lg" textAlign="center" mb={4}>
-          Registration Form
-        </Heading>
-        <Input
-          type="email"
-          name="email"
-          placeholder="Email"
-          value={formData.email}
-          onChange={handleInputChange}
-        />
-        <Input
-          type="password"
-          name="password"
-          placeholder="Password (min. 6 characters)"
-          value={formData.password}
-          onChange={handleInputChange}
-        />
-        <Input
-          type="password"
-          name="confirmPassword"
-          placeholder="Confirm Password"
-          value={formData.confirmPassword}
-          onChange={handleInputChange}
-        />
-        <FormControl>
-          <FormLabel mb={1}>Department (optional)</FormLabel>
-          <Select
-            name="dept"
-            value={formData.dept}
-            onChange={handleInputChange}
-            placeholder={
-              departmentsLoading
-                ? 'Loading departments...'
-                : 'No department selected'
-            }
-            isDisabled={departmentsLoading || Boolean(departmentError)}
-          >
-            {departments.map((department) => (
-              <option key={department} value={department}>
-                {department}
-              </option>
-            ))}
-          </Select>
-          {departmentError && (
-            <Text color="red.500" fontSize="sm" mt={1}>
-              {departmentError}
+    <Box bg={pageBg} minH="100vh" py={{ base: 6, md: 10 }}>
+      <Container maxW="2xl">
+        {/* Header */}
+        <Flex align="center" gap={4} mb={8}>
+          <IconButton
+            aria-label="Go back"
+            icon={<FiArrowLeft />}
+            variant="ghost"
+            onClick={() => navigate(-1)}
+          />
+          <Flex align="center" justify="center" boxSize={12} borderRadius="lg" bg={iconBg} color={iconColor}>
+            <Icon as={FiUserPlus} boxSize={6} />
+          </Flex>
+          <Box>
+            <Heading as="h1" size="lg">
+              Create New User
+            </Heading>
+            <Text color={subColor} fontSize="sm">
+              The user receives a welcome email with a link to set their own password.
             </Text>
-          )}
-        </FormControl>
-        <VStack align="start" spacing={2}>
-          <Text>Select Role(s):</Text>
-          <Checkbox
-            name="ITTC"
-            value="ITTC"
-            isChecked={formData.roles.includes('ITTC')}
-            onChange={handleInputChange}
+          </Box>
+        </Flex>
+
+        {createdEmail ? (
+          /* Success state */
+          <Box bg={cardBg} borderWidth="1px" borderColor={border} borderRadius="xl" p={8} textAlign="center">
+            <Flex align="center" justify="center" boxSize={14} borderRadius="full" bg={iconBg} color={iconColor} mx="auto" mb={4}>
+              <Icon as={FiMail} boxSize={7} />
+            </Flex>
+            <Heading as="h2" size="md" mb={2}>
+              User created
+            </Heading>
+            <Text color={subColor} mb={6}>
+              An account for <strong>{createdEmail}</strong> has been created. A welcome
+              email with a password-setup link is on its way to them.
+            </Text>
+            <Flex justify="center" gap={3} wrap="wrap">
+              <Button colorScheme="teal" onClick={resetForm}>
+                Create Another User
+              </Button>
+              <Button variant="outline" onClick={() => navigate('/usermanagement')}>
+                Go to User Management
+              </Button>
+            </Flex>
+          </Box>
+        ) : (
+          /* Form */
+          <Box
+            as="form"
+            onSubmit={handleSubmit}
+            bg={cardBg}
+            borderWidth="1px"
+            borderColor={border}
+            borderRadius="xl"
+            p={{ base: 5, md: 8 }}
           >
-            Institute Time Table Coordinator
-          </Checkbox>
-          <Checkbox
-            name="DTTI"
-            value="DTTI"
-            isChecked={formData.roles.includes('DTTI')}
-            onChange={handleInputChange}
-          >
-            Department Time Table Coordinator
-          </Checkbox>
-          <Checkbox
-            name="CM"
-            value="CM"
-            isChecked={formData.roles.includes('CM')}
-            onChange={handleInputChange}
-          >
-            Event Certificate Manager
-          </Checkbox>
-          <Checkbox
-            name="admin"
-            value="admin"
-            isChecked={formData.roles.includes('admin')}
-            onChange={handleInputChange}
-          >
-            XCEED admin
-          </Checkbox>
-          <Checkbox
-            name="EO"
-            value="EO"
-            isChecked={formData.roles.includes('EO')}
-            onChange={handleInputChange}
-          >
-            Event Organiser
-          </Checkbox>
-          <Checkbox
-            name="PRM"
-            value="PRM"
-            isChecked={formData.roles.includes('PRM')}
-            onChange={handleInputChange}
-          >
-            Paper Review Manager
-          </Checkbox>
-          <Checkbox
-            name="doctor"
-            value="doctor"
-            isChecked={formData.roles.includes('doctor')}
-            onChange={handleInputChange}
-          >
-            Diabetics Module Doctor
-          </Checkbox>
-          <Checkbox
-            name="patient"
-            value="patient"
-            isChecked={formData.roles.includes('patient')}
-            onChange={handleInputChange}
-          >
-            Diabetics Module Patient
-          </Checkbox>
-          <Checkbox
-            name="dm-admin"
-            value="dm-admin"
-            isChecked={formData.roles.includes('dm-admin')}
-            onChange={handleInputChange}
-          >
-            Diabetics Module Admin
-          </Checkbox>
-          <Checkbox
-            name="iams-admin"
-            value="iams-admin"
-            isChecked={formData.roles.includes('iams-admin')}
-            onChange={handleInputChange}
-          >
-            IAMS Admin
-          </Checkbox>
-          <Checkbox
-            name="iams-dept-admin"
-            value="iams-dept-admin"
-            isChecked={formData.roles.includes('iams-dept-admin')}
-            onChange={handleInputChange}
-          >
-            IAMS Department Admin
-          </Checkbox>
-        </VStack>
-        <Button colorScheme="teal" onClick={handleSubmit}>
-          Register
-        </Button>
-        {error && <Text color="red.500">{error}</Text>}
-        {success && <Text color="green.500">{success}</Text>}
-      </VStack>
+            {error && (
+              <Alert status="error" borderRadius="md" fontSize="sm" mb={5}>
+                <AlertIcon />
+                {error}
+              </Alert>
+            )}
+
+            <FormControl isRequired mb={4}>
+              <FormLabel>Email</FormLabel>
+              <Input
+                type="email"
+                placeholder="user@nitj.ac.in"
+                value={formData.email}
+                onChange={(e) => setField('email', e.target.value)}
+              />
+            </FormControl>
+
+            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} mb={4}>
+              <FormControl isRequired>
+                <FormLabel>Password</FormLabel>
+                <Input
+                  type="password"
+                  placeholder="Min. 6 characters"
+                  value={formData.password}
+                  onChange={(e) => setField('password', e.target.value)}
+                />
+              </FormControl>
+              <FormControl isRequired>
+                <FormLabel>Confirm Password</FormLabel>
+                <Input
+                  type="password"
+                  placeholder="Re-enter password"
+                  value={formData.confirmPassword}
+                  onChange={(e) => setField('confirmPassword', e.target.value)}
+                />
+              </FormControl>
+            </SimpleGrid>
+
+            <FormControl mb={6} isRequired={formData.roles.includes('iams-dept-admin')}>
+              <FormLabel>Department</FormLabel>
+              <Select
+                value={formData.dept}
+                onChange={(e) => setField('dept', e.target.value)}
+                placeholder={departmentsLoading ? 'Loading departments…' : 'No department selected'}
+                isDisabled={departmentsLoading || Boolean(departmentError)}
+              >
+                {departments.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </Select>
+              <FormHelperText>
+                {departmentError ||
+                  'Optional — required only for the IAMS Department Admin role.'}
+              </FormHelperText>
+            </FormControl>
+
+            <Divider mb={5} />
+
+            <FormLabel mb={3}>Roles</FormLabel>
+            {ROLE_GROUPS.map(({ group, roles }) => (
+              <Box key={group} mb={4}>
+                <Text
+                  fontSize="xs"
+                  fontWeight="700"
+                  textTransform="uppercase"
+                  letterSpacing="wide"
+                  color={groupColor}
+                  mb={2}
+                >
+                  {group}
+                </Text>
+                <SimpleGrid columns={{ base: 1, sm: 2 }} spacingX={4} spacingY={2}>
+                  {roles.map(({ value, label }) => (
+                    <Checkbox
+                      key={value}
+                      colorScheme="teal"
+                      isChecked={formData.roles.includes(value)}
+                      onChange={(e) => toggleRole(value, e.target.checked)}
+                    >
+                      {label}
+                    </Checkbox>
+                  ))}
+                </SimpleGrid>
+              </Box>
+            ))}
+
+            <Button
+              type="submit"
+              colorScheme="teal"
+              width="100%"
+              mt={4}
+              size="lg"
+              leftIcon={<FiUserPlus />}
+              isLoading={submitting}
+            >
+              Create User
+            </Button>
+          </Box>
+        )}
+      </Container>
     </Box>
   );
 };

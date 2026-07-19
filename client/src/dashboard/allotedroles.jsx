@@ -1,271 +1,273 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
-  ChakraProvider,
-  Container,
   Box,
-  Text,
-  VStack,
-  Spinner,
-  SimpleGrid,
-  Card,
-  CardHeader,
-  CardBody,
-  CardFooter,
-  Heading,
-  Button,
-  Badge,
+  Container,
   Flex,
-  Link as ChakraLink,
+  Heading,
+  Icon,
+  SimpleGrid,
+  Spinner,
+  Text,
+  useColorModeValue,
 } from '@chakra-ui/react';
+import {
+  FiActivity,
+  FiArrowRight,
+  FiAward,
+  FiCalendar,
+  FiFileText,
+  FiHeart,
+  FiMic,
+  FiShield,
+  FiUser,
+  FiUserCheck,
+} from 'react-icons/fi';
 import getEnvironment from '../getenvironment';
-import { Navigate, useNavigate } from 'react-router-dom';
+
 const apiUrl = getEnvironment();
+
+const ROLE_META = {
+  ITTC: {
+    name: 'Institute Time Table Coordinator',
+    link: '/tt/admin',
+    description: 'Manage institute-wide timetables',
+    icon: FiCalendar,
+    accent: 'blue',
+  },
+  DTTI: {
+    name: 'Department Time Table Coordinator',
+    link: '/tt/dashboard',
+    description: 'Manage department timetables',
+    icon: FiCalendar,
+    accent: 'blue',
+  },
+  CM: {
+    name: 'Event Certificate Manager',
+    link: '/cm/dashboard',
+    description: 'Create and manage certificates',
+    icon: FiAward,
+    accent: 'green',
+  },
+  admin: {
+    name: 'XCEED Super User',
+    link: '/superadmin',
+    description: 'Full system administration',
+    icon: FiShield,
+    accent: 'red',
+  },
+  EO: {
+    name: 'Event Organiser',
+    link: '/cf/dashboard',
+    description: 'Organize and manage events',
+    icon: FiMic,
+    accent: 'purple',
+  },
+  editor: {
+    name: 'Paper Review Management',
+    link: '/prm/dashboard',
+    description: 'Manage paper reviews',
+    icon: FiFileText,
+    accent: 'orange',
+  },
+  PRM: {
+    name: 'PRM',
+    link: '/prm/home',
+    description: 'Paper Review Management',
+    icon: FiFileText,
+    accent: 'orange',
+  },
+  FACULTY: {
+    name: 'Faculty',
+    link: '/prm/home',
+    description: 'Faculty dashboard',
+    icon: FiUser,
+    accent: 'orange',
+  },
+  doctor: {
+    name: 'Diabetics Module Doctor',
+    link: '/dm/doctor/dashboard',
+    description: 'Patient management',
+    icon: FiHeart,
+    accent: 'pink',
+  },
+  patient: {
+    name: 'Diabetics Module Patient',
+    link: '/dm/patient/dashboard',
+    description: 'Track your health',
+    icon: FiHeart,
+    accent: 'pink',
+  },
+  'dm-admin': {
+    name: 'Diabetics Module Admin',
+    link: '/dm/admin/dashboard',
+    description: 'Manage diabetics module',
+    icon: FiActivity,
+    accent: 'pink',
+  },
+  'iams-admin': {
+    name: 'IAMS Admin',
+    link: '/iams-admin',
+    description: 'Manage face recognition attendance system',
+    icon: FiUserCheck,
+    accent: 'cyan',
+  },
+  'iams-dept-admin': {
+    name: 'IAMS Department Admin',
+    link: '/dept-admin/dashboard',
+    description: 'Department-level attendance management',
+    icon: FiUserCheck,
+    accent: 'cyan',
+  },
+};
+
+const roleMeta = (role) =>
+  ROLE_META[role] || {
+    name: role,
+    link: '#',
+    description: 'Access your dashboard',
+    icon: FiUser,
+    accent: 'gray',
+  };
+
+// Roles that map to 'editor' historically appear with either casing.
+const singleRoleTarget = (role, user) => {
+  if (user?.name?.toLowerCase() === 'coe@nitj.ac.in') return '/tt/coe/facultyload';
+  if (role === 'Editor') return ROLE_META.editor.link;
+  return roleMeta(role).link;
+};
+
+const RoleCard = ({ role, onOpen }) => {
+  const { name, description, icon, accent } = roleMeta(role);
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const border = useColorModeValue('gray.200', 'gray.700');
+  const descColor = useColorModeValue('gray.600', 'gray.400');
+  const iconBg = useColorModeValue(`${accent}.50`, `${accent}.900`);
+  const iconColor = useColorModeValue(`${accent}.600`, `${accent}.300`);
+  const hoverBorder = useColorModeValue(`${accent}.400`, `${accent}.500`);
+
+  return (
+    <Box
+      as="button"
+      textAlign="left"
+      onClick={onOpen}
+      role="group"
+      bg={cardBg}
+      borderWidth="1px"
+      borderColor={border}
+      borderRadius="xl"
+      p={6}
+      display="flex"
+      flexDirection="column"
+      gap={4}
+      transition="all 0.2s ease"
+      _hover={{
+        transform: 'translateY(-4px)',
+        boxShadow: 'lg',
+        borderColor: hoverBorder,
+      }}
+      _focusVisible={{ boxShadow: 'outline' }}
+    >
+      <Flex align="center" justify="space-between" w="full">
+        <Flex align="center" justify="center" boxSize={12} borderRadius="lg" bg={iconBg} color={iconColor}>
+          <Icon as={icon} boxSize={6} />
+        </Flex>
+        <Icon
+          as={FiArrowRight}
+          boxSize={5}
+          color={iconColor}
+          opacity={0}
+          transform="translateX(-6px)"
+          transition="all 0.2s ease"
+          _groupHover={{ opacity: 1, transform: 'translateX(0)' }}
+        />
+      </Flex>
+      <Box>
+        <Heading as="h3" size="md" mb={1}>
+          {name}
+        </Heading>
+        <Text fontSize="sm" color={descColor}>
+          {description}
+        </Text>
+      </Box>
+    </Box>
+  );
+};
 
 const AllocatedRolesPage = () => {
   const navigate = useNavigate();
   const [allocatedRoles, setAllocatedRoles] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [user, setUser] = useState('');
+  const [user, setUser] = useState(null);
+
+  const pageBg = useColorModeValue('gray.50', 'gray.900');
+  const subColor = useColorModeValue('gray.600', 'gray.400');
 
   useEffect(() => {
-    const fetchAllocatedRoles = async () => {
+    (async () => {
       try {
         const response = await fetch(`${apiUrl}/user/getuser`, {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
         });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch allocated roles');
-        }
-
+        if (!response.ok) throw new Error('Failed to fetch allocated roles');
         const userdetails = await response.json();
-        console.log('Fetched user details:', userdetails); // Log the fetched data
         const excludedRoles = ['Reviewer', 'Author'];
         setAllocatedRoles(
-          userdetails.user.role.filter((role) => !excludedRoles.includes(role))
-        ); // Filter out empty roles
+          (userdetails.user.role || []).filter((role) => !excludedRoles.includes(role)),
+        );
         setUser(userdetails.user);
       } catch (error) {
         console.error('Error fetching allocated roles:', error.message);
       } finally {
         setIsLoading(false);
       }
-    };
-    fetchAllocatedRoles();
+    })();
   }, []);
 
-  if (isLoading) {
-    return <Spinner />;
-  }
-  if (allocatedRoles.length === 1 && user) {
-     const email = user.name?.toLowerCase();
-    if (email === 'coe@nitj.ac.in') {
-      console.log('Navigating to COE faculty load page for user:', email);
-    navigate('/tt/coe/facultyload');
-    return null;
-  }
-    switch (allocatedRoles[0]) {
-      case 'ITTC':
-        navigate('/tt/admin');
-        break;
-      case 'DTTI':
-        navigate('/tt/dashboard');
-        break;
-      case 'CM':
-        navigate('/cm/dashboard');
-        break;
-      case 'admin':
-        navigate('/superadmin');
-        break;
-      case 'EO':
-        navigate('/cf/dashboard');
-        break;
-      case 'Editor':
-      case 'editor':
-        navigate('/prm/dashboard');
-        break;
-      case 'PRM':
-      case 'FACULTY':
-        navigate('/prm/home');
-        break;
-      case 'doctor':
-        navigate('/dm/doctor/dashboard');
-        break;
-      case 'patient':
-        navigate('/dm/patient/dashboard');
-        break;
-      case 'dm-admin':
-        navigate('/dm/admin/dashboard');
-        break;
-      case 'iams-admin':
-        navigate('/iams-admin');
-        break;
-      case 'iams-dept-admin':
-        navigate('/dept-admin/dashboard');
-        break;
-      default:
-        return 'some unknown role! If it is a new role, add it in the cases';
+  // Single-role users skip the picker and land on their dashboard directly.
+  useEffect(() => {
+    if (!isLoading && allocatedRoles.length === 1 && user) {
+      const target = singleRoleTarget(allocatedRoles[0], user);
+      if (target !== '#') navigate(target);
     }
+  }, [isLoading, allocatedRoles, user, navigate]);
+
+  if (isLoading) {
+    return (
+      <Flex bg={pageBg} minH="100vh" align="center" justify="center">
+        <Spinner size="lg" />
+      </Flex>
+    );
   }
+
+  const email = Array.isArray(user?.email) ? user.email[0] : user?.email;
+
   return (
-    <ChakraProvider>
-      <Container maxW="container.xl" py={8}>
-        <Box p={4}>
-          {isLoading ? (
-            <Spinner />
-          ) : (
-            <VStack spacing={6} align="stretch">
-              {user && (
-                <Box textAlign="center" mb={4}>
-                  <Heading size="lg" mb={2}>Welcome, {user.email}!</Heading>
-                  <Text color="gray.600" fontSize="md">Select a role to access your dashboard</Text>
-                </Box>
-              )}
-              <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
-                {allocatedRoles.map((role, index) => {
-                  // Define role details
-                  let roleName = '';
-                  let roleLink = '';
-                  let roleDescription = '';
-                  let roleColor = 'teal';
-
-                  switch(role) {
-                    case 'ITTC':
-                      roleName = 'Institute Time Table Coordinator';
-                      roleLink = '/tt/admin';
-                      roleDescription = 'Manage institute-wide timetables';
-                      roleColor = 'blue';
-                      break;
-                    case 'DTTI':
-                      roleName = 'Department Time Table Coordinator';
-                      roleLink = '/tt/dashboard';
-                      roleDescription = 'Manage department timetables';
-                      roleColor = 'blue';
-                      break;
-                    case 'CM':
-                      roleName = 'Event Certificate Manager';
-                      roleLink = '/cm/dashboard';
-                      roleDescription = 'Create and manage certificates';
-                      roleColor = 'blue';
-                      break;
-                    case 'admin':
-                      roleName = 'XCEED Super User';
-                      roleLink = '/superadmin';
-                      roleDescription = 'Full system administration';
-                      roleColor = 'blue';
-                      break;
-                    case 'EO':
-                      roleName = 'Event Organiser';
-                      roleLink = '/cf/dashboard';
-                      roleDescription = 'Organize and manage events';
-                      roleColor = 'blue';
-                      break;
-                    case 'editor':
-                      roleName = 'Paper Review Management';
-                      roleLink = '/prm/dashboard';
-                      roleDescription = 'Manage paper reviews';
-                      roleColor = 'blue';
-                      break;
-                    case 'PRM':
-                      roleName = 'PRM';
-                      roleLink = '/prm/home';
-                      roleDescription = 'Paper Review Management';
-                      roleColor = 'blue';
-                      break;
-                    case 'FACULTY':
-                      roleName = 'Faculty';
-                      roleLink = '/prm/home';
-                      roleDescription = 'Faculty dashboard';
-                      roleColor = 'blue';
-                      break;
-                    case 'doctor':
-                      roleName = 'Diabetics Module Doctor';
-                      roleLink = '/dm/doctor/dashboard';
-                      roleDescription = 'Patient management';
-                      roleColor = 'blue';
-                      break;
-                    case 'patient':
-                      roleName = 'Diabetics Module Patient';
-                      roleLink = '/dm/patient/dashboard';
-                      roleDescription = 'Track your health';
-                      roleColor = 'blue';
-                      break;
-                    case 'dm-admin':
-                      roleName = 'Diabetics Module Admin';
-                      roleLink = '/dm/admin/dashboard';
-                      roleDescription = 'Manage diabetics module';
-                      roleColor = 'blue';
-                      break;
-                    case 'iams-admin':
-                      roleName = 'IAMS Admin';
-                      roleLink = '/iams-admin';
-                      roleDescription = 'Manage face recognition attendance system';
-                      roleColor = 'cyan';
-                      break;
-                    case 'iams-dept-admin':
-                      roleName = 'IAMS Department Admin';
-                      roleLink = '/dept-admin/dashboard';
-                      roleDescription = 'Department-level attendance management';
-                      roleColor = 'cyan';
-                      break;
-                    default:
-                      roleName = role;
-                      roleLink = '#';
-                      roleDescription = 'Access your dashboard';
-                      roleColor = 'blue';
-                  }
-
-                  return (
-                    <Card 
-                      key={index}
-                      variant="elevated"
-                      size="md"
-                      _hover={{
-                        transform: 'translateY(-4px)',
-                        shadow: 'xl',
-                        transition: 'all 0.3s ease',
-                      }}
-                      transition="all 0.2s ease"
-                    >
-                      <CardHeader pb={2}>
-                        <Flex justifyContent="space-between" alignItems="center">
-                          <Badge colorScheme={roleColor} fontSize="sm" px={3} py={1} borderRadius="full">
-                            Role #{index + 1}
-                          </Badge>
-                        </Flex>
-                      </CardHeader>
-                      <CardBody py={3}>
-                        <Heading size="md" mb={2} color={`${roleColor}.600`}>
-                          {roleName}
-                        </Heading>
-                        <Text color="gray.600" fontSize="sm">
-                          {roleDescription}
-                        </Text>
-                      </CardBody>
-                      <CardFooter pt={0}>
-                        <Button
-                          as={ChakraLink}
-                          href={roleLink}
-                          colorScheme={roleColor}
-                          width="full"
-                          _hover={{ textDecoration: 'none' }}
-                        >
-                          Access Dashboard
-                        </Button>
-                      </CardFooter>
-                    </Card>
-                  );
-                })}
-              </SimpleGrid>
-            </VStack>
-          )}
+    <Box bg={pageBg} minH="100vh" py={{ base: 8, md: 14 }}>
+      <Container maxW="5xl">
+        <Box mb={{ base: 8, md: 12 }} textAlign="center">
+          <Heading as="h1" size="xl" mb={2}>
+            Welcome{email ? `, ${email}` : ''}
+          </Heading>
+          <Text color={subColor} fontSize={{ base: 'md', md: 'lg' }}>
+            {allocatedRoles.length
+              ? `You have ${allocatedRoles.length} role${allocatedRoles.length === 1 ? '' : 's'} — select one to open its dashboard.`
+              : 'No roles have been assigned to your account yet. Contact your administrator.'}
+          </Text>
         </Box>
+        <SimpleGrid columns={{ base: 1, sm: 2, lg: 3 }} spacing={6}>
+          {allocatedRoles.map((role) => (
+            <RoleCard
+              key={role}
+              role={role}
+              onOpen={() => navigate(singleRoleTarget(role, user))}
+            />
+          ))}
+        </SimpleGrid>
       </Container>
-    </ChakraProvider>
+    </Box>
   );
 };
 

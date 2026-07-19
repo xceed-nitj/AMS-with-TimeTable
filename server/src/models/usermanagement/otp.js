@@ -49,8 +49,12 @@ otpSchema.statics.checkAndDeleteExpiredOTPs = async function () {
   await this.deleteMany({ createdAt: { $lt: expirationTime } });
 };
 
-setInterval(() => {
-  mongoose.model("OTP").checkAndDeleteExpiredOTPs();
+// Sweep expired OTPs once a minute. unref() so this timer never keeps the
+// process alive, and swallow errors (e.g. sweeping while the connection is
+// down) instead of crashing on an unhandled rejection.
+const otpSweeper = setInterval(() => {
+  mongoose.model("OTP").checkAndDeleteExpiredOTPs().catch(() => {});
 }, 60 * 1000);
+otpSweeper.unref();
 
 module.exports = mongoose.model("OTP", otpSchema);

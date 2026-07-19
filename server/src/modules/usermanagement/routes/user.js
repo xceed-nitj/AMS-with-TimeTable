@@ -55,6 +55,30 @@ userRouter.post("/assignrole", checkRole(['admin']), async (req, res) => {
   }
 });
 
+userRouter.post("/assign-dept-admin", checkRole(['admin', 'iams-admin']), async (req, res) => {
+  try {
+    await UserController.assignDeptAdminByEmail(req, res);
+  } catch (e) {
+    res.status(e?.status || 500).json({ error: e?.message || "Internal Server Error" });
+  }
+});
+
+userRouter.get("/dept-admins", checkRole(['admin', 'iams-admin']), async (req, res) => {
+  try {
+    await UserController.getDeptAdmins(req, res);
+  } catch (e) {
+    res.status(e?.status || 500).json({ error: e?.message || "Internal Server Error" });
+  }
+});
+
+userRouter.post("/remove-dept-admin", checkRole(['admin', 'iams-admin']), async (req, res) => {
+  try {
+    await UserController.removeDeptAdmin(req, res);
+  } catch (e) {
+    res.status(e?.status || 500).json({ error: e?.message || "Internal Server Error" });
+  }
+});
+
 userRouter.post("/deleterole", checkRole(['admin']), async (req, res) => {
   try {
     await UserController.deleteRole(req, res);

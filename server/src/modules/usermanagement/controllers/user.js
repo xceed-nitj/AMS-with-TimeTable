@@ -5,6 +5,10 @@ const {
   getTimetableDepartment,
   findDepartmentCoordinator,
 } = require("./facultyDepartment");
+const { notifyUserCreated, notifyRoleAdded } = require("./adminNotifier");
+const { sendWelcomeEmail, resolveFrontendBase } = require("./welcomeMailer");
+const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
 const getApiURL = require("../../certificateModule/helper/getApiURL")
 
 
@@ -123,6 +127,18 @@ class UserController {
       if (!user.role.includes(role)) {
         user.role.push(role);
         await user.save();
+        notifyRoleAdded(user, role);
+        const userEmail = Array.isArray(user.email) ? user.email[0] : user.email;
+        if (userEmail) {
+          sendWelcomeEmail({
+            email: userEmail,
+            frontendBase: resolveFrontendBase(req),
+            heading: "A new role has been added to your XCEED account",
+            intro: `<p>The role <strong>${role}</strong> has been added to your
+                      account on the XCEED platform (NIT Jalandhar).</p>`,
+            accountCreated: false,
+          });
+        }
       }
       res.status(200).json({ message: "Role assigned successfully", user });
     } catch (error) {
@@ -182,6 +198,131 @@ class UserController {
         message: "Department updated successfully",
         user: userResponse,
       });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+
+  // Assign the iams-dept-admin role by email; creates the account first if it
+  // doesn't exist yet (random password — the user sets their own via the
+  // forgot-password / OTP flow).
+  async assignDeptAdminByEmail(req, res) {
+    try {
+      const email = (req.body.email || "").trim().toLowerCase();
+      const deptInput = typeof req.body.dept === "string" ? req.body.dept.trim() : "";
+
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res.status(400).json({ error: "A valid email is required" });
+      }
+
+      if (!deptInput) {
+        return res.status(400).json({ error: "Department is required" });
+      }
+      const department = await getTimetableDepartment(deptInput);
+      if (!department) {
+        return res.status(400).json({
+          error: "Select a valid department from the timetable",
+        });
+      }
+
+      let user = await User.findOne({ email });
+
+      const existingCoordinator = await findDepartmentCoordinator(
+        department,
+        user?._id,
+      );
+      if (existingCoordinator) {
+        return res.status(409).json({
+          error: `${department} already has an IAMS Department Admin`,
+        });
+      }
+
+      let created = false;
+      let roleAdded = false;
+      if (!user) {
+        const randomPassword = crypto.randomBytes(24).toString("base64url");
+        const hash = await bcrypt.hash(randomPassword, 10);
+        user = await User.create({
+          name: email,
+          email: email,
+          password: hash,
+          role: ["iams-dept-admin"],
+          dept: department,
+          isEmailVerified: false,
+          isFirstLogin: true,
+        });
+        created = true;
+        roleAdded = true;
+        notifyUserCreated(user);
+      } else {
+        user.dept = department;
+        if (!user.role.includes("iams-dept-admin")) {
+          user.role.push("iams-dept-admin");
+          await user.save();
+          roleAdded = true;
+          notifyRoleAdded(user, "iams-dept-admin");
+        } else {
+          await user.save();
+        }
+      }
+
+      if (roleAdded) {
+        sendWelcomeEmail({
+          email,
+          frontendBase: resolveFrontendBase(req),
+          heading: "You are now an IAMS Department Admin",
+          intro: `<p>You have been assigned as the <strong>IAMS Department Admin</strong> for
+                    <strong>${department}</strong> on the XCEED platform (NIT Jalandhar).</p>` +
+                 (created
+                   ? "<p>An account has been created for this email address.</p>"
+                   : ""),
+          accountCreated: created,
+        });
+      }
+
+      const userResponse = user.toObject();
+      delete userResponse.password;
+      res.status(created ? 201 : 200).json({
+        message: created
+          ? "User created and IAMS Department Admin role assigned"
+          : "IAMS Department Admin role assigned",
+        created,
+        user: userResponse,
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+
+  // Scoped counterpart of deleteRole: only removes iams-dept-admin, so it can
+  // be exposed to iams-admin users without granting general role deletion.
+  async removeDeptAdmin(req, res) {
+    try {
+      const { userId } = req.body;
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      user.role = user.role.filter((r) => r !== "iams-dept-admin");
+      await user.save();
+      const userResponse = user.toObject();
+      delete userResponse.password;
+      res.status(200).json({ message: "Role removed successfully", user: userResponse });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+
+  async getDeptAdmins(req, res) {
+    try {
+      const users = await User.find(
+        { role: "iams-dept-admin" },
+        { password: 0 },
+      ).sort({ dept: 1 });
+      res.json({ users });
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: "Internal server error" });

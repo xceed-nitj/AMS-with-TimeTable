@@ -812,28 +812,26 @@ function TabOther() {
 
 const AMS_DEVS_BY_YEAR = {
     2026: {
-        metric: 'commits',
         devs: [
-            { name: 'Dr. D. Harimurugan', github: 'harimurugan1989', count: 75              },
-            { name: 'Samiksha Khaire',    github: null,               count: 28              },
-            { name: 'Anmoldeep Kaur',     github: 'anmolkaur92',     count: 27              },
-            { name: 'Mukal Markanda',     github: 'CodewithMukal',   count: 22              },
-            { name: 'Pallvi Saini',       github: null,               count: 19              },
-            { name: 'Karan Gupta',        github: 'guptakaran20',  count: 16              },
-            { name: 'Amit Mallick',       github: 'amit837-design',  count: 11, prs: 4      },
-            { name: 'Gulshan',            github: 'Gulshan-heap',    count: 10, prs: 1      },
-            { name: 'Javin Chutani',      github: 'javin1106',       count: 9               },
+            { name: 'Dr. D. Harimurugan', github: 'harimurugan1989' },
+            { name: 'Samiksha Khaire',    github: null              },
+            { name: 'Anmoldeep Kaur',     github: 'anmolkaur92'     },
+            { name: 'Mukal Markanda',     github: 'CodewithMukal'   },
+            { name: 'Pallvi Saini',       github: null              },
+            { name: 'Karan Gupta',        github: 'guptakaran0720'  },
+            { name: 'Amit Mallick',       github: 'amit837-design'  },
+            { name: 'Gulshan',            github: 'Gulshan-heap'    },
+            { name: 'Javin Chutani',      github: 'javin1106'       },
         ],
     },
     2023: {
-        metric: 'PRs merged',
         devs: [
-            { name: 'Aanchal', github: null, count: 1 },
+            { name: 'Aanchal', github: null },
         ],
     },
 };
 
-function DevCard({ dev, rank, metric }) {
+function DevCard({ dev, rank }) {
     const isFirst = rank === 0;
     const accentColor = isFirst ? '#7c3aed' : '#374151';
     const bgColor     = isFirst ? '#faf5ff' : '#f9fafb';
@@ -858,15 +856,7 @@ function DevCard({ dev, rank, metric }) {
                 {dev.name.charAt(0).toUpperCase()}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: accentColor }}>{dev.name}</span>
-                    {dev.prs && (
-                        <span style={{
-                            fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 99,
-                            background: '#eef2ff', color: '#6366f1', border: '1px solid #c7d2fe',
-                        }}>{dev.prs} PR{dev.prs !== 1 ? 's' : ''}</span>
-                    )}
-                </div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: accentColor }}>{dev.name}</div>
                 {dev.github ? (
                     <a href={`https://github.com/${dev.github}`} target="_blank" rel="noreferrer"
                         style={{ fontSize: 11, color: '#6366f1', textDecoration: 'none', fontFamily: 'monospace' }}
@@ -876,10 +866,6 @@ function DevCard({ dev, rank, metric }) {
                 ) : (
                     <span style={{ fontSize: 11, color: '#9ca3af', fontFamily: 'monospace' }}>—</span>
                 )}
-            </div>
-            <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                <div style={{ fontSize: 16, fontWeight: 800, color: accentColor, lineHeight: 1 }}>{dev.count}</div>
-                <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 1 }}>{metric}</div>
             </div>
         </div>
     );
@@ -894,13 +880,12 @@ function TabDevelopers() {
         <div>
             <SectionTitle>Developers & Contributors</SectionTitle>
             <Note type="info">
-                Scoped to attendance module files — frontend, backend controllers/models, and Python ML service.
-                Sorted by contributions per year, newest year first.
+                Contributors to the attendance module — frontend, backend controllers/models, and Python ML service.
+                Listed per year, newest year first.
             </Note>
 
             {years.map(year => {
-                const { metric, devs } = AMS_DEVS_BY_YEAR[year];
-                const yearTotal = devs.reduce((s, d) => s + d.count, 0);
+                const { devs } = AMS_DEVS_BY_YEAR[year];
                 return (
                     <div key={year} style={{ marginBottom: 28 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
@@ -911,11 +896,11 @@ function TabDevelopers() {
                             }}>{year}</div>
                             <div style={{ flex: 1, height: 1, background: '#e4e8f5' }} />
                             <div style={{ fontSize: 11, color: '#9ca3af' }}>
-                                {devs.length} contributor{devs.length !== 1 ? 's' : ''} · {yearTotal} {metric}
+                                {devs.length} contributor{devs.length !== 1 ? 's' : ''}
                             </div>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 8 }}>
-                            {devs.map((d, i) => <DevCard key={d.name} dev={d} rank={i} metric={metric} />)}
+                            {devs.map((d, i) => <DevCard key={d.name} dev={d} rank={i} />)}
                         </div>
                     </div>
                 );
@@ -938,10 +923,11 @@ function TabDevCycle() {
         <div>
             <SectionTitle>Development Cycle</SectionTitle>
             <Note type="info">
-                What changed, week by week (newest first) — features merged to the main branch from
+                What changed in the <strong>Attendance Management System</strong>, week by week (newest first) —
+                features merged to the main branch from
                 March {DEV_CYCLE.length ? DEV_CYCLE[DEV_CYCLE.length - 1].week.slice(-4) : ''} to date, written in
                 plain language ({totalItems} features across {DEV_CYCLE.length} weeks; internal
-                technical changes are not listed).
+                technical changes and other XCEED modules are not listed).
             </Note>
 
             {DEV_CYCLE.map(({ week, items }) => (

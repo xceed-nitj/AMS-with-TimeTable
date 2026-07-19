@@ -11,7 +11,7 @@ const ejsTemplatePath = path.join(__dirname, "otpbody.ejs");
 console.log(ejsTemplatePath);
 async function forgotPassword(req, res) {
   try {
-    const { email } = req.body;
+    const email = String(req.body.email || "").trim();
     const checkuser = await User.findOne({ email: email });
     if (!checkuser) {
       console.log("User not exists");
@@ -48,26 +48,23 @@ const sendOTP = async (email) => {
       };
     }
 
-    let result = await OTP.findOne({ email });
-    var otp = null;
-    if (result) {
-      otp = result.otp;
-      console.log("OTP already exists:", otp);
-    } else {
-      otp = otpGenerator.generate(6, {
-        lowerCaseAlphabets: false,
-        upperCaseAlphabets: false,
-        specialChars: false,
-      });
-      await OTP.create({ email, otp });
-      console.log("New OTP generated:", otp);
-    }
+    // OTP records are keyed by lowercased email so the reset step matches
+    // regardless of how the user re-types their address. Always issue a fresh
+    // OTP: reusing an existing record risks sending one that the 10-minute
+    // cleanup sweeper is about to delete.
+    const otpKey = email.trim().toLowerCase();
+    await OTP.deleteMany({ email: otpKey });
+    const otp = otpGenerator.generate(6, {
+      lowerCaseAlphabets: false,
+      upperCaseAlphabets: false,
+      specialChars: false,
+    });
+    await OTP.create({ email: otpKey, otp });
 
-    console.log(otp);
     const otpInfo = {
-      title: "Email verification for NITJ",
+      title: "Forgot Password",
       purpose:
-        "Thank you for registering with NITJ. To complete your registration, please use the following OTP (One-Time Password) to verify your account:",
+        "We received a request to reset the password for your XCEED account. Use the following OTP (One-Time Password) to set your new password:",
       OTP: otp,
     };
 
@@ -75,7 +72,7 @@ const sendOTP = async (email) => {
     const renderedHTML = ejs.render(otpBody, otpInfo);
 
     // Add await here
-    await mailSender(email, "Sign Up verification", renderedHTML);
+    await mailSender(email, "Forgot Password — OTP", renderedHTML);
 
     return {
       success: true,
