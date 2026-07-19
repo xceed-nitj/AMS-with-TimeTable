@@ -11,6 +11,28 @@ import { useBatchYears } from './useBatchYears';
 const _apiUrl    = getEnvironment();
 const CAMERA_API = `${_apiUrl}/attendancemodule/cameras`;
 const CAMERA_ROOMS_API = `${CAMERA_API}/rooms`;
+const OTHER_CONTROLS_API = `${_apiUrl}/attendancemodule/settings/other-controls`;
+
+// Current minutes-of-day (0–1439) in Asia/Kolkata, independent of the
+// browser timezone — mirrors the server-side timeWindowGuard.
+function nowMinIST() {
+    const parts = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Asia/Kolkata',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+    }).formatToParts(new Date());
+    const h = Number(parts.find(p => p.type === 'hour')?.value ?? 0);
+    const m = Number(parts.find(p => p.type === 'minute')?.value ?? 0);
+    return ((h % 24) * 60 + m) % (24 * 60);
+}
+
+function timeStrToMin(hhmm, fallback) {
+    if (!hhmm || typeof hhmm !== 'string' || !hhmm.includes(':')) return fallback;
+    const [h, m] = hhmm.split(':').map(Number);
+    if (Number.isNaN(h) || Number.isNaN(m)) return fallback;
+    return h * 60 + m;
+}
 
 const fetch = (input, init = {}) => window.fetch(input, {
     credentials: 'include',
@@ -213,6 +235,10 @@ export default function GroundTruthRTSP({ fixedDepartment = '' }) {
     const [retryCount,    setRetryCount]    = useState(0);
     const [retryCountdown, setRetryCountdown] = useState(0);
 
+    // Optional 08:30–17:30 IST acquisition window (admin toggle, default off).
+    const [gtWindow, setGtWindow] = useState({ enabled: false, start: '08:30', end: '17:30' });
+    const [nowMin, setNowMin] = useState(nowMinIST());
+
     const [combinedMode,     setCombinedMode]     = useState(false);
     const [combinedIdx,      setCombinedIdx]      = useState(0);       
     const [switchCountdown,  setSwitchCountdown]  = useState(0);       
@@ -251,6 +277,30 @@ export default function GroundTruthRTSP({ fixedDepartment = '' }) {
     useEffect(() => {
         fetchDegrees();
     }, [])
+
+    // Load the acquisition-window restriction and keep the current IST minute
+    // fresh (every 30s) so the Start button enables/disables as the window
+    // opens or closes without a page reload.
+    useEffect(() => {
+        fetch(`${OTHER_CONTROLS_API}/`)
+            .then(r => r.json())
+            .then(d => {
+                const s = d?.settings || {};
+                setGtWindow({
+                    enabled: !!s.groundTruthTimeWindowEnabled,
+                    start: s.windowStart || '08:30',
+                    end: s.windowEnd || '17:30',
+                });
+            })
+            .catch(() => {});
+        const id = setInterval(() => setNowMin(nowMinIST()), 30000);
+        return () => clearInterval(id);
+    }, []);
+
+    const windowOpen = !gtWindow.enabled || (
+        nowMin >= timeStrToMin(gtWindow.start, 510) &&
+        nowMin <= timeStrToMin(gtWindow.end, 1050)
+    );
 
     useEffect(() => {
         if (fixedDepartment) setDepartment(fixedDepartment);
@@ -417,6 +467,15 @@ export default function GroundTruthRTSP({ fixedDepartment = '' }) {
 
             if (!response.ok) {
                 const text = await response.text().catch(() => '');
+                // A 403 is a deliberate policy block (e.g. the acquisition
+                // time-window restriction) — surface it and do NOT retry.
+                if (response.status === 403) {
+                    let reason = text;
+                    try { reason = JSON.parse(text).error || text; } catch { /* keep raw text */ }
+                    const blockErr = new Error(reason || 'Acquisition is not allowed right now.');
+                    blockErr.noRetry = true;
+                    throw blockErr;
+                }
                 throw new Error(`Server error ${response.status}${text ? ': ' + text : ''}`);
             }
 
@@ -495,6 +554,16 @@ export default function GroundTruthRTSP({ fixedDepartment = '' }) {
                     setRetryCount(0);
                     setStatus('done');
                 }
+            } else if (err.noRetry) {
+                // Policy block (e.g. outside the allowed acquisition window) —
+                // stop cleanly, no retry loop.
+                clearRetry();
+                setRetryCount(0);
+                addLog(`⛔ ${err.message}`, theme.danger);
+                showToast(err.message, 'error');
+                setStatus('idle');
+                if (combinedMode) setCombinedMode(false);
+                if (roomMode) setRoomMode(false);
             } else {
                 const attempt = retryCount + 1;
                 setRetryCount(attempt);
@@ -917,6 +986,20 @@ export default function GroundTruthRTSP({ fixedDepartment = '' }) {
 
             <LivePreview apiBase={API_BASE} isRunning={isRunning} jobId={gtJobId} />
 
+            {!windowOpen && (
+                <div style={{
+                    marginBottom: 16,
+                    padding: '10px 16px',
+                    borderRadius: 8,
+                    fontSize: 13,
+                    background: 'rgba(239,68,68,0.10)',
+                    color: theme.danger,
+                    border: `1px solid rgba(239,68,68,0.30)`,
+                }}>
+                    ⛔ Ground Truth acquisition is restricted to {gtWindow.start}–{gtWindow.end} IST. The Start button is disabled outside this window.
+                </div>
+            )}
+
             <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
                 <button
                     onClick={() => {
@@ -927,11 +1010,13 @@ export default function GroundTruthRTSP({ fixedDepartment = '' }) {
                         }
                     }}
                     disabled={isRunning || isStopping || isRetrying || !batchName || anyMode
+                        || !windowOpen
                         || (!selectedRoom && !selectedCamera)
                         || (selectedRoom && roomCameras.length === 0 && !roomCamsLoad)}
+                    title={!windowOpen ? `Ground Truth acquisition is restricted to ${gtWindow.start}–${gtWindow.end} IST` : undefined}
                     style={{
                         ...styles.btnPrimary,
-                        opacity: (isRunning || isStopping || isRetrying || !batchName || anyMode) ? 0.5 : 1,
+                        opacity: (isRunning || isStopping || isRetrying || !batchName || anyMode || !windowOpen) ? 0.5 : 1,
                         minWidth: 200,
                     }}
                 >
@@ -955,19 +1040,20 @@ export default function GroundTruthRTSP({ fixedDepartment = '' }) {
                 {!selectedRoom && (
                 <button
                     onClick={handleStartCombined}
-                    disabled={isRunning || isStopping || isRetrying || !batchName || anyMode || registeredCameras.length < 2}
+                    disabled={isRunning || isStopping || isRetrying || !batchName || anyMode || !windowOpen || registeredCameras.length < 2}
+                    title={!windowOpen ? `Ground Truth acquisition is restricted to ${gtWindow.start}–${gtWindow.end} IST` : undefined}
                     style={{
                         padding: '10px 24px', borderRadius: 8,
-                        cursor: (isRunning || isStopping || isRetrying || !batchName || anyMode || registeredCameras.length < 2) ? 'default' : 'pointer',
+                        cursor: (isRunning || isStopping || isRetrying || !batchName || anyMode || !windowOpen || registeredCameras.length < 2) ? 'default' : 'pointer',
                         fontSize: '14px', fontWeight: 700,
                         border: 'none',
                         background: combinedMode
                             ? '#0284c7'
-                            : (isRunning || isStopping || isRetrying || !batchName) ? '#94a3b8' : '#0ea5e9',
+                            : (isRunning || isStopping || isRetrying || !batchName || !windowOpen) ? '#94a3b8' : '#0ea5e9',
                         color: '#ffffff',
                         boxShadow: combinedMode ? '0 2px 8px rgba(2,132,199,0.4)' : '0 2px 8px rgba(14,165,233,0.3)',
                         transition: 'all 0.15s',
-                        opacity: (isRunning || isStopping || isRetrying || !batchName) && !combinedMode ? 0.5 : 1,
+                        opacity: (isRunning || isStopping || isRetrying || !batchName || !windowOpen) && !combinedMode ? 0.5 : 1,
                         minWidth: 200,
                         display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center',
                     }}

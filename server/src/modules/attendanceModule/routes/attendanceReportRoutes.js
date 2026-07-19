@@ -103,6 +103,11 @@ const sessionCtrl = require("../controllers/attendanceSessionController");
 // Start a multi-run session
 router.post("/start-session", ...attendanceRoleAccess, enforceAttendanceDepartment, async (req, res) => {
   try {
+    // Optional 08:30–17:30 IST restriction (admin toggle, default off).
+    const { checkAttendanceRunAllowed } = require("../controllers/timeWindowGuard");
+    const runGate = await checkAttendanceRunAllowed();
+    if (!runGate.allowed) return res.status(403).json({ error: runGate.reason });
+
     const result = await sessionCtrl.startSession(req.body);
     res.json(result);
   } catch (e) {

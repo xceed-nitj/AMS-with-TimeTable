@@ -14,7 +14,29 @@ import ProxyModal from './ProxyModal';
 const apiUrl = getEnvironment();
 const REPORT_API = `${apiUrl}/attendancemodule/reports`;
 const ML_API = `${apiUrl}/ml`;
+const OTHER_CONTROLS_API = `${apiUrl}/attendancemodule/settings/other-controls`;
 const pct = (a, b) => (b > 0 ? Math.round((a / b) * 100) : 0);
+
+// Current minutes-of-day (0–1439) in Asia/Kolkata, independent of the browser
+// timezone — mirrors the server-side timeWindowGuard.
+function nowMinIST() {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Kolkata',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(new Date());
+  const h = Number(parts.find((p) => p.type === 'hour')?.value ?? 0);
+  const m = Number(parts.find((p) => p.type === 'minute')?.value ?? 0);
+  return ((h % 24) * 60 + m) % (24 * 60);
+}
+
+function timeStrToMin(hhmm, fallback) {
+  if (!hhmm || typeof hhmm !== 'string' || !hhmm.includes(':')) return fallback;
+  const [h, m] = hhmm.split(':').map(Number);
+  if (Number.isNaN(h) || Number.isNaN(m)) return fallback;
+  return h * 60 + m;
+}
 const CAMERA_SWITCH_SEC = 30; // must match CAMERA_SWITCH_SEC in rtsp_routes.py
 // ── LT103 dual-camera preset (same as groundtruthgen_rtsp) ───────────────────
 //const LT103L_URL = 'rtsp://admin:Admin%401234%23@10.10.177.249:554/video/live?channel=1&subtype=0&rtsp_transport=tcp';
@@ -89,6 +111,31 @@ export default function AttendanceReport() {
   const [sessionActive, setSessionActive] = useState(false);
   const [sessionChecks, setSessionChecks] = useState(0);
 
+  // ── Optional 08:30–17:30 IST attendance-run window (admin toggle, off by default) ──
+  const [runWindow, setRunWindow] = useState({ enabled: false, start: '08:30', end: '17:30' });
+  const [nowMin, setNowMin] = useState(nowMinIST());
+
+  useEffect(() => {
+    fetch(`${OTHER_CONTROLS_API}/`, { credentials: 'include' })
+      .then((r) => r.json())
+      .then((d) => {
+        const s = d?.settings || {};
+        setRunWindow({
+          enabled: !!s.attendanceRunTimeWindowEnabled,
+          start: s.windowStart || '08:30',
+          end: s.windowEnd || '17:30',
+        });
+      })
+      .catch(() => { });
+    const id = setInterval(() => setNowMin(nowMinIST()), 30000);
+    return () => clearInterval(id);
+  }, []);
+
+  const windowOpen =
+    !runWindow.enabled ||
+    (nowMin >= timeStrToMin(runWindow.start, 510) &&
+      nowMin <= timeStrToMin(runWindow.end, 1050));
+
   // ── History ───────────────────────────────────────────────────
   const [reports, setReports] = useState([]);
   const [histLoading, setHistLoading] = useState(false);
@@ -102,9 +149,9 @@ export default function AttendanceReport() {
   const [detailReport, setDetailReport] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   // Proxy Info of the detail report
-    const [proxyInfo, setProxyInfo] = useState(null);
-    const [proxyInfoLoading, setProxyInfoLoading] = useState(true);
-    const [showProxyModal, setshowProxyModal] = useState(false);
+  const [proxyInfo, setProxyInfo] = useState(null);
+  const [proxyInfoLoading, setProxyInfoLoading] = useState(true);
+  const [showProxyModal, setshowProxyModal] = useState(false);
 
   // ── Camera status from DB ─────────────────────────────────────────────────
   const [cameraStatus, setCameraStatus] = useState(null); // null | 'ok' | 'inactive' | 'none'
@@ -1035,6 +1082,19 @@ export default function AttendanceReport() {
                 />
               </div>
             </div>
+            {!windowOpen && (
+              <div style={{
+                margin: '4px 0 12px',
+                padding: '10px 16px',
+                borderRadius: 8,
+                fontSize: 13,
+                background: 'rgba(239,68,68,0.10)',
+                color: theme.danger,
+                border: '1px solid rgba(239,68,68,0.30)',
+              }}>
+                ⛔ Attendance runs are restricted to {runWindow.start}–{runWindow.end} IST. Run Once and Start Session are disabled outside this window.
+              </div>
+            )}
             <div
               style={{
                 display: 'grid',
@@ -1074,16 +1134,19 @@ export default function AttendanceReport() {
                   onClick={runAttendance}
                   disabled={
                     processing ||
+                    !windowOpen ||
                     !rtspUrl.trim() ||
                     !room ||
                     !slot ||
                     (!derivedCtx?.batch && !manualBatch)
                   }
+                  title={!windowOpen ? `Attendance runs are restricted to ${runWindow.start}–${runWindow.end} IST` : undefined}
                   style={{
                     ...styles.btnPrimary,
                     minWidth: 140,
                     opacity:
                       processing ||
+                        !windowOpen ||
                         !rtspUrl.trim() ||
                         !room ||
                         !slot ||
@@ -1123,11 +1186,13 @@ export default function AttendanceReport() {
                   disabled={
                     processing ||
                     sessionActive ||
+                    !windowOpen ||
                     !rtspUrl.trim() ||
                     !room ||
                     !slot ||
                     (!derivedCtx?.batch && !manualBatch)
                   }
+                  title={!windowOpen ? `Attendance runs are restricted to ${runWindow.start}–${runWindow.end} IST` : undefined}
                   style={{
                     ...styles.btnPrimary,
                     minWidth: 140,
@@ -1135,6 +1200,7 @@ export default function AttendanceReport() {
                     opacity:
                       processing ||
                         sessionActive ||
+                        !windowOpen ||
                         !rtspUrl.trim() ||
                         !room ||
                         !slot ||
@@ -2024,10 +2090,10 @@ export default function AttendanceReport() {
               {
                 // If there are proxies shows the number of possible proxies
                 !proxyInfoLoading && proxyInfo.length > 0 && (
-                  <div style={{marginBottom: 16, cursor: "pointer"}}>
-                    <span onClick={() => setshowProxyModal(true)} style={{...styles.badge('warning'), fontSize: 14, width: "fit-content", display: "flex", alignItems: "center", justifyContent: "center", gap: 4, fontWeight: 600}}>
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-triangle-alert-icon lucide-triangle-alert"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
-                      {proxyInfo.length} Possible { proxyInfo.length > 1 ? "Proxies" : "Proxy"}
+                  <div style={{ marginBottom: 16, cursor: "pointer" }}>
+                    <span onClick={() => setshowProxyModal(true)} style={{ ...styles.badge('warning'), fontSize: 14, width: "fit-content", display: "flex", alignItems: "center", justifyContent: "center", gap: 4, fontWeight: 600 }}>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-triangle-alert-icon lucide-triangle-alert"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg>
+                      {proxyInfo.length} Possible {proxyInfo.length > 1 ? "Proxies" : "Proxy"}
                     </span>
                   </div>
                 )
