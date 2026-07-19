@@ -69,6 +69,9 @@ const CSS = `
   @keyframes amsFadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; } }
   .ams-nav-item { transition: background .15s, color .15s; cursor: pointer; }
   .ams-nav-item:hover { background: rgba(99,102,241,0.06) !important; }
+  .ams-nav-newtab-btn { opacity: 0; transition: opacity .12s, background .12s, color .12s; }
+  .ams-nav-item:hover .ams-nav-newtab-btn { opacity: 1; }
+  .ams-nav-newtab-btn:hover { background: rgba(99,102,241,0.12) !important; color: #6366f1 !important; }
   .ams-page-content { /* no animation — CSS animation creates stacking context that traps fixed-position portals */ }
 `;
 
@@ -224,10 +227,41 @@ export default function AMSLayout() {
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
+                        flex: 1,
                       }}
                     >
                       {item.label}
                     </span>
+                  )}
+                  {!collapsed && !item.newTab && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        window.open(item.route, '_blank', 'noopener,noreferrer');
+                      }}
+                      title={`Open ${item.label} in new tab`}
+                      className="ams-nav-newtab-btn"
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        bottom: 0,
+                        right: 4,
+                        width: 26,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: T.textMuted,
+                        fontSize: 18,
+                        fontWeight: 600,
+                        lineHeight: 1,
+                        borderRadius: 6,
+                      }}
+                    >
+                      +
+                    </button>
                   )}
                 </div>
               );
