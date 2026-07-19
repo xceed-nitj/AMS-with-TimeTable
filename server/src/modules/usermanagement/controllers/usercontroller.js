@@ -12,6 +12,8 @@ const ejs = require("ejs");
 const path = require("path");
 const ejsTemplatePath = path.join(__dirname, "otpbody.ejs");
 const mailSender = require("../../mailsender");
+const { notifyUserCreated } = require("./adminNotifier");
+const { sendWelcomeEmail, resolveFrontendBase } = require("./welcomeMailer");
 const {
   getFacultyDepartmentByEmail,
   getTimetableDepartment,
@@ -81,6 +83,21 @@ exports.register = async (req, res, next) => {
           isFirstLogin: false,
         });
 
+        notifyUserCreated(user);
+
+        sendWelcomeEmail({
+          email,
+          frontendBase: resolveFrontendBase(req),
+          heading: "Your XCEED account has been created",
+          intro: `<p>An account has been created for this email address on the
+                    XCEED platform (NIT Jalandhar)${
+                      roles?.length
+                        ? ` with the role(s): <strong>${roles.join(", ")}</strong>`
+                        : ""
+                    }.</p>`,
+          accountCreated: true,
+        });
+
         // Generate a JWT token
         const maxAge = 3 * 60 * 60; // 3 hours in seconds
         const token = jwt.sign(
@@ -99,7 +116,6 @@ exports.register = async (req, res, next) => {
           sameSite: "none",
         });
 
-        const otp = await sendOTP(email);
         const userResponse = user.toObject();
         delete userResponse.password;
         res.status(201).json({

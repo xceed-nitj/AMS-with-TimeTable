@@ -23,6 +23,7 @@ import Login from './dashboard/login';
 import Messages from './timetableadmin/messages';
 import ForgotPassword from './dashboard/ForgotPassword';
 import SuperAdminPage from './dashboard/superadmin';
+import DeptAdminAssignPage from './dashboard/deptAdminAssign';
 import CommonSlot from './timetableadmin/commonslot.jsx';
 import Subjects from './timetableadmin/addsubjects';
 import ImportTT from './timetableadmin/importt.jsx';
@@ -708,6 +709,7 @@ function App() {
           <Route path="model-analytics" element={<ModelAnalytics />} />
           <Route path="reports" element={<AttendanceReport />} />
           <Route path="frame-verification" element={<FrameVerification />} />
+          <Route path="dept-admins" element={<DeptAdminAssignPage />} />
           <Route path="erp-overrides" element={<ErpOverrides />} />
           <Route path="erp-overrides/:reportId" element={<ErpOverrideAnalysis />} />
           <Route path="confidence" element={<ConfidenceMonitor />} />
