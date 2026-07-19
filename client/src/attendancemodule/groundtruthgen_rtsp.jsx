@@ -885,7 +885,7 @@ export default function GroundTruthRTSP({ fixedDepartment = '' }) {
                     )}
                 </div>
 
-                {!selectedRoom && (
+                {!selectedRoom && !fixedDepartment && (
                 <div style={{ marginBottom: 20 }}>
                     <label style={styles.label}>Camera</label>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
@@ -911,6 +911,7 @@ export default function GroundTruthRTSP({ fixedDepartment = '' }) {
                 </div>
                 )}
 
+                {!fixedDepartment && (
                 <div style={{ marginBottom: 20 }}>
                     <label style={styles.label}>
                         Target Images per Person
@@ -936,7 +937,9 @@ export default function GroundTruthRTSP({ fixedDepartment = '' }) {
                         {TARGET_OPTIONS.find(o => o.value === targetImgs)?.hint}
                     </div>
                 </div>
+                )}
 
+                {!fixedDepartment && (
                 <div style={{ marginBottom: 20 }}>
                     <label style={styles.label}>Detection Quality</label>
                     <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
@@ -954,7 +957,9 @@ export default function GroundTruthRTSP({ fixedDepartment = '' }) {
                         ))}
                     </div>
                 </div>
+                )}
 
+                {!fixedDepartment && (
                 <div style={{ marginBottom: 20 }}>
                     <label style={styles.label}>Frame Skip</label>
                     <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
@@ -972,7 +977,9 @@ export default function GroundTruthRTSP({ fixedDepartment = '' }) {
                         ))}
                     </div>
                 </div>
+                )}
 
+                {!fixedDepartment && (
                 <div style={{
                     padding: '10px 16px', background: theme.bg, borderRadius: '6px',
                     fontSize: '13px', fontFamily: theme.fontMono,
@@ -982,6 +989,7 @@ export default function GroundTruthRTSP({ fixedDepartment = '' }) {
                         ground_truth/{batchName || '…'}/person_001/ … person_NNN/
                     </span>
                 </div>
+                )}
             </div>
 
             <LivePreview apiBase={API_BASE} isRunning={isRunning} jobId={gtJobId} />
