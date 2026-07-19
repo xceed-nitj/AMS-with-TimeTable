@@ -13,6 +13,7 @@ const {
     updateStudentEmbedding: syncUpdateStudentEmbedding,
     buildBatchEmbeddingsPkl,
 } = require('./embeddingSyncHelper');
+const { checkAttendanceRunAllowed } = require('./timeWindowGuard');
 
 const ML_SERVICE_URL   = process.env.ML_SERVICE_URL || 'http://localhost:8500';
 const GROUND_TRUTH_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'ground_truth');
@@ -543,6 +544,10 @@ res.json({ ...response, embedding_files_used: embeddingFiles.length });
     //
     async runAttendance(req, res) {
         try {
+            // Optional 08:30–17:30 IST restriction (admin toggle, default off).
+            const runGate = await checkAttendanceRunAllowed();
+            if (!runGate.allowed) return res.status(403).json({ error: runGate.reason });
+
             const { videoLink, room, slot, date, batch: batchOverride } = req.body;
 
             if (!videoLink)     return res.status(400).json({ error: 'videoLink is required' });

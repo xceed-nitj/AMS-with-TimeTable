@@ -5,6 +5,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
 import NotificationSettingsTab from './NotificationSettingsTab';
 import FrameCleanupSettingsTab from './FrameCleanupSettingsTab';
+import OtherControlsSettingsTab from './OtherControlsSettingsTab';
 import { theme as T, cssReset } from './config';
 import DeptMenuConfig from './DeptMenuConfig';
 import DegreeManagement from './DegreeManagement';
@@ -178,7 +179,7 @@ export default function EditSessionDates() {
   const isFetching = useRef(false);
 
   // ── Tab ───────────────────────────────────────────────────────────────────
-  const initialTab = ['session', 'batch', 'notifications', 'deptMenu', 'degree', 'erpControls', 'frameCleanup'].includes(
+  const initialTab = ['session', 'batch', 'notifications', 'deptMenu', 'degree', 'erpControls', 'frameCleanup', 'otherControls'].includes(
     searchParams.get('tab'),
   )
     ? searchParams.get('tab')
@@ -892,6 +893,12 @@ export default function EditSessionDates() {
             onClick={() => setActiveTab('frameCleanup')}
           >
             Frame Cleanup
+          </button>
+          <button
+            className={`ams-tab${activeTab === 'otherControls' ? ' active' : ''}`}
+            onClick={() => setActiveTab('otherControls')}
+          >
+            Other Controls
           </button>
         </div>
 
@@ -1697,6 +1704,7 @@ export default function EditSessionDates() {
           </div>
         )}
         {activeTab === 'frameCleanup' && <FrameCleanupSettingsTab />}
+        {activeTab === 'otherControls' && <OtherControlsSettingsTab />}
       </div>
 
       {/* ── Holiday delete confirmation modal ── */}

@@ -138,6 +138,9 @@ router.use(
 router.use('/settings/frame-cleanup',
     ...attendanceRoleAccess,
     require("./frameCleanupSettingsRoutes"));
+router.use('/settings/other-controls',
+    ...attendanceRoleAccess,
+    require("./otherControlsSettingsRoutes"));
 router.use(
     '/health',
     ...attendanceRoleAccess,

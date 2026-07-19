@@ -27,6 +27,7 @@ const {
     buildEnrolledEmbeddingsAdaface,
     buildEnrolledEmbeddingsAdafaceTopK,
 } = require('../controllers/embeddingSyncHelper');
+const { checkAttendanceRunAllowed } = require('../controllers/timeWindowGuard');
 
 const ML_URL = process.env.ML_SERVICE_URL || 'http://localhost:8500';
 const GROUND_TRUTH_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'ground_truth');
@@ -857,6 +858,12 @@ router.post('/test-pipeline', async (req, res) => {
 // 2. Derive ground truth folder name from timetable session
 // 3. Stream SSE from Python ML service
 router.post('/run-attendance-rtsp', async (req, res) => {
+    // Optional 08:30–17:30 IST restriction (admin toggle, default off).
+    const runGate = await checkAttendanceRunAllowed();
+    if (!runGate.allowed) {
+        return res.status(403).json({ error: runGate.reason });
+    }
+
     const { room, slot, date, rtspUrl, durationSec, frameSkip, batch: manualBatch,
             subject: manualSubject, faculty: manualFaculty, semester: manualSem,
             locksemId: manualLocksemId } = req.body;
