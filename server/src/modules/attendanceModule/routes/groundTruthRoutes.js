@@ -135,6 +135,7 @@ router.post('/run-attendance', async (req, res) => {
 const axios = require('axios');
 const fs    = require('fs');
 const { buildExistingFoldersPayload } = require('../controllers/embeddingSyncHelper');
+const { checkGroundTruthAllowed } = require('../controllers/timeWindowGuard');
 
 // The ML service may run on a separate machine (e.g. the H100 GPU box) —
 // always resolve it from ML_SERVICE_URL, same as every other integration
@@ -225,6 +226,12 @@ function handleGroundTruthEvent(event, batch, pythonFolderMap) {
 }
 
 router.post('/extract-rtsp-stream', async (req, res) => {
+    // Optional 08:30–17:30 IST restriction (admin toggle, default off).
+    const gate = await checkGroundTruthAllowed();
+    if (!gate.allowed) {
+        return res.status(403).json({ error: gate.reason });
+    }
+
     const batch           = req.body.batch || '';
     const existingFolders = buildExistingFoldersPayload(path.join(GT_BASE_DIR, batch));
     const body            = { ...req.body, existingFolders };

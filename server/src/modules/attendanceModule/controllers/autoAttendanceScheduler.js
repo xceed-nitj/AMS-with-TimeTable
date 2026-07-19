@@ -26,6 +26,7 @@ const {
 } = require("./embeddingSyncHelper");
 const alertNotifier = require("./alertNotifier");
 const { pushAttendanceToErp } = require("./erpAttendancePushController");
+const { checkAttendanceRunAllowed } = require("./timeWindowGuard");
 
 const ML_URL = process.env.ML_SERVICE_URL || "http://localhost:8500";
 const EMBEDDINGS_DIR = path.join(
@@ -763,6 +764,14 @@ function startAutoScheduler() {
     // Step 2: working day check (global on/off + stopped days + allotment non-working days)
     if (!config.active) return;
     if ((config.stoppedDays || []).includes(date)) return;
+
+    // Optional 08:30–17:30 IST restriction (admin toggle, default off). Only
+    // bites when the toggle is ON; when OFF, runs fire at any time as before.
+    const runGate = await checkAttendanceRunAllowed();
+    if (!runGate.allowed) {
+      console.log(`[AutoScheduler] Skipping ${date} — ${runGate.reason}`);
+      return;
+    }
     const allotmentEntry = await Allotment.findOne({
       "nonWorkingDays.date": date,
     })

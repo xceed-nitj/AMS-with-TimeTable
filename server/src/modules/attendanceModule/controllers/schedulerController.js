@@ -20,6 +20,7 @@ const {
   buildEnrolledEmbeddingsAdaface,
   buildEnrolledEmbeddingsAdafaceTopK,
 } = require('./embeddingSyncHelper');
+const { checkAttendanceRunAllowed } = require('./timeWindowGuard');
 
 const ML_URL = process.env.ML_SERVICE_URL || 'http://localhost:8500';
 const EMBEDDINGS_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'embeddings');
@@ -470,6 +471,10 @@ exports.runAll = async (req, res) => {
     const { slot } = req.body;
     const date = req.body.date || todayStr();
     if (!slot) return res.status(400).json({ error: 'slot is required' });
+
+    // Optional 08:30–17:30 IST restriction (admin toggle, default off).
+    const runGate = await checkAttendanceRunAllowed();
+    if (!runGate.allowed) return res.status(403).json({ error: runGate.reason });
 
     const config = await AcquisitionControl.findOne({ profileName: 'default' }).lean();
     if (!config) return res.status(404).json({ error: 'AcquisitionControl config not found' });
