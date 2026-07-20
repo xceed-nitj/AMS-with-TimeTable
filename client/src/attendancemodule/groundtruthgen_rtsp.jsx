@@ -45,7 +45,8 @@ const TARGET_OPTIONS = [
     { value: 5,  hint: 'Minimal storage — embedding uses all 5' },
     { value: 8,  hint: '5 embed + 3 backup' },
     { value: 10, hint: '5 embed + 5 backup (recommended)' },
-    { value: 15, hint: '5 embed + 10 backup for diversity' },
+    { value: 15, hint: '5 embed + 10 backup (high quality)' },
+    { value: 20, hint: '5 embed + 15 backup (max quality)' },
 ];
 
 const FRAME_SKIP_OPTIONS = [
@@ -499,8 +500,8 @@ export default function GroundTruthRTSP({ fixedDepartment = '' }) {
                             addLog(`▶ ${ev.message}`, theme.accent);
                             break;
                         case 'frame':
-                            // Frequent frame logging causes UI flicker and freezes the main thread
-                            // Only update UI on stage changes or person_update
+                            if (ev.faces_this_frame > 0)
+                                addLog(`🎞 Frame ${ev.frame} — ${ev.faces_this_frame} face(s) detected`, '#aaa');
                             break;
                         case 'person_update':
                             setPersons(prev => ({

@@ -741,3 +741,171 @@ def get_student_ground_truth(batch_name: str, roll_no: str):
         "has_info":         bool(ef or bf),
     }
 
+# ─── RTSP Live Preview (MJPEG) ───────────────────────────────────────────────
+
+import threading
+
+_preview_frame      = None
+_preview_lock       = threading.Lock()
+_preview_cap        = None
+_preview_thread     = None
+_preview_stop_event = threading.Event()
+_preview_last_error = None
+
+
+def _preview_reader(rtsp_url: str, stop_event: threading.Event, first_frame_event: threading.Event):
+    """Background thread — continuously reads latest frame from RTSP."""
+    global _preview_frame, _preview_cap, _preview_last_error
+
+    # Low-latency capture options for the LIVE PREVIEW only. Stays on TCP so the
+    # stream remains lossless (no decode artifacts / no quality loss) — we only
+    # strip FFmpeg's jitter/reorder buffering so preview frames arrive fresh
+    # instead of drifting further behind real time the longer you watch.
+    #
+    # This env var is process-global and the attendance/acquisition path
+    # (rtsp_routes._open_capture) reads it via os.environ.setdefault(), so we
+    # set it ONLY around this capture's open and restore the previous value
+    # immediately after — the attendance workflow's capture options are never
+    # affected by the preview.
+    _prev_opts = os.environ.get("OPENCV_FFMPEG_CAPTURE_OPTIONS")
+    os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = (
+        "rtsp_transport;tcp|max_delay;0|fflags;nobuffer|flags;low_delay|reorder_queue_size;0"
+    )
+    cap = None
+    try:
+        cap = cv2.VideoCapture(rtsp_url, cv2.CAP_FFMPEG)
+        # FFmpeg reads OPENCV_FFMPEG_CAPTURE_OPTIONS at open time, so it's safe
+        # to restore the global now that the capture is constructed.
+        if _prev_opts is None:
+            os.environ.pop("OPENCV_FFMPEG_CAPTURE_OPTIONS", None)
+        else:
+            os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = _prev_opts
+        # Keep only the newest decoded frame — drop any backlog so the preview
+        # never lags behind real time.
+        cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+        _preview_cap = cap
+
+        if not cap.isOpened():
+            _preview_last_error = "Could not open RTSP stream (camera unreachable or credentials invalid)."
+            first_frame_event.set()
+            return
+
+        while not stop_event.is_set():
+            ret, frame = cap.read()
+            if not ret:
+                if not first_frame_event.is_set():
+                    _preview_last_error = "RTSP stream opened but no frames were received."
+                    first_frame_event.set()
+                break
+
+            # Enforce minimum 960px width for preview quality
+            h, w = frame.shape[:2]
+            if w < 960:
+                scale = 960 / w
+                frame = cv2.resize(frame, (960, int(h * scale)),
+                                   interpolation=cv2.INTER_LANCZOS4)
+
+            with _preview_lock:
+                _preview_frame = frame.copy()
+
+            if not first_frame_event.is_set():
+                first_frame_event.set()
+    except Exception as exc:
+        _preview_last_error = f"Preview reader crashed: {exc}"
+        first_frame_event.set()
+    finally:
+        if cap is not None:
+            cap.release()
+
+
+@router.post("/start-preview")
+def start_preview(body: dict = Body(...)):
+    global _preview_thread, _preview_stop_event, _preview_frame, _preview_last_error
+
+    rtsp_url = body.get("rtspUrl")
+    if not rtsp_url:
+        raise HTTPException(status_code=400, detail="rtspUrl required")
+
+    # Stop existing preview thread if running
+    _preview_stop_event.set()
+    if _preview_thread and _preview_thread.is_alive():
+        _preview_thread.join(timeout=3)
+
+    with _preview_lock:
+        _preview_frame = None
+    _preview_last_error = None
+
+    _preview_stop_event = threading.Event()
+    first_frame_event = threading.Event()
+    _preview_thread = threading.Thread(
+        target=_preview_reader,
+        args=(rtsp_url, _preview_stop_event, first_frame_event),
+        daemon=True,
+    )
+    _preview_thread.start()
+
+    # Do not report success until at least one frame is available.
+    if not first_frame_event.wait(timeout=8):
+        _preview_stop_event.set()
+        if _preview_thread and _preview_thread.is_alive():
+            _preview_thread.join(timeout=2)
+        raise HTTPException(status_code=504, detail="Timed out waiting for first frame from RTSP stream.")
+
+    with _preview_lock:
+        has_frame = _preview_frame is not None
+    if not has_frame:
+        detail = _preview_last_error or "RTSP stream did not produce frames."
+        raise HTTPException(status_code=502, detail=detail)
+
+    return {"status": "ok"}
+
+
+@router.get("/rtsp-preview")
+def rtsp_preview(quality: int = 92, scale: float = 1.0):
+    """MJPEG stream endpoint — one persistent connection per session."""
+
+    import time
+    ready_deadline = time.time() + 5
+    while True:
+        with _preview_lock:
+            ready = _preview_frame is not None
+        if ready:
+            break
+        if time.time() > ready_deadline:
+            raise HTTPException(status_code=503, detail=_preview_last_error or "Preview stream is not ready.")
+        time.sleep(0.05)
+
+    def frame_generator():
+        while True:
+            with _preview_lock:
+                frame = _preview_frame.copy() if _preview_frame is not None else None
+
+            if frame is None:
+                time.sleep(0.05)
+                continue
+
+            # Optional downscale for bandwidth (scale param from frontend)
+            if scale != 1.0 and 0.1 < scale < 1.0:
+                h, w  = frame.shape[:2]
+                frame = cv2.resize(frame,
+                                   (int(w * scale), int(h * scale)),
+                                   interpolation=cv2.INTER_AREA)
+
+            # JPEG encode quality from frontend. Wider range makes quality changes easier to notice.
+            encode_params = [cv2.IMWRITE_JPEG_QUALITY, min(max(quality, 20), 95)]
+            _, buf = cv2.imencode('.jpg', frame, encode_params)
+
+            yield (
+                b"--frame\r\n"
+                b"Content-Type: image/jpeg\r\n\r\n"
+                + buf.tobytes()
+                + b"\r\n"
+            )
+
+            time.sleep(1 / 25)  # 25 fps preview (smoother live view)
+
+    return StreamingResponse(
+        frame_generator(),
+        media_type="multipart/x-mixed-replace; boundary=frame",
+        headers={"Cache-Control": "no-cache"},
+    )
