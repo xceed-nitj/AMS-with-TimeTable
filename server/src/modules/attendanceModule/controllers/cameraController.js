@@ -2,6 +2,7 @@ const axios = require('axios');
 const net = require('net');
 const Camera = require('../../../models/attendanceModule/camera.js');
 const MasterRoom = require('../../../models/masterroom.js');
+const { spawn } = require("child_process");
 
 const ML_URL = process.env.ML_SERVICE_URL || 'http://localhost:8500';
 
@@ -44,6 +45,44 @@ function normalizeRoom(value = '') {
     return String(value).trim().replace(/[\s\-.]+/g, '').toUpperCase();
 }
 
+// Checks for online status of streams | same stuff as ffprobe command
+function probeRtsp(rtspUrl, timeoutMs = 5000) {
+    return new Promise((resolve) => {
+        const ffprobe = spawn("ffprobe", [
+            "-v", "error",
+            "-rtsp_transport", "tcp",
+            "-show_entries", "stream=codec_type",
+            "-of", "default=noprint_wrappers=1:nokey=1",
+            rtspUrl,
+        ]);
+
+        let finished = false;
+
+        const timer = setTimeout(() => {
+            if (!finished) {
+                finished = true;
+                ffprobe.kill("SIGKILL");
+                resolve(false);
+            }
+        }, timeoutMs);
+
+        ffprobe.on("close", (code) => {
+            if (finished) return;
+            finished = true;
+            clearTimeout(timer);
+            resolve(code === 0);
+        });
+
+        ffprobe.on("error", () => {
+            if (finished) return;
+            finished = true;
+            clearTimeout(timer);
+            resolve(false);
+        });
+    });
+}
+
+// Doesnt correctly tell if stream is running or not as only checks for a TCP connection which is open when mediamtx is running regardless of stream status
 function probeTcpReachability(host, port, timeoutMs = 1200) {
     return new Promise((resolve) => {
         if (!host || !Number.isFinite(Number(port))) {
@@ -133,7 +172,7 @@ class CameraController {
             const checkedAt = new Date().toISOString();
             const evaluated = await Promise.all(
                 cameras.map(async (camera) => {
-                    const online = await probeTcpReachability(camera.ipAddress, camera.port);
+                    const online = await probeRtsp(camera.streamUrl);
                     return {
                         ...camera,
                         status: online ? 'online' : 'offline',
