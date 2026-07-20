@@ -504,6 +504,54 @@ class GroundTruthUploadController {
         }
     }
 
+    // ─── Delete ALL photos in a batch ───────────────────────────────────
+    async deleteAllPhotos(req, res) {
+        try {
+            const batch = sanitizeBatch(req.params.batch);
+            const batchPath = path.join(ERP_PHOTOS_DIR, batch);
+            assertInsideRoot(batchPath);
+
+            if (!fs.existsSync(batchPath)) {
+                return res.status(404).json({ error: 'Batch folder not found' });
+            }
+
+            const existingFiles = await fsPromises.readdir(batchPath);
+            const deletedRollNos = [];
+
+            for (const f of existingFiles) {
+                const ext = path.extname(f);
+                if (!/^\.(jpg|jpeg|png|webp)$/i.test(ext)) continue;
+                const roll = path.basename(f, ext);
+                const filePath = path.join(batchPath, f);
+                assertInsideRoot(filePath);
+                await fsPromises.unlink(filePath);
+                deletedRollNos.push(roll.toUpperCase());
+            }
+
+            if (deletedRollNos.length === 0) {
+                return res.status(404).json({ error: 'No photos found for this batch' });
+            }
+
+            console.log(`[GT Upload] Delete ALL: batch=${batch} count=${deletedRollNos.length}`);
+
+            res.json({
+                message: `Deleted ${deletedRollNos.length} photo(s)`,
+                deletedCount: deletedRollNos.length,
+            });
+
+            for (const roll_no of deletedRollNos) {
+                triggerEmbeddingSync('delete', { batch, roll_no });
+            }
+
+        } catch (err) {
+            if (err.message === 'Invalid batch name' || err.message === 'Batch name is required') {
+                return res.status(400).json({ error: err.message });
+            }
+            console.error('[GT Upload] Delete all error:', err);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+
     // ─── Force Sync All ───────────────────────────────────────────────
     async syncAll(req, res) {
         try {
