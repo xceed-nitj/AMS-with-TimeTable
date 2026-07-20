@@ -45,8 +45,7 @@ const TARGET_OPTIONS = [
     { value: 5,  hint: 'Minimal storage — embedding uses all 5' },
     { value: 8,  hint: '5 embed + 3 backup' },
     { value: 10, hint: '5 embed + 5 backup (recommended)' },
-    { value: 15, hint: '5 embed + 10 backup (high quality)' },
-    { value: 20, hint: '5 embed + 15 backup (max quality)' },
+    { value: 15, hint: '5 embed + 10 backup for diversity' },
 ];
 
 const FRAME_SKIP_OPTIONS = [
@@ -397,12 +396,10 @@ export default function GroundTruthRTSP({ fixedDepartment = '' }) {
 
     const stopStream = useCallback(async () => {
         try {
-            const jobId = gtJobId;
-            setGtJobId(null);
             await fetch(`${API_BASE}/stop-rtsp-stream`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(jobId ? { jobId } : {}),
+                body: JSON.stringify(gtJobId ? { jobId: gtJobId } : {}),
             });
         } catch { /* clean fallback trace exit */ }
     }, [gtJobId]);
@@ -571,7 +568,7 @@ export default function GroundTruthRTSP({ fixedDepartment = '' }) {
                 const attempt = retryCount + 1;
                 setRetryCount(attempt);
                 addLog(`❌ ${err.message} — retrying in ${RETRY_DELAY}s (attempt ${attempt})…`, theme.danger);
-                if (status === 'running') setStatus('retrying');
+                setStatus('retrying');
                 setRetryCountdown(RETRY_DELAY);
 
                 retryTickRef.current = setInterval(() => {
