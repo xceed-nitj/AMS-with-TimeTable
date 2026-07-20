@@ -201,6 +201,14 @@ class RTSPRequest(BaseModel):
     minSamples:          int   = 3
     clusterThreshold:    float = 0.45
     jobId:               str   = ""
+    # Server-persistent acquisition (GT acquisition job manager, Node side):
+    # when True, the run never auto-stops on "all detected persons reached
+    # target" — it keeps collecting newly-arriving people until maxDurationSec
+    # elapses or Node sends an explicit stop. maxDurationSec is a hard ceiling
+    # (default 60 min) so a job can never outlive its window even if the stop
+    # signal is lost.
+    continuous:          bool  = False
+    maxDurationSec:      int   = 3600
     # [{folderName, infoJson, photos: [{filename, data}]}] — sent by Node so this
     # process never needs direct filesystem access to ground_truth/ (may run on a
     # separate machine).
@@ -425,6 +433,16 @@ def extract_rtsp_stream(req: RTSPRequest):
                     yield sse({"type": "stage", "message": "Stop signal received — finishing up…"})
                     break
 
+                # Hard duration ceiling — a server-persistent job (continuous
+                # mode) has no target-reached auto-stop, so this is what bounds
+                # it if no explicit stop arrives. Also protects the plain path
+                # from an unbounded run.
+                if time.time() - start >= req.maxDurationSec:
+                    logger.info("Max duration %ss reached — stopping", req.maxDurationSec)
+                    yield sse({"type": "stage",
+                               "message": f"Max duration {req.maxDurationSec}s reached — finishing up…"})
+                    break
+
                 ok, frame, seq, grab_n = reader.latest()
 
                 if not ok:
@@ -547,7 +565,8 @@ def extract_rtsp_stream(req: RTSPRequest):
                                "message": f"Frame {frame_count} | {len(all_embeddings)} detections | {n_persons} people | {n_done}/{n_persons} done"})
 
                 secs_since_new = time.time() - _last_new_person_t
-                if (person_counts
+                if (not req.continuous
+                        and person_counts
                         and all(c >= req.targetImgsPerPerson for c in person_counts.values())
                         and secs_since_new >= NEW_PERSON_TIMEOUT):
                     yield sse({"type": "stage",

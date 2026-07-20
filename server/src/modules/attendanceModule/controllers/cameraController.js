@@ -351,6 +351,7 @@ class CameraController {
 
             return res.json({
                 status: 'ok',
+                jobId: result.data?.jobId,
                 previewCamera: {
                     id: camera._id,
                     cameraId: camera.cameraId,
@@ -385,6 +386,7 @@ class CameraController {
                 responseType: 'stream',
                 timeout: 0,
                 params: {
+                    jobId: req.query.jobId,
                     quality: req.query.quality,
                     scale: req.query.scale,
                 },
@@ -403,7 +405,12 @@ class CameraController {
 
     async stopPreview(req, res) {
         try {
-            const result = await axios.post(`${ML_URL}/stop-rtsp-stream`, {}, { timeout: 10000 });
+            const jobId = req.body?.jobId;
+            const result = await axios.post(
+                `${ML_URL}/stop-preview`,
+                jobId ? { jobId } : {},
+                { timeout: 10000 },
+            );
             return res.json(result.data);
         } catch (error) {
             return sendKnownError(res, error);

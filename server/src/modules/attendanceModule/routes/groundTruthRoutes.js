@@ -148,82 +148,13 @@ const ML_SERVICE_URL = /^https?:\/\//i.test(rawMlUrl) ? rawMlUrl : `http://${raw
 
 const GT_BASE_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'ground_truth');
 
-// Internal SSE event types that Node.js handles server-side (not forwarded to client)
-const GT_INTERNAL = new Set(['mkdir_batch', 'mkdir', 'crop_save', 'info_save', 'file_delete']);
-
-// pythonFolderMap: maps Python-assigned "person_XXX" label → MongoDB ObjectId string
-// scoped per SSE request so parallel streams never collide
-function handleGroundTruthEvent(event, batch, pythonFolderMap) {
-    const batchDir = path.join(GT_BASE_DIR, batch);
-    try {
-        if (event.type === 'mkdir_batch') {
-            fs.mkdirSync(batchDir, { recursive: true });
-
-        } else if (event.type === 'mkdir') {
-            // Create the folder on disk (name stays person_XXX)
-            fs.mkdirSync(path.join(batchDir, event.folder), { recursive: true });
-
-            // Generate a stable ObjectId for this cluster immediately
-            const oid    = new mongoose.Types.ObjectId();
-            const oidStr = oid.toString();
-            pythonFolderMap[event.folder] = oidStr;
-
-            // Persist ClusterMatch record so the _id exists before ERP matching
-            ClusterMatch.create({
-                _id:           oid,
-                batch,
-                folderName:    event.folder,   // e.g. "person_001" — immutable label
-                currentFolder: event.folder,   // tracks actual disk folder; updated on approval
-                status:        'unmatched',
-                imageFiles:    [],
-                imageCount:    0,
-            }).catch(err => {
-                // Duplicate key = folder already registered (re-run / restart), safe to ignore
-                if (err.code !== 11000)
-                    console.error('[GT] ClusterMatch create error:', err.message);
-            });
-
-        } else if (event.type === 'crop_save') {
-            const folderPath = path.join(batchDir, event.folder);
-            fs.mkdirSync(folderPath, { recursive: true });
-            fs.writeFileSync(path.join(folderPath, event.filename), Buffer.from(event.data, 'base64'));
-
-            // Update imageFiles list on the ClusterMatch record
-            const oidStr = pythonFolderMap[event.folder];
-            if (oidStr) {
-                ClusterMatch.findByIdAndUpdate(oidStr, {
-                    $addToSet: { imageFiles:    event.filename },
-                    $inc:      { imageCount:    1 },
-                }).catch(() => {});
-            }
-
-        } else if (event.type === 'info_save') {
-            const folderPath = path.join(batchDir, event.folder);
-            fs.mkdirSync(folderPath, { recursive: true });
-            fs.writeFileSync(path.join(folderPath, '_info.json'), JSON.stringify(event.info, null, 2));
-
-            // Sync embeddingFiles / previewFiles to DB from the info payload
-            const oidStr = pythonFolderMap[event.folder];
-            if (oidStr && event.info) {
-                const embeds  = event.info.embedding_files || [];
-                const backups = event.info.backup_files    || [];
-                const all     = [...embeds, ...backups];
-                ClusterMatch.findByIdAndUpdate(oidStr, {
-                    $set: {
-                        embeddingFiles: embeds,
-                        previewFiles:   all.slice(0, 6),
-                    },
-                }).catch(() => {});
-            }
-
-        } else if (event.type === 'file_delete') {
-            const filePath = path.join(batchDir, event.folder, event.filename);
-            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-        }
-    } catch (err) {
-        console.error(`[GT] Error handling ${event.type} for ${batch}/${event.folder || ''}:`, err.message);
-    }
-}
+// The disk writer and the set of internally-handled SSE event types now live
+// in the acquisition manager, shared between the legacy browser-driven
+// /extract-rtsp-stream path (below) and the server-persistent gt-acquisition/*
+// jobs — so both write ground-truth files identically.
+const gtManager = require('../controllers/gtAcquisitionManager');
+const { handleGroundTruthEvent, GT_INTERNAL } = gtManager;
+const getUserDetails = require('../../usermanagement/controllers/dto');
 
 router.post('/extract-rtsp-stream', async (req, res) => {
     // Optional 08:30–17:30 IST restriction (admin toggle, default off).
@@ -340,6 +271,90 @@ router.post('/start-preview', async (req, res) => {
         console.error('start-preview proxy error:', err.message);
         res.status(502).json({ error: 'ML service unavailable' });
     }
+});
+
+// ─── Server-persistent Ground Truth acquisition (gtAcquisitionManager) ────────
+// Unlike /extract-rtsp-stream (which dies when the browser tab closes), these
+// jobs run on the server until Stop or the 60-minute ceiling. The browser
+// starts a job, attaches to observe it, and can reattach after a reload.
+
+async function resolveStartedByName(req) {
+    if (req.user?.email) return req.user.email;
+    try {
+        const u = await getUserDetails(req.user.id);
+        return u?.email || String(req.user.id);
+    } catch (_) {
+        return String(req.user?.id || 'user');
+    }
+}
+
+// Start a job. `enforceAttendanceDepartment` (mounted on /ground-truth) already
+// rejects a batch outside the caller's department, so no extra check needed.
+router.post('/gt-acquisition/start', async (req, res) => {
+    const gate = await checkGroundTruthAllowed();
+    if (!gate.allowed) return res.status(403).json({ error: gate.reason });
+
+    const {
+        mode = 'single', batch, cameras,
+        detSize, frameSkip, targetImgsPerPerson, minSamples, clusterThreshold,
+    } = req.body || {};
+
+    if (!batch) return res.status(400).json({ error: 'batch is required' });
+    if (!Array.isArray(cameras) || cameras.length === 0)
+        return res.status(400).json({ error: 'cameras[] is required' });
+    if (!cameras.every(c => c && c.url))
+        return res.status(400).json({ error: 'every camera needs a url' });
+
+    const { acquisitionId } = gtManager.startAcquisition({
+        mode,
+        batch,
+        cameras,
+        params: {
+            detSize:             Number(detSize)             || 320,
+            frameSkip:           Number(frameSkip)           || 10,
+            targetImgsPerPerson: Number(targetImgsPerPerson) || 10,
+            minSamples:          Number(minSamples)          || 3,
+            clusterThreshold:    Number(clusterThreshold)    || 0.45,
+        },
+        startedByName: await resolveStartedByName(req),
+        department:    req.attendanceDepartment,
+    });
+
+    res.json({ acquisitionId });
+});
+
+// List running/recent jobs the caller may see — used on page load to show
+// active acquisitions (elapsed time + per-person counts) and reattach.
+router.get('/gt-acquisition/status', (req, res) => {
+    res.json({
+        jobs: gtManager.listJobs({
+            department:  req.attendanceDepartment,
+            fullAccess:  req.attendanceFullAccess,
+        }),
+    });
+});
+
+// Live SSE feed for one job: emits a `snapshot` immediately, then streams
+// updates. Detaching (tab close/reload) never affects the job.
+router.get('/gt-acquisition/stream', (req, res) => {
+    const { acquisitionId } = req.query;
+    if (!acquisitionId) return res.status(400).json({ error: 'acquisitionId is required' });
+
+    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.flushHeaders();
+
+    gtManager.attachStream(acquisitionId, res);
+});
+
+router.post('/gt-acquisition/stop', async (req, res) => {
+    const { acquisitionId } = req.body || {};
+    if (!acquisitionId) return res.status(400).json({ error: 'acquisitionId is required' });
+    const result = await gtManager.stopAcquisition(acquisitionId);
+    if (!result.ok) return res.status(404).json(result);
+    res.json(result);
 });
 
 module.exports = router;

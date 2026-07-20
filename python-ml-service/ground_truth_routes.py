@@ -742,20 +742,30 @@ def get_student_ground_truth(batch_name: str, roll_no: str):
     }
 
 # ─── RTSP Live Preview (MJPEG) ───────────────────────────────────────────────
+# Previews are per-job so several cameras (e.g. a room's left + right feeds)
+# stream independently and never mix into one shared frame buffer. Each preview
+# is keyed by a deterministic id derived from its RTSP URL, so the same camera
+# reuses a single capture thread while different cameras get separate slots.
 
 import threading
+import time
+import hashlib
 
-_preview_frame      = None
-_preview_lock       = threading.Lock()
-_preview_cap        = None
-_preview_thread     = None
-_preview_stop_event = threading.Event()
-_preview_last_error = None
+_previews      = {}                 # job_id -> preview dict
+_previews_lock = threading.Lock()
+
+# Stop a preview whose last viewer disconnected this long ago (seconds).
+PREVIEW_IDLE_TIMEOUT = 30.0
 
 
-def _preview_reader(rtsp_url: str, stop_event: threading.Event, first_frame_event: threading.Event):
-    """Background thread — continuously reads latest frame from RTSP."""
-    global _preview_frame, _preview_cap, _preview_last_error
+def _preview_job_id(rtsp_url: str) -> str:
+    return hashlib.sha1(rtsp_url.encode("utf-8")).hexdigest()[:16]
+
+
+def _preview_reader(rtsp_url: str, prev: dict, first_frame_event: threading.Event):
+    """Background thread — continuously reads the latest frame from one RTSP
+    stream into that preview's own frame buffer."""
+    stop_event = prev["stop"]
 
     # Low-latency capture options for the LIVE PREVIEW only. Stays on TCP so the
     # stream remains lossless (no decode artifacts / no quality loss) — we only
@@ -783,10 +793,10 @@ def _preview_reader(rtsp_url: str, stop_event: threading.Event, first_frame_even
         # Keep only the newest decoded frame — drop any backlog so the preview
         # never lags behind real time.
         cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-        _preview_cap = cap
+        prev["cap"] = cap
 
         if not cap.isOpened():
-            _preview_last_error = "Could not open RTSP stream (camera unreachable or credentials invalid)."
+            prev["last_error"] = "Could not open RTSP stream (camera unreachable or credentials invalid)."
             first_frame_event.set()
             return
 
@@ -794,7 +804,7 @@ def _preview_reader(rtsp_url: str, stop_event: threading.Event, first_frame_even
             ret, frame = cap.read()
             if not ret:
                 if not first_frame_event.is_set():
-                    _preview_last_error = "RTSP stream opened but no frames were received."
+                    prev["last_error"] = "RTSP stream opened but no frames were received."
                     first_frame_event.set()
                 break
 
@@ -805,104 +815,177 @@ def _preview_reader(rtsp_url: str, stop_event: threading.Event, first_frame_even
                 frame = cv2.resize(frame, (960, int(h * scale)),
                                    interpolation=cv2.INTER_LANCZOS4)
 
-            with _preview_lock:
-                _preview_frame = frame.copy()
+            with prev["lock"]:
+                prev["frame"] = frame.copy()
 
             if not first_frame_event.is_set():
                 first_frame_event.set()
     except Exception as exc:
-        _preview_last_error = f"Preview reader crashed: {exc}"
+        prev["last_error"] = f"Preview reader crashed: {exc}"
         first_frame_event.set()
     finally:
         if cap is not None:
             cap.release()
 
 
+def _stop_preview_job(job_id: str):
+    with _previews_lock:
+        prev = _previews.pop(job_id, None)
+    if not prev:
+        return
+    prev["stop"].set()
+    thread = prev.get("thread")
+    if thread and thread.is_alive():
+        thread.join(timeout=3)
+
+
+def _sweep_idle_previews():
+    """Stop previews whose last viewer disconnected more than
+    PREVIEW_IDLE_TIMEOUT ago, so unmounted panels don't leak capture threads."""
+    now = time.time()
+    stale = []
+    with _previews_lock:
+        for job_id, prev in _previews.items():
+            if prev["viewers"] <= 0 and (now - prev["last_access"]) > PREVIEW_IDLE_TIMEOUT:
+                stale.append(job_id)
+    for job_id in stale:
+        _stop_preview_job(job_id)
+
+
 @router.post("/start-preview")
 def start_preview(body: dict = Body(...)):
-    global _preview_thread, _preview_stop_event, _preview_frame, _preview_last_error
-
     rtsp_url = body.get("rtspUrl")
     if not rtsp_url:
         raise HTTPException(status_code=400, detail="rtspUrl required")
 
-    # Stop existing preview thread if running
-    _preview_stop_event.set()
-    if _preview_thread and _preview_thread.is_alive():
-        _preview_thread.join(timeout=3)
+    _sweep_idle_previews()
 
-    with _preview_lock:
-        _preview_frame = None
-    _preview_last_error = None
+    job_id = _preview_job_id(rtsp_url)
 
-    _preview_stop_event = threading.Event()
+    # Reuse an already-running preview for the same camera instead of restarting.
+    with _previews_lock:
+        existing = _previews.get(job_id)
+        if existing is not None:
+            existing["last_access"] = time.time()
+    if existing is not None:
+        with existing["lock"]:
+            if existing["frame"] is not None:
+                return {"status": "ok", "jobId": job_id}
+        # Slot exists but hasn't produced a frame yet — fall through and restart.
+        _stop_preview_job(job_id)
+
+    prev = {
+        "stop":        threading.Event(),
+        "frame":       None,
+        "lock":        threading.Lock(),
+        "cap":         None,
+        "thread":      None,
+        "last_error":  None,
+        "viewers":     0,
+        "last_access": time.time(),
+    }
+    with _previews_lock:
+        _previews[job_id] = prev
+
     first_frame_event = threading.Event()
-    _preview_thread = threading.Thread(
+    prev["thread"] = threading.Thread(
         target=_preview_reader,
-        args=(rtsp_url, _preview_stop_event, first_frame_event),
+        args=(rtsp_url, prev, first_frame_event),
         daemon=True,
     )
-    _preview_thread.start()
+    prev["thread"].start()
 
     # Do not report success until at least one frame is available.
     if not first_frame_event.wait(timeout=8):
-        _preview_stop_event.set()
-        if _preview_thread and _preview_thread.is_alive():
-            _preview_thread.join(timeout=2)
+        _stop_preview_job(job_id)
         raise HTTPException(status_code=504, detail="Timed out waiting for first frame from RTSP stream.")
 
-    with _preview_lock:
-        has_frame = _preview_frame is not None
+    with prev["lock"]:
+        has_frame = prev["frame"] is not None
     if not has_frame:
-        detail = _preview_last_error or "RTSP stream did not produce frames."
+        detail = prev["last_error"] or "RTSP stream did not produce frames."
+        _stop_preview_job(job_id)
         raise HTTPException(status_code=502, detail=detail)
 
+    return {"status": "ok", "jobId": job_id}
+
+
+@router.post("/stop-preview")
+def stop_preview(body: dict = Body(...)):
+    job_id = body.get("jobId")
+    if job_id:
+        _stop_preview_job(job_id)
     return {"status": "ok"}
 
 
-@router.get("/rtsp-preview")
-def rtsp_preview(quality: int = 92, scale: float = 1.0):
-    """MJPEG stream endpoint — one persistent connection per session."""
+def _resolve_preview(job_id: str):
+    """Return (job_id, prev) for the requested job, or the most recently
+    started preview when no job id is given (keeps callers that don't pass one
+    working, e.g. the single-camera ground-truth flow)."""
+    with _previews_lock:
+        if job_id and job_id in _previews:
+            return job_id, _previews[job_id]
+        if not job_id and _previews:
+            newest = max(_previews.items(), key=lambda kv: kv[1]["last_access"])
+            return newest
+    return None, None
 
-    import time
+
+@router.get("/rtsp-preview")
+def rtsp_preview(jobId: str = "", quality: int = 92, scale: float = 1.0):
+    """MJPEG stream endpoint — one persistent connection per camera preview."""
+
     ready_deadline = time.time() + 5
+    prev = None
     while True:
-        with _preview_lock:
-            ready = _preview_frame is not None
-        if ready:
-            break
+        _, prev = _resolve_preview(jobId)
+        if prev is not None:
+            with prev["lock"]:
+                ready = prev["frame"] is not None
+            if ready:
+                break
         if time.time() > ready_deadline:
-            raise HTTPException(status_code=503, detail=_preview_last_error or "Preview stream is not ready.")
+            detail = (prev["last_error"] if prev else None) or "Preview stream is not ready."
+            raise HTTPException(status_code=503, detail=detail)
         time.sleep(0.05)
 
+    with _previews_lock:
+        prev["viewers"] += 1
+        prev["last_access"] = time.time()
+
     def frame_generator():
-        while True:
-            with _preview_lock:
-                frame = _preview_frame.copy() if _preview_frame is not None else None
+        try:
+            while not prev["stop"].is_set():
+                with prev["lock"]:
+                    frame = prev["frame"].copy() if prev["frame"] is not None else None
 
-            if frame is None:
-                time.sleep(0.05)
-                continue
+                if frame is None:
+                    time.sleep(0.05)
+                    continue
 
-            # Optional downscale for bandwidth (scale param from frontend)
-            if scale != 1.0 and 0.1 < scale < 1.0:
-                h, w  = frame.shape[:2]
-                frame = cv2.resize(frame,
-                                   (int(w * scale), int(h * scale)),
-                                   interpolation=cv2.INTER_AREA)
+                # Optional downscale for bandwidth (scale param from frontend)
+                if scale != 1.0 and 0.1 < scale < 1.0:
+                    h, w  = frame.shape[:2]
+                    frame = cv2.resize(frame,
+                                       (int(w * scale), int(h * scale)),
+                                       interpolation=cv2.INTER_AREA)
 
-            # JPEG encode quality from frontend. Wider range makes quality changes easier to notice.
-            encode_params = [cv2.IMWRITE_JPEG_QUALITY, min(max(quality, 20), 95)]
-            _, buf = cv2.imencode('.jpg', frame, encode_params)
+                # JPEG encode quality from frontend.
+                encode_params = [cv2.IMWRITE_JPEG_QUALITY, min(max(quality, 20), 95)]
+                _, buf = cv2.imencode('.jpg', frame, encode_params)
 
-            yield (
-                b"--frame\r\n"
-                b"Content-Type: image/jpeg\r\n\r\n"
-                + buf.tobytes()
-                + b"\r\n"
-            )
+                yield (
+                    b"--frame\r\n"
+                    b"Content-Type: image/jpeg\r\n\r\n"
+                    + buf.tobytes()
+                    + b"\r\n"
+                )
 
-            time.sleep(1 / 25)  # 25 fps preview (smoother live view)
+                time.sleep(1 / 25)  # 25 fps preview (smoother live view)
+        finally:
+            with _previews_lock:
+                prev["viewers"] = max(0, prev["viewers"] - 1)
+                prev["last_access"] = time.time()
 
     return StreamingResponse(
         frame_generator(),

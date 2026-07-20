@@ -179,10 +179,14 @@ export default function EditSessionDates() {
   const isFetching = useRef(false);
 
   // ── Tab ───────────────────────────────────────────────────────────────────
-  const initialTab = ['session', 'batch', 'notifications', 'deptMenu', 'degree', 'erpControls', 'frameCleanup', 'otherControls'].includes(
-    searchParams.get('tab'),
+  // Frame cleanup now lives inside the "Other Controls" tab, but keep old
+  // ?tab=frameCleanup deep links working by mapping them across.
+  const requestedTab =
+    searchParams.get('tab') === 'frameCleanup' ? 'otherControls' : searchParams.get('tab');
+  const initialTab = ['session', 'batch', 'notifications', 'deptMenu', 'degree', 'erpControls', 'otherControls'].includes(
+    requestedTab,
   )
-    ? searchParams.get('tab')
+    ? requestedTab
     : 'session';
   const [activeTab, setActiveTab] = useState(initialTab);
 
@@ -887,12 +891,6 @@ export default function EditSessionDates() {
             onClick={() => setActiveTab('erpControls')}
           >
             ERP Controls
-          </button>
-          <button
-            className={`ams-tab${activeTab === 'frameCleanup' ? ' active' : ''}`}
-            onClick={() => setActiveTab('frameCleanup')}
-          >
-            Frame Cleanup
           </button>
           <button
             className={`ams-tab${activeTab === 'otherControls' ? ' active' : ''}`}
@@ -1703,8 +1701,24 @@ export default function EditSessionDates() {
             <ErpPushSettingsTab />
           </div>
         )}
-        {activeTab === 'frameCleanup' && <FrameCleanupSettingsTab />}
-        {activeTab === 'otherControls' && <OtherControlsSettingsTab />}
+        {activeTab === 'otherControls' && (
+          <div>
+            <OtherControlsSettingsTab />
+            <div
+              style={{
+                fontSize: 14,
+                fontWeight: 700,
+                color: T.text,
+                margin: '4px 0 16px',
+                paddingTop: 16,
+                borderTop: `1px solid ${T.border}`,
+              }}
+            >
+              Frame Cleanup
+            </div>
+            <FrameCleanupSettingsTab />
+          </div>
+        )}
       </div>
 
       {/* ── Holiday delete confirmation modal ── */}

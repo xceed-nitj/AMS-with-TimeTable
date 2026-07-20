@@ -13,7 +13,6 @@ import {
 } from '@chakra-ui/react';
 import {
   FiActivity,
-  FiArrowRight,
   FiAward,
   FiCalendar,
   FiFileText,
@@ -137,60 +136,75 @@ const singleRoleTarget = (role, user) => {
   return roleMeta(role).link;
 };
 
-const RoleCard = ({ role, onOpen }) => {
-  const { name, description, icon, accent } = roleMeta(role);
-  const cardBg = useColorModeValue('white', 'gray.800');
-  const border = useColorModeValue('gray.200', 'gray.700');
-  const descColor = useColorModeValue('gray.600', 'gray.400');
-  const iconBg = useColorModeValue(`${accent}.50`, `${accent}.900`);
-  const iconColor = useColorModeValue(`${accent}.600`, `${accent}.300`);
+const RoleItem = ({ role, index, onOpen }) => {
+  const { name, description, accent } = roleMeta(role);
+  const cardBg = useColorModeValue(`${accent}.50`, `${accent}.900`);
+  const cardBorder = useColorModeValue(`${accent}.100`, `${accent}.700`);
+  const hoverBg = useColorModeValue(`${accent}.100`, `${accent}.800`);
   const hoverBorder = useColorModeValue(`${accent}.400`, `${accent}.500`);
+  const descColor = useColorModeValue('gray.600', 'gray.300');
+  const nameColor = useColorModeValue('gray.800', 'white');
+  const numColor = useColorModeValue(`${accent}.500`, `${accent}.300`);
 
   return (
-    <Box
+    <Flex
       as="button"
-      textAlign="left"
       onClick={onOpen}
       role="group"
+      direction="column"
+      textAlign="left"
+      h="full"
       bg={cardBg}
       borderWidth="1px"
-      borderColor={border}
-      borderRadius="xl"
-      p={6}
-      display="flex"
-      flexDirection="column"
-      gap={4}
+      borderColor={cardBorder}
+      borderRadius="2xl"
+      p={{ base: 5, md: 6 }}
       transition="all 0.2s ease"
       _hover={{
+        bg: hoverBg,
+        borderColor: hoverBorder,
         transform: 'translateY(-4px)',
         boxShadow: 'lg',
-        borderColor: hoverBorder,
       }}
       _focusVisible={{ boxShadow: 'outline' }}
     >
-      <Flex align="center" justify="space-between" w="full">
-        <Flex align="center" justify="center" boxSize={12} borderRadius="lg" bg={iconBg} color={iconColor}>
-          <Icon as={icon} boxSize={6} />
-        </Flex>
-        <Icon
-          as={FiArrowRight}
-          boxSize={5}
-          color={iconColor}
+      <Flex align="center" justify="space-between" w="full" mb={{ base: 4, md: 5 }}>
+        <Text
+          fontSize={{ base: '3xl', md: '4xl' }}
+          fontWeight="extrabold"
+          fontFamily="mono"
+          lineHeight="1"
+          color={numColor}
+        >
+          {String(index + 1).padStart(2, '0')}
+        </Text>
+        <Box
+          as="span"
+          aria-hidden="true"
+          fontSize={{ base: '2xl', md: '3xl' }}
+          lineHeight="1"
+          color={numColor}
           opacity={0}
-          transform="translateX(-6px)"
+          transform="translateX(-10px)"
           transition="all 0.2s ease"
           _groupHover={{ opacity: 1, transform: 'translateX(0)' }}
-        />
+        >
+          &rarr;
+        </Box>
       </Flex>
-      <Box>
-        <Heading as="h3" size="md" mb={1}>
-          {name}
-        </Heading>
-        <Text fontSize="sm" color={descColor}>
-          {description}
-        </Text>
-      </Box>
-    </Box>
+      <Heading
+        as="h3"
+        fontSize={{ base: 'lg', md: 'xl' }}
+        lineHeight="1.3"
+        mb={2}
+        color={nameColor}
+      >
+        {name}
+      </Heading>
+      <Text fontSize={{ base: 'sm', md: 'md' }} color={descColor} lineHeight="1.5">
+        {description}
+      </Text>
+    </Flex>
   );
 };
 
@@ -201,7 +215,11 @@ const AllocatedRolesPage = () => {
   const [user, setUser] = useState(null);
 
   const pageBg = useColorModeValue('gray.50', 'gray.900');
-  const subColor = useColorModeValue('gray.600', 'gray.400');
+  const subColor = useColorModeValue('gray.500', 'gray.400');
+  const emptyCardBg = useColorModeValue('white', 'gray.800');
+  const emptyCardBorder = useColorModeValue('gray.100', 'gray.700');
+  const labelColor = useColorModeValue('gray.400', 'gray.500');
+  const emptyIconBg = useColorModeValue('gray.100', 'gray.700');
 
   useEffect(() => {
     (async () => {
@@ -243,29 +261,82 @@ const AllocatedRolesPage = () => {
   }
 
   const email = Array.isArray(user?.email) ? user.email[0] : user?.email;
+  const displayName = user?.name || email || 'there';
+  const roleCount = allocatedRoles.length;
 
   return (
-    <Box bg={pageBg} minH="100vh" py={{ base: 8, md: 14 }}>
+    <Box bg={pageBg} minH="100vh" py={{ base: 8, md: 16 }}>
       <Container maxW="5xl">
-        <Box mb={{ base: 8, md: 12 }} textAlign="center">
-          <Heading as="h1" size="xl" mb={2}>
-            Welcome{email ? `, ${email}` : ''}
+        {/* Header */}
+        <Box mb={{ base: 8, md: 12 }}>
+          <Text
+            fontSize={{ base: 'xs', md: 'sm' }}
+            fontWeight="bold"
+            letterSpacing="0.12em"
+            textTransform="uppercase"
+            color={labelColor}
+            mb={2}
+          >
+            Welcome back
+          </Text>
+          <Heading
+            as="h1"
+            fontSize={{ base: 'xl', md: '3xl' }}
+            lineHeight="1.2"
+            letterSpacing="-0.01em"
+            wordBreak="break-word"
+          >
+            {email || displayName}
           </Heading>
-          <Text color={subColor} fontSize={{ base: 'md', md: 'lg' }}>
-            {allocatedRoles.length
-              ? `You have ${allocatedRoles.length} role${allocatedRoles.length === 1 ? '' : 's'} — select one to open its dashboard.`
-              : 'No roles have been assigned to your account yet. Contact your administrator.'}
+          <Text color={subColor} fontSize={{ base: 'md', md: 'lg' }} mt={3}>
+            {roleCount
+              ? `Choose a workspace to continue — you have ${roleCount} ${roleCount === 1 ? 'role' : 'roles'}.`
+              : 'No roles have been assigned to your account yet.'}
           </Text>
         </Box>
-        <SimpleGrid columns={{ base: 1, sm: 2, lg: 3 }} spacing={6}>
-          {allocatedRoles.map((role) => (
-            <RoleCard
-              key={role}
-              role={role}
-              onOpen={() => navigate(singleRoleTarget(role, user))}
-            />
-          ))}
-        </SimpleGrid>
+
+        {roleCount ? (
+          <SimpleGrid columns={{ base: 1, sm: 2, lg: 3 }} spacing={{ base: 4, md: 6 }}>
+            {allocatedRoles.map((role, index) => (
+              <RoleItem
+                key={role}
+                role={role}
+                index={index}
+                onOpen={() => navigate(singleRoleTarget(role, user))}
+              />
+            ))}
+          </SimpleGrid>
+        ) : (
+          <Flex
+            direction="column"
+            align="center"
+            textAlign="center"
+            bg={emptyCardBg}
+            borderWidth="1px"
+            borderColor={emptyCardBorder}
+            borderRadius="2xl"
+            py={{ base: 12, md: 16 }}
+            px={6}
+          >
+            <Flex
+              align="center"
+              justify="center"
+              boxSize={16}
+              borderRadius="full"
+              bg={emptyIconBg}
+              color={subColor}
+              mb={4}
+            >
+              <Icon as={FiUser} boxSize={8} />
+            </Flex>
+            <Heading as="h2" fontSize={{ base: 'lg', md: 'xl' }} mb={2}>
+              No roles assigned yet
+            </Heading>
+            <Text color={subColor} fontSize={{ base: 'sm', md: 'md' }} maxW="sm">
+              Your account doesn&apos;t have any roles yet. Please contact your administrator to get access.
+            </Text>
+          </Flex>
+        )}
       </Container>
     </Box>
   );
