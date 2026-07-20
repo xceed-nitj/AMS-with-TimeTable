@@ -87,6 +87,16 @@ router.delete('/photo/:batch/:rollNo', async (req, res) => {
     }
 });
 
+// Delete ALL photos in a batch
+router.delete('/photos/:batch', async (req, res) => {
+    try {
+        await controller.deleteAllPhotos(req, res);
+    } catch (e) {
+        console.error('[GT Upload Route] deleteAllPhotos error:', e);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // List photos (roll numbers) in a batch
 router.get('/list/:batch', async (req, res) => {
     try { await controller.listPhotos(req, res); }
