@@ -13,6 +13,7 @@ router.post(  '/resolve-flag',                               (req, res) => contr
 
 // ── Photo / folder management (used by edit mode in FlaggedAssign) ─
 router.delete('/cluster/:batch/:folder',                     (req, res) => controller.deleteCluster(req, res));
+router.delete('/cluster-multiple/:batch',                    (req, res) => controller.deleteMultipleClusters(req, res));
 router.delete('/cluster-photo/:batch/:folder/:filename',     (req, res) => controller.deleteClusterPhoto(req, res));
 router.get(   '/all-clusters/:batch',                        (req, res) => controller.listAllClusters(req, res));
 

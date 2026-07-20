@@ -530,7 +530,7 @@ def extract_rtsp_stream(req: RTSPRequest):
                                                             batch_dir, mean_embs, serial,
                                                             req.targetImgsPerPerson, pcounts,
                                                             req.clusterThreshold, fstate,
-                                                            top_n=state.gt_config.get("top_n", 10),
+                                                            top_n=req.targetImgsPerPerson,
                                                             embed_n=state.gt_config.get("embed_n", 5))
                         return new_s, upd, mean_embs, pcounts, crops, fstate
 
@@ -570,7 +570,7 @@ def extract_rtsp_stream(req: RTSPRequest):
                     all_timestamps, all_quality, batch_dir, existing_mean_embs,
                     next_serial, req.targetImgsPerPerson, person_counts, req.clusterThreshold,
                     fstate_final,
-                    top_n=state.gt_config.get("top_n", 10),
+                    top_n=req.targetImgsPerPerson,
                     embed_n=state.gt_config.get("embed_n", 5))
                 for crop_event in crops_to_emit:
                     yield sse(crop_event)
@@ -1961,11 +1961,8 @@ def _save_clusters(labels, unique_labels, all_embeddings, all_face_images,
             crops_to_emit.append({"type": "mkdir", "folder": folder_name})
 
         existing_mean_embs[folder_name] = cluster_mean
-        current_count = len(folder_state.get(folder_name, {}).get("scores", {}))
-        if current_count >= target_per_person:
-            continue
-
-        still_need      = target_per_person - current_count
+        # Always consider up to target_per_person images from the current pass to replace lower quality existing ones.
+        still_need      = target_per_person
         cluster_sorted  = sorted(
             [(all_face_images[i], all_quality[i], all_timestamps[i], i) for i in indices],
             key=lambda x: x[1], reverse=True)[:still_need]

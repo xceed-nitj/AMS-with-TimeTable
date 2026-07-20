@@ -203,15 +203,19 @@ const movePhoto = async (rollNo, filename, direction) => {
     if (!student) return;
 
     const currentEmb = student.embeddingFiles.map(p => p.filename);
-    let newEmbedding;
+    const currentBackup = student.backupFiles.map(p => p.filename);
+    let newEmbedding, newBackup;
+    
     if (direction === 'promote') {
         newEmbedding = [...new Set([...currentEmb, filename])];
+        newBackup = currentBackup.filter(f => f !== filename);
     } else {
         newEmbedding = currentEmb.filter(f => f !== filename);
         if (newEmbedding.length === 0) {
             showToast('Must keep at least one embedding image', 'error');
             return;
         }
+        newBackup = [...new Set([...currentBackup, filename])];
     }
 
     setBusyPhoto(filename);
@@ -220,7 +224,7 @@ const movePhoto = async (rollNo, filename, direction) => {
         const res  = await fetch(`${API_BASE}/update-embedding`, {
             method:  'POST',
             headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ batch: selectedBatch, rollNo, embeddingFiles: newEmbedding }),
+            body:    JSON.stringify({ batch: selectedBatch, rollNo, embeddingFiles: newEmbedding, backupFiles: newBackup }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed');

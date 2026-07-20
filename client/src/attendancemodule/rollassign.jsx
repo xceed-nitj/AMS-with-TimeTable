@@ -215,6 +215,7 @@ export default function RollAssign({ fixedDepartment = '' }) {
                         embeddingCount:  s.embeddingCount  || 0,
                         backupCount:     s.backupCount     || 0,
                         unapprovedCount: s.unapprovedCount || 0,
+                        previewFiles:    [...(s.embeddingFiles || []), ...(s.backupFiles || [])].slice(0, 4).map(f => f.filename),
                     };
                 }
                 setUnapprovedMap(uMap);
@@ -324,14 +325,14 @@ export default function RollAssign({ fixedDepartment = '' }) {
 
     const reviewQueue = [...pendingReview, ...mergedItems, ...flaggedItems];
 
-    const openModal = (item) => {
+    const openModal = (item, queue) => {
         if (matching) return;
-        setModal({ item, match: item }); setOverrideRoll(item.rollNo || '');
+        setModal({ item, match: item, queue: queue || reviewQueue }); setOverrideRoll(item.rollNo || '');
     };
     const openQueueItem = (queue, currentFolderName, direction) => {
         const idx = queue.findIndex(r => r.folderName === currentFolderName);
         const next = queue[idx + direction];
-        if (next) { setModal({ item: next, match: next }); setOverrideRoll(next.rollNo || ''); }
+        if (next) { setModal({ item: next, match: next, queue }); setOverrideRoll(next.rollNo || ''); }
         else setModal(null);
     };
 
@@ -405,7 +406,7 @@ export default function RollAssign({ fixedDepartment = '' }) {
         setSaving(item.folderName);
         try {
             const res = await fetch(
-                `${RA_BASE}/cluster/${encodeURIComponent(batchName)}/${encodeURIComponent(item.folderName)}`,
+                `${FLAG_BASE}/cluster/${encodeURIComponent(batchName)}/${encodeURIComponent(item.folderName)}`,
                 { method: 'DELETE' }
             );
             const data = await res.json();
@@ -415,6 +416,46 @@ export default function RollAssign({ fixedDepartment = '' }) {
             broadcastRefresh(batchName);
         } catch (err) { showToast(err.message, 'error'); }
         finally { setSaving(null); }
+    };
+
+    const deleteAllUnprocessed = async () => {
+        if (!unprocessed.length) return;
+        if (!window.confirm(`Delete ALL ${unprocessed.length} unprocessed clusters permanently?\n\nThis cannot be undone.`)) return;
+        setLoading(true);
+        try {
+            const folders = unprocessed.map(u => u.folderName);
+            const res = await fetch(`${FLAG_BASE}/cluster-multiple/${encodeURIComponent(batchName)}`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ folders })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Delete failed');
+            showToast(`Deleted ${data.deleted.length} unprocessed clusters`);
+            setUnprocessed([]);
+            broadcastRefresh(batchName);
+        } catch (err) { showToast(err.message, 'error'); }
+        finally { setLoading(false); }
+    };
+
+    const deleteAllUnmatched = async () => {
+        if (!crossDeptItems.length) return;
+        if (!window.confirm(`Delete ALL ${crossDeptItems.length} unmatched clusters permanently?\n\nThis cannot be undone.`)) return;
+        setLoading(true);
+        try {
+            const folders = crossDeptItems.map(c => c.folderName);
+            const res = await fetch(`${FLAG_BASE}/cluster-multiple/${encodeURIComponent(batchName)}`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ folders })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Delete failed');
+            showToast(`Deleted ${data.deleted.length} unmatched clusters`);
+            setCrossDeptItems([]);
+            broadcastRefresh(batchName);
+        } catch (err) { showToast(err.message, 'error'); }
+        finally { setLoading(false); }
     };
 
     const handleApprove = async (item, rollNo) => {
@@ -624,10 +665,11 @@ export default function RollAssign({ fixedDepartment = '' }) {
                     </div>
                 </div>
                 </>
-            )}  
-            
-                      {modal && createPortal((() => {
-                const queueIdx = reviewQueue.findIndex(r => r.folderName === modal.item.folderName);
+            )}
+
+            {modal && createPortal((() => {
+                const currentQueue = modal.queue || reviewQueue;
+                const queueIdx = currentQueue.findIndex(r => r.folderName === modal.item.folderName);
                 return (
                     <VerifyModal
                         item={modal.item} match={modal.match} batchName={batchName} photoUrl={photoUrl} erpPhotoUrl={erpPhotoUrl}
@@ -636,10 +678,10 @@ export default function RollAssign({ fixedDepartment = '' }) {
                         onApprove={() => handleApprove(modal.item, overrideRoll)}
                         onFlag={() => handleFlag(modal.item, modal.match)}
                         onClose={() => setModal(null)}
-                        hasPrev={queueIdx > 0} hasNext={queueIdx < reviewQueue.length - 1}
-                        onPrev={() => openQueueItem(reviewQueue, modal.item.folderName, -1)}
-                        onNext={() => openQueueItem(reviewQueue, modal.item.folderName, +1)}
-                        position={queueIdx + 1} total={reviewQueue.length}
+                        hasPrev={queueIdx > 0} hasNext={queueIdx < currentQueue.length - 1}
+                        onPrev={() => openQueueItem(currentQueue, modal.item.folderName, -1)}
+                        onNext={() => openQueueItem(currentQueue, modal.item.folderName, 1)}
+                        position={queueIdx + 1} total={currentQueue.length}
                         toast={toast}
                     />
                 );
@@ -902,15 +944,32 @@ export default function RollAssign({ fixedDepartment = '' }) {
                         {unmatchedItems.map(item => (
                             <ClusterCard key={item.folderName} item={item} batchName={batchName} photoUrl={photoUrl} erpPhotoUrl={erpPhotoUrl}
                                 isUnmatched
+                                onClick={() => openModal(item, unmatchedItems)} disabled={matching}
                                 onDeleteFolder={() => deleteUnmatchedFolder(item)}
                                 deletingFolder={saving === item.folderName} />
                         ))}
                     </Section>
 
-                    <Section title="Unmatched Cluster" count={crossDeptItems.length} accentColor="#a78bfa" emptyText="No cross-department clusters">
+                    <Section 
+                        title="Unmatched Cluster" 
+                        count={crossDeptItems.length} 
+                        accentColor="#a78bfa" 
+                        emptyText="No cross-department clusters"
+                        rightElement={
+                            crossDeptItems.length > 0 && (
+                                <button 
+                                    onClick={deleteAllUnmatched} 
+                                    style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: 6, cursor: 'pointer', background: 'transparent', color: theme.danger, border: `1px solid ${theme.danger}`, outline: 'none' }}
+                                >
+                                    Delete All
+                                </button>
+                            )
+                        }
+                    >
                         {crossDeptItems.map(item => (
                             <CrossDeptCard key={item.folderName} item={item} batchName={batchName} photoUrl={photoUrl}
                                 saving={saving === item.folderName}
+                                onClick={() => openModal(item, crossDeptItems)}
                                 onApprove={(rollNo) => handleApprove(item, rollNo)}
                                 onDeleteFolder={() => deleteUnmatchedFolder(item)}
                                 deletingFolder={saving === item.folderName} />
@@ -919,10 +978,25 @@ export default function RollAssign({ fixedDepartment = '' }) {
 
                     {/* CHANGE 7+8: Unprocessed — no roll no field, delete folder button */}
                     {unprocessed.length > 0 && (
-                        <Section title="Unprocessed" count={unprocessed.length} accentColor={theme.textMuted}>
+                        <Section 
+                            title="Unprocessed" 
+                            count={unprocessed.length} 
+                            accentColor={theme.textMuted}
+                            rightElement={
+                                unprocessed.length > 0 && (
+                                    <button 
+                                        onClick={deleteAllUnprocessed} 
+                                        style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: 6, cursor: 'pointer', background: 'transparent', color: theme.danger, border: `1px solid ${theme.danger}`, outline: 'none' }}
+                                    >
+                                        Delete All
+                                    </button>
+                                )
+                            }
+                        >
                             {unprocessed.map(item => (
                                 <ClusterCard key={item.folderName} item={item} batchName={batchName} photoUrl={photoUrl} erpPhotoUrl={erpPhotoUrl}
                                     isUnprocessed
+                                    onClick={() => openModal(item, unprocessed)} disabled={matching}
                                     onDeleteFolder={() => deleteUnprocessedFolder(item)}
                                     deletingFolder={saving === item.folderName} />
                             ))}
@@ -1226,7 +1300,7 @@ function FlagResolveModal({ item, batchName, flagPhotoUrl, flagErpPhotoUrl, roll
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                             <div style={{ fontSize: '12px', fontWeight: 600, color: theme.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Extracted Face Images</div>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
-                                {(item.previewFiles || []).map((f, i) => (
+                                {(item.imageFiles?.length > 0 ? item.imageFiles : item.previewFiles || []).map((f, i) => (
                                     <div key={f + i} style={{ position: 'relative' }}>
                                         <img src={flagPhotoUrl(batchName, folder, f)} alt="" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: 6, border: `1px solid ${theme.border}`, display: 'block', opacity: deleting === f ? 0.2 : 1, transition: 'opacity 0.15s' }} onError={e => { e.target.style.opacity = '0.1'; }} />
                                         <button
@@ -1361,14 +1435,17 @@ function UnapprovedPhotoCard({ rollNo, photos, stats, busy, onApprove, onApprove
     );
 }
 
-function Section({ title, count, accentColor, children, emptyText }) {
+function Section({ title, count, accentColor, children, emptyText, rightElement }) {
     const [open, setOpen] = useState(true);
     return (
         <div style={{ marginBottom: 32 }}>
-            <div onClick={() => setOpen(o => !o)} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: open ? 14 : 0, cursor: 'pointer', userSelect: 'none' }}>
-                <span style={{ fontSize: '10px', color: accentColor, display: 'inline-block', transition: 'transform .18s', transform: open ? 'rotate(0deg)' : 'rotate(-90deg)' }}>▼</span>
-                <span style={{ fontSize: '14px', fontWeight: 700, color: theme.text }}>{title}</span>
-                <span style={{ fontSize: '12px', fontWeight: 600, background: accentColor + '22', color: accentColor, padding: '2px 8px', borderRadius: 10 }}>{count}</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: open ? 14 : 0 }}>
+                <div onClick={() => setOpen(o => !o)} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', userSelect: 'none' }}>
+                    <span style={{ fontSize: '10px', color: accentColor, display: 'inline-block', transition: 'transform .18s', transform: open ? 'rotate(0deg)' : 'rotate(-90deg)' }}>▼</span>
+                    <span style={{ fontSize: '14px', fontWeight: 700, color: theme.text }}>{title}</span>
+                    <span style={{ fontSize: '12px', fontWeight: 600, background: accentColor + '22', color: accentColor, padding: '2px 8px', borderRadius: 10 }}>{count}</span>
+                </div>
+                {rightElement && <div>{rightElement}</div>}
             </div>
             {open && (count === 0 && emptyText
                 ? <div style={{ padding: '14px 16px', borderRadius: 8, fontSize: '12px', color: theme.textMuted, background: theme.surface, border: `1px dashed ${theme.border}` }}>{emptyText}</div>
@@ -1381,14 +1458,14 @@ function Section({ title, count, accentColor, children, emptyText }) {
 // CHANGE 1+2+7+8: ClusterCard updated — no folder name for assigned, delete+edit buttons for assigned, delete for unprocessed
 function ClusterCard({ item, batchName, photoUrl, erpPhotoUrl, onClick, isAssigned, isUnmatched, isUnprocessed, isMerged, disabled, stats, unapprovedCount, onDeleteFolder, deletingFolder, onDeleteAllImages, deletingAllImages, onEditRoll }) {
     const folderForPhoto = item.currentFolder || item.folderName;
-    const previews       = item.previewFiles || [];
+    const previews       = (isAssigned && stats?.previewFiles) ? stats.previewFiles : (item.previewFiles || []);
     const borderColor    = isAssigned ? theme.success + '44' : isMerged ? theme.warning + '88' : (isUnmatched || isUnprocessed) ? theme.border + '88' : theme.border;
 
     return (
         <div
-            onClick={(isUnmatched || isUnprocessed || disabled) ? undefined : onClick}
-            style={{ background: theme.surface, border: `1px solid ${borderColor}`, borderRadius: 10, opacity: disabled && !isUnmatched && !isUnprocessed ? 0.6 : 1, overflow: 'hidden', cursor: (isUnmatched || isUnprocessed || (disabled && !isUnmatched && !isUnprocessed)) ? 'default' : 'pointer', transition: 'border-color 0.15s' }}
-            onMouseEnter={e => { if (!disabled || isUnmatched || isUnprocessed) e.currentTarget.style.borderColor = isAssigned ? theme.success : (isUnmatched || isUnprocessed) ? '#f8717155' : theme.accent; }}
+            onClick={disabled ? undefined : onClick}
+            style={{ background: theme.surface, border: `1px solid ${borderColor}`, borderRadius: 10, opacity: disabled ? 0.6 : 1, overflow: 'hidden', cursor: disabled ? 'default' : 'pointer', transition: 'border-color 0.15s' }}
+            onMouseEnter={e => { if (!disabled) e.currentTarget.style.borderColor = isAssigned ? theme.success : (isUnmatched || isUnprocessed) ? '#f8717155' : theme.accent; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = borderColor; }}
         >
             <div style={{ display: 'flex', height: 80, overflow: 'hidden', background: '#000', gap: 1 }}>
@@ -1549,12 +1626,13 @@ function GTModal({ rollNo, batchName, onClose, showToast, onMoved }) {
     const handleDone = async () => {
         if (!student) return;
         const currentEmbedding = (student.embeddingFiles || []).map(f => f.filename);
+        const currentBackup = (student.backupFiles || []).map(f => f.filename);
         if (currentEmbedding.length === 0) { showToast('Must keep at least one embedding image', 'error'); return; }
         setDoneSaving(true);
         try {
             const res  = await fetch(`${GT_BASE}/update-embedding`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ batch: batchName, rollNo, embeddingFiles: currentEmbedding }),
+                body: JSON.stringify({ batch: batchName, rollNo, embeddingFiles: currentEmbedding, backupFiles: currentBackup }),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Failed');
@@ -1752,7 +1830,7 @@ function VerifyModal({ item, match, batchName, photoUrl, erpPhotoUrl, overrideRo
                     <div>
                         <div style={{ fontSize: '11px', fontWeight: 600, color: theme.textMuted, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Extracted Face Images</div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 5 }}>
-                            {(item.previewFiles || []).map((f, i) => (
+                            {(item.imageFiles?.length > 0 ? item.imageFiles : item.previewFiles || []).map((f, i) => (
                                 <img key={i} src={photoUrl(batchName, folderForPhoto, f)} alt="" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: 6, border: `1px solid ${theme.border}` }} onError={e => { e.target.style.display = 'none'; }} />
                             ))}
                         </div>
@@ -1822,7 +1900,7 @@ function VerifyModal({ item, match, batchName, photoUrl, erpPhotoUrl, overrideRo
     );
 }
 
-function CrossDeptCard({ item, batchName, photoUrl, saving, onApprove, onDeleteFolder, deletingFolder }) {
+function CrossDeptCard({ item, batchName, photoUrl, saving, onApprove, onDeleteFolder, deletingFolder, onClick }) {
     const folderForPhoto = item.currentFolder || item.folderName;
     const previews       = item.previewFiles || [];
 
@@ -1833,7 +1911,9 @@ function CrossDeptCard({ item, batchName, photoUrl, saving, onApprove, onDeleteF
             borderRadius: 10,
             overflow: 'hidden',
             transition: 'border-color 0.15s',
+            cursor: onClick ? 'pointer' : 'default'
         }}
+            onClick={onClick}
             onMouseEnter={e => { e.currentTarget.style.borderColor = '#a78bfa'; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = '#a78bfa55'; }}
         >

@@ -184,6 +184,7 @@ class RollAssignController {
                     folderName:    r.folderName,
                     currentFolder: r.currentFolder || r.folderName,
                     imageCount:    r.imageCount    || 0,
+                    imageFiles:    r.imageFiles    || [],
                     previewFiles:  r.previewFiles  || [],
                     status:        r.status,
                 }))
@@ -791,18 +792,37 @@ class RollAssignController {
 
                 await fsPromises.writeFile(infoPath, JSON.stringify(info, null, 2));
             }
-
             // ── Update DB record by ObjectId ──────────────────────────
-            await ClusterMatch.findByIdAndUpdate(id, {
-                $set: {
-                    currentFolder: finalRollNo,
-                    rollNo:        finalRollNo,
-                    status:        'approved',
-                    approved:      true,
-                    imageFiles,
-                    updated_at:    new Date(),
-                },
-            });
+            if (mergedIntoExisting) {
+                await ClusterMatch.findByIdAndDelete(id);
+                const allFinalFiles = fs.existsSync(folderPath) ? (await fsPromises.readdir(folderPath)).filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f)).sort() : [];
+                await ClusterMatch.findOneAndUpdate(
+                    { batch, currentFolder: finalRollNo },
+                    {
+                        $set: {
+                            rollNo:        finalRollNo,
+                            status:        'approved',
+                            approved:      true,
+                            imageFiles:    allFinalFiles,
+                            imageCount:    allFinalFiles.length,
+                            previewFiles:  allFinalFiles.slice(0, 6),
+                            updated_at:    new Date(),
+                        }
+                    },
+                    { upsert: true }
+                );
+            } else {
+                await ClusterMatch.findByIdAndUpdate(id, {
+                    $set: {
+                        currentFolder: finalRollNo,
+                        rollNo:        finalRollNo,
+                        status:        'approved',
+                        approved:      true,
+                        imageFiles,
+                        updated_at:    new Date(),
+                    },
+                });
+            }
 
             // Clear any pending flag for this cluster
             const flags = await readFlags(batch);

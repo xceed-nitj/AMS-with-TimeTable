@@ -316,6 +316,40 @@ class FlagController {
 
             res.json({ ok: true, deleted: safeOriginal });
         } catch (err) {
+            console.error('deleteCluster error:', err);
+            res.status(500).json({ error: err.message });
+        }
+    }
+
+    // ── DELETE /cluster-multiple/:batch
+    // Bulk delete clusters. Expects req.body.folders as an array of original folder names.
+    async deleteMultipleClusters(req, res) {
+        try {
+            const { batch } = req.params;
+            const { folders } = req.body;
+            if (!Array.isArray(folders) || folders.length === 0) {
+                return res.status(400).json({ error: 'folders array is required' });
+            }
+
+            const deletedFolders = [];
+            for (const folder of folders) {
+                const safeOriginal = path.basename(folder);
+                const currentPath = path.join(GROUND_TRUTH_DIR, batch, safeOriginal);
+                
+                if (fs.existsSync(currentPath)) {
+                    await fsPromises.rm(currentPath, { recursive: true, force: true });
+                }
+                
+                await ClusterMatch.deleteOne({ batch, folderName: safeOriginal });
+                deletedFolders.push(safeOriginal);
+            }
+
+            const flags = await readFlags(batch);
+            await writeFlags(batch, flags.filter(f => !deletedFolders.includes(f.folderName)));
+
+            res.json({ ok: true, deleted: deletedFolders });
+        } catch (err) {
+            console.error('deleteMultipleClusters error:', err);
             res.status(500).json({ error: err.message });
         }
     }
