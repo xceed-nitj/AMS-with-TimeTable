@@ -769,7 +769,7 @@ export default function Camera() {
                                                 className="camera-mini-btn"
                                                 title="Preview"
                                                 target='_blank'
-                                                href={`/camera/preview?cameraId=${encodeURIComponent(camera.cameraId)}`}
+                                                href={`/cameras/preview?cameraId=${encodeURIComponent(camera.cameraId)}`}
                                                 style={{ textDecoration: 'none' }}
                                             >
                                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
