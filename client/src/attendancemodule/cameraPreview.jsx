@@ -59,7 +59,7 @@ function StatusBadge({ status }) {
 }
 
 // Single camera feed panel
-function FeedPanel({ camera, quality, scale, onError }) {
+function FeedPanel({ camera, quality, scale, refreshKey, onError }) {
   const [feedKey, setFeedKey] = useState(0);
   const [starting, setStarting] = useState(true);
   const [failed, setFailed] = useState(false);
@@ -105,13 +105,13 @@ function FeedPanel({ camera, quality, scale, onError }) {
   useEffect(() => {
     startFeed();
     return () => {
-      fetch(`${CAMERA_API}/preview/stop`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: '{}',
-      }).catch(() => {});
+        fetch(`${CAMERA_API}/preview/stop`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: '{}',
+        }).catch(() => {});
     };
-  }, [camera?._id]);
+}, [camera?._id, refreshKey]);
 
   useEffect(() => {
     if (streamUrl) {
@@ -326,6 +326,11 @@ export default function CameraPreview() {
   const [previewScale, setPreviewScale] = useState('1');
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleRefresh = () => {
+    setRefreshKey(prev => prev + 1);
+};
 
   const showToast = useCallback((msg, type = 'success') => {
     clearTimeout(toastTimer.current);
@@ -513,7 +518,7 @@ export default function CameraPreview() {
 
         <button
           type="button"
-          onClick={fetchCameras}
+          onClick={handleRefresh}
           disabled={loading}
           style={{ ...styles.btnGhost, alignSelf: 'flex-end' }}
         >
@@ -575,6 +580,7 @@ export default function CameraPreview() {
               camera={roomCameras.left}
               quality={previewQuality}
               scale={previewScale}
+              refreshKey={refreshKey}
               onError={(msg) => showToast(msg, 'warning')}
             />
           ) : (
@@ -595,6 +601,7 @@ export default function CameraPreview() {
               camera={roomCameras.right}
               quality={previewQuality}
               scale={previewScale}
+              refreshKey={refreshKey}
               onError={(msg) => showToast(msg, 'warning')}
             />
           ) : (
