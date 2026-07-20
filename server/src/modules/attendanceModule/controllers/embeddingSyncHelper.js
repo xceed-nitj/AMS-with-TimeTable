@@ -48,7 +48,7 @@ function writeInfoJson(studentDir, info) {
  * @returns {Promise<object>} the ML service's response
  *   { status, roll_no, embedding_files_used, total_selected, missing_files, mean_embedding }
  */
-async function updateStudentEmbedding(studentDir, rollNo, embeddingFiles) {
+async function updateStudentEmbedding(studentDir, rollNo, embeddingFiles, backupFiles = null) {
     const photos = readPhotoBytes(studentDir, embeddingFiles);
 
     const response = await axios.post(
@@ -63,7 +63,13 @@ async function updateStudentEmbedding(studentDir, rollNo, embeddingFiles) {
         : [];
     const info = readInfoJson(studentDir);
     info.embedding_files = embeddingFiles.filter(f => allImgs.includes(f));
-    info.backup_files    = allImgs.filter(f => !embeddingFiles.includes(f)).slice(0, 5);
+    
+    if (backupFiles && Array.isArray(backupFiles)) {
+        info.backup_files = backupFiles.filter(f => allImgs.includes(f) && !info.embedding_files.includes(f)).slice(0, 10);
+    } else {
+        info.backup_files = allImgs.filter(f => !info.embedding_files.includes(f)).slice(0, 10);
+    }
+
     if (Array.isArray(result.mean_embedding)) info.mean_embedding = result.mean_embedding;
     if (Array.isArray(result.top_k_embeddings) && result.top_k_embeddings.length > 0) {
         info.top_k_embeddings = result.top_k_embeddings;

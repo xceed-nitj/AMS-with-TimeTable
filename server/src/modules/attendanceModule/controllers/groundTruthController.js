@@ -476,7 +476,7 @@ setImmediate(async () => {
     // ─── Update embedding for a student ─────────────────────────────────────
    async updateStudentEmbedding(req, res) {
     try {
-        const { batch, rollNo, embeddingFiles } = req.body;
+        const { batch, rollNo, embeddingFiles, backupFiles } = req.body;
         if (!batch || !rollNo || !Array.isArray(embeddingFiles) || embeddingFiles.length === 0)
             return res.status(400).json({ error: 'batch, rollNo, and embeddingFiles[] required' });
         if (embeddingFiles.length > 5)
@@ -485,7 +485,7 @@ setImmediate(async () => {
         const studentDir = path.join(GROUND_TRUTH_DIR, batch, rollNo);
 
         // 1. Update the student embedding in ML service
-        const response = await syncUpdateStudentEmbedding(studentDir, rollNo, embeddingFiles);
+        const response = await syncUpdateStudentEmbedding(studentDir, rollNo, embeddingFiles, backupFiles);
 
         // 2. Rebuild all subject PKLs where this student is enrolled — wait for completion
 try {

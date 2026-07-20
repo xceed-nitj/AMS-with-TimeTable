@@ -396,10 +396,12 @@ export default function GroundTruthRTSP({ fixedDepartment = '' }) {
 
     const stopStream = useCallback(async () => {
         try {
+            const jobId = gtJobId;
+            setGtJobId(null);
             await fetch(`${API_BASE}/stop-rtsp-stream`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(gtJobId ? { jobId: gtJobId } : {}),
+                body: JSON.stringify(jobId ? { jobId } : {}),
             });
         } catch { /* clean fallback trace exit */ }
     }, [gtJobId]);
@@ -497,8 +499,8 @@ export default function GroundTruthRTSP({ fixedDepartment = '' }) {
                             addLog(`▶ ${ev.message}`, theme.accent);
                             break;
                         case 'frame':
-                            if (ev.faces_this_frame > 0)
-                                addLog(`🎞 Frame ${ev.frame} — ${ev.faces_this_frame} face(s) detected`, '#aaa');
+                            // Frequent frame logging causes UI flicker and freezes the main thread
+                            // Only update UI on stage changes or person_update
                             break;
                         case 'person_update':
                             setPersons(prev => ({
@@ -568,7 +570,7 @@ export default function GroundTruthRTSP({ fixedDepartment = '' }) {
                 const attempt = retryCount + 1;
                 setRetryCount(attempt);
                 addLog(`❌ ${err.message} — retrying in ${RETRY_DELAY}s (attempt ${attempt})…`, theme.danger);
-                setStatus('retrying');
+                if (status === 'running') setStatus('retrying');
                 setRetryCountdown(RETRY_DELAY);
 
                 retryTickRef.current = setInterval(() => {
