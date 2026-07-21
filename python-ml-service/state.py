@@ -77,6 +77,7 @@ gt_config = {
     "det_score_floor":         0.5,   # minimum InsightFace det_score to accept a face
     # --- Session behaviour ---
     "new_person_timeout":      60,    # auto-stop after N seconds with no new person
+    "camera_switch_sec":       30,    # seconds on each camera before switching (2-camera sessions)
     # --- Image storage ---
     "top_n":                   10,    # max images kept per person folder
     "embed_n":                 5,     # of top_n, how many are used for embeddings

@@ -64,6 +64,16 @@ function FeedPanel({ camera, quality, scale, refreshKey, onError }) {
   const [starting, setStarting] = useState(true);
   const [failed, setFailed] = useState(false);
   const [streamUrl, setStreamUrl] = useState(null);
+  // Each panel tracks its own preview job so the two feeds never share a slot.
+  const jobIdRef = useRef(null);
+
+  const buildStreamUrl = useCallback(
+    () =>
+      `${CAMERA_API}/preview/stream?jobId=${encodeURIComponent(
+        jobIdRef.current || '',
+      )}&quality=${quality}&scale=${scale}&t=${Date.now()}`,
+    [quality, scale],
+  );
 
   const startFeed = useCallback(() => {
     if (!camera?._id) return;
@@ -86,10 +96,9 @@ function FeedPanel({ camera, quality, scale, refreshKey, onError }) {
       body: '{}',
     })
       .then((res) => res.json())
-      .then(() => {
-        setStreamUrl(
-          `${CAMERA_API}/preview/stream?quality=${quality}&scale=${scale}&t=${Date.now()}`,
-        );
+      .then((data) => {
+        jobIdRef.current = data?.jobId || null;
+        setStreamUrl(buildStreamUrl());
         setFeedKey((k) => k + 1);
         setStarting(false);
       })
@@ -100,24 +109,23 @@ function FeedPanel({ camera, quality, scale, refreshKey, onError }) {
           `Could not start feed for ${camera.cameraId}: ${err.message}`,
         );
       });
-  }, [camera?._id, quality, scale]);
+  }, [camera?._id, buildStreamUrl]);
 
   useEffect(() => {
     startFeed();
     return () => {
+        const jobId = jobIdRef.current;
         fetch(`${CAMERA_API}/preview/stop`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: '{}',
+            body: JSON.stringify(jobId ? { jobId } : {}),
         }).catch(() => {});
     };
 }, [camera?._id, refreshKey]);
 
   useEffect(() => {
     if (streamUrl) {
-      setStreamUrl(
-        `${CAMERA_API}/preview/stream?quality=${quality}&scale=${scale}&t=${Date.now()}`,
-      );
+      setStreamUrl(buildStreamUrl());
       setFeedKey((k) => k + 1);
     }
   }, [quality, scale]);

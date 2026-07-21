@@ -47,6 +47,7 @@ const GT_OPTIONS = {
     new_person_timeout:     [15, 30, 45, 60, 90, 120, 180],
     top_n:                  [5, 8, 10, 15, 20, 30],
     embed_n:                [3, 4, 5, 7, 10],
+    camera_switch_sec:      [5, 10, 15, 20, 30, 45, 60, 90, 120],
 };
 
 const GT_LABELS = {
@@ -61,6 +62,7 @@ const GT_LABELS = {
     new_person_timeout:     { label: 'New-person timeout',     unit: 'sec',     hint: 'Auto-stop if all people reach target and no new person appears for N seconds.' },
     top_n:                  { label: 'Max images / person',    unit: 'images',  hint: 'Maximum images kept per person folder (lowest-quality ones are deleted).' },
     embed_n:                { label: 'Embedding images',       unit: 'images',  hint: 'Of the top-N kept, how many are used to compute the mean embedding.' },
+    camera_switch_sec:      { label: 'Camera switch interval', unit: 'sec',     hint: 'When two cameras are configured for a session, how long to capture from each before switching to the other.' },
 };
 
 const ATTEND_OPTIONS = {
@@ -827,10 +829,10 @@ export default function MLFineTuning() {
                             Behaviour & Storage
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
-                            {['new_person_timeout', 'top_n', 'embed_n'].map(key => {
+                            {['new_person_timeout', 'top_n', 'embed_n', 'camera_switch_sec'].map(key => {
                                 const meta = GT_LABELS[key];
                                 const opts = GT_OPTIONS[key];
-                                const defaults = { new_person_timeout: 60, top_n: 10, embed_n: 5 };
+                                const defaults = { new_person_timeout: 60, top_n: 10, embed_n: 5, camera_switch_sec: 30 };
                                 return (
                                     <div key={key}>
                                         <label style={styles.label}>{meta.label}{meta.unit ? ` (${meta.unit})` : ''}</label>
