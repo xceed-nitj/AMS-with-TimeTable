@@ -1108,7 +1108,7 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
     )
     # Back-compat alias — the capture loop below reads this name.
     run_adaface_shadow = need_adaface
-    CAMERA_SWITCH_SEC = 30
+    CAMERA_SWITCH_SEC = state.gt_config.get("camera_switch_sec", 30)
     cameras = [req.rtspUrl]
     if req.rtspUrl2:
         cameras.append(req.rtspUrl2)
@@ -1853,13 +1853,20 @@ def _load_existing_folders_from_payload(existing_folders, existing_mean_embs):
     photo bytes Node already sent (req.existingFolders) instead of reading
     ground_truth/ off local disk — this process may run on a separate
     machine from the Node server.
+
+    existing_mean_embs maps folder_name -> list of individually-normalised
+    reference embeddings (one per stored photo, up to 5) — NOT a single mean.
+    A new cluster is scored against each reference photo separately and the
+    best (max) similarity wins ("max-of-K", see _save_clusters). Averaging
+    the references first would wash out legitimate day-to-day pose/lighting
+    variation and under-match a returning student against their own photos.
     """
     for folder in existing_folders:
         folder_name = folder.get("folderName")
         photos      = folder.get("photos") or []
         if not photos:
             continue
-        folder_embs, folder_weights = [], []
+        folder_embs = []
         for photo in photos[:5]:
             try:
                 img_bytes = base64.b64decode(photo.get("data", ""))
@@ -1881,23 +1888,9 @@ def _load_existing_folders_from_payload(existing_folders, existing_mean_embs):
             norm = np.linalg.norm(emb)
             if norm == 0:
                 continue
-            x1, y1, x2, y2 = map(int, face.bbox)
-            crop = img[max(0,y1):y2, max(0,x1):x2]
-            if crop.size > 0:
-                gray    = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
-                lap     = float(cv2.Laplacian(gray, cv2.CV_64F).var())
-                quality = det_score * min(lap, 500) / 500
-            else:
-                quality = det_score
             folder_embs.append(emb / norm)
-            folder_weights.append(max(quality, 0.01))
         if folder_embs:
-            weights  = np.array(folder_weights, dtype=np.float32)
-            weights /= weights.sum()
-            mean_emb = np.average(np.array(folder_embs, dtype=np.float32), axis=0, weights=weights)
-            norm     = np.linalg.norm(mean_emb)
-            if norm > 0:
-                existing_mean_embs[folder_name] = mean_emb / norm
+            existing_mean_embs[folder_name] = folder_embs
 
 
 def _select_diverse(pool, stored_embs, new_embs, n):
@@ -1956,6 +1949,7 @@ def _save_clusters(labels, unique_labels, all_embeddings, all_face_images,
     updated       = {}
     crops_to_emit = []
     MATCH_THRESHOLD = max(cluster_threshold, 0.50)
+    MAX_REF_EMBS    = 5   # keep the most recent K reference embeddings per folder
 
     for cluster_id in unique_labels:
         indices      = np.where(labels == cluster_id)[0]
@@ -1967,8 +1961,13 @@ def _save_clusters(labels, unique_labels, all_embeddings, all_face_images,
         cluster_mean /= norm
 
         best_folder, best_score = None, 0.0
-        for fname, ex_emb in existing_mean_embs.items():
-            score = float(np.dot(cluster_mean, ex_emb))
+        for fname, ex_embs in existing_mean_embs.items():
+            # Max-of-K: score against each reference photo individually and
+            # keep the best match, rather than averaging references first —
+            # a returning student photographed at a different angle/lighting
+            # still matches strongly against whichever reference photo is
+            # closest to it, instead of being dragged down by the others.
+            score = max((float(np.dot(cluster_mean, e)) for e in ex_embs), default=0.0)
             if score > best_score:
                 best_score, best_folder = score, fname
 
@@ -1979,7 +1978,10 @@ def _save_clusters(labels, unique_labels, all_embeddings, all_face_images,
             next_serial += 1
             crops_to_emit.append({"type": "mkdir", "folder": folder_name})
 
-        existing_mean_embs[folder_name] = cluster_mean
+        ref_embs = existing_mean_embs.setdefault(folder_name, [])
+        ref_embs.append(cluster_mean)
+        if len(ref_embs) > MAX_REF_EMBS:
+            del ref_embs[:-MAX_REF_EMBS]
         # Always consider up to target_per_person images from the current pass to replace lower quality existing ones.
         still_need      = target_per_person
         cluster_sorted  = sorted(
@@ -2050,11 +2052,16 @@ def _update_info_inmem(folder_name, new_scores, folder_state, crops_to_emit,
     all_scored = sorted(fs["scores"].items(), key=lambda x: x[1], reverse=True)
 
     if len(all_scored) > top_n:
-        for fname, _ in all_scored[top_n:]:
-            crops_to_emit.append({"type": "file_delete", "folder": folder_name, "filename": fname})
-            fs["scores"].pop(fname, None)
-            fs.get("embs", {}).pop(fname, None)
-        all_scored = all_scored[:top_n]
+        # Diversity-based retention, not pure quality rank — consecutive video
+        # frames of the same pose otherwise all score similarly high and crowd
+        # out different angles, leaving near-duplicate photos in the folder.
+        keep = set(_select_diverse(all_scored, fs.get("embs", {}), {}, top_n))
+        for fname, _ in all_scored:
+            if fname not in keep:
+                crops_to_emit.append({"type": "file_delete", "folder": folder_name, "filename": fname})
+                fs["scores"].pop(fname, None)
+                fs.get("embs", {}).pop(fname, None)
+        all_scored = [(f, s) for f, s in all_scored if f in keep]
 
     # Select embed_n images by diversity (greedy farthest-point in embedding
     # space) rather than pure quality rank, so different angles are preferred.
@@ -2307,6 +2314,7 @@ class GTConfigUpdate(BaseModel):
     new_person_timeout:     Optional[int]   = None
     top_n:                  Optional[int]   = None
     embed_n:                Optional[int]   = None
+    camera_switch_sec:      Optional[int]   = None
 
 
 @router.get("/gt-config")
@@ -2333,6 +2341,7 @@ def update_gt_config_ep(req: GTConfigUpdate):
         "new_person_timeout":     (15, 300),
         "top_n":                  (5, 30),
         "embed_n":                (3, 15),
+        "camera_switch_sec":      (5, 300),
     }
     for key, (lo, hi) in float_ranges.items():
         if key in updates and not (lo <= updates[key] <= hi):

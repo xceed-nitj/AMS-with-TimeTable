@@ -269,7 +269,7 @@ def _digital_zoom(frame: np.ndarray, zoom_factor: float,
 
     zoomed_crop = frame[y1:y2, x1:x2]
     zoomed      = cv2.resize(zoomed_crop, (W, H),
-                             interpolation=cv2.INTER_LINEAR)
+                             interpolation=cv2.INTER_LANCZOS4)
 
     # scale_back: zoomed pixel → original frame pixel
     # zoomed is W wide but represents crop_w original pixels
@@ -616,17 +616,22 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
         # Upscale small crops for better saved images
         ch, cw = crop.shape[:2]
         target = 300
-        if cw < target or ch < target:
+        was_upscaled = cw < target or ch < target
+        if was_upscaled:
             scale_up = max(target / cw, target / ch)
             new_w    = int(cw * scale_up)
             new_h    = int(ch * scale_up)
             crop     = cv2.resize(crop, (new_w, new_h),
                                   interpolation=cv2.INTER_CUBIC)
- 
-        # Sharpen
-        blur = cv2.GaussianBlur(crop, (0, 0), 1.5)
-        crop = cv2.addWeighted(crop, 1.5, blur, -0.5, 0)
-        crop = np.clip(crop, 0, 255).astype(np.uint8)
+
+            # Sharpen — only needed to counter the blur introduced by
+            # upscaling above; applying it to crops that were already
+            # native-resolution (e.g. the 1x front-row pass) just adds
+            # halos/noise on top of an already-sharp source image, making
+            # saved ground-truth crops look worse than the live RTSP feed.
+            blur = cv2.GaussianBlur(crop, (0, 0), 1.5)
+            crop = cv2.addWeighted(crop, 1.5, blur, -0.5, 0)
+            crop = np.clip(crop, 0, 255).astype(np.uint8)
  
         # Save accepted crop (attendance debug only)
         if _debug:
