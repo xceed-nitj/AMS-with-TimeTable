@@ -57,7 +57,7 @@ router.post('/', checkRole(['EO']) ,async (req, res) => {
     }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', checkRole(['EO']), async (req, res) => {
     try {
         const confObj = req.body;
         await confController.updateConf(confObj, req.params.id);

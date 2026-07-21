@@ -54,7 +54,7 @@ sponsorsRouter.post("/",checkRole(['EO']), async (req, res) => {
 });
 
 // PUT /sponsors/:id
-sponsorsRouter.put("/:id", async (req, res) => {
+sponsorsRouter.put("/:id", checkRole(['EO']), async (req, res) => {
   try {
     await sponsorsController.updateSponsor(req, res);
   } catch (e) {

@@ -54,7 +54,7 @@ router.post("/",checkRole(['EO']), async (req, res) => {
   }
 });
 
-router.put("/:id", async (req, res) => {
+router.put("/:id", checkRole(['EO']), async (req, res) => {
   try {
     const sponsorshipRateId = req.params.id;
     const updatedSponsorshipRate = req.body;

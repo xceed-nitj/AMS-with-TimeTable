@@ -46,7 +46,7 @@ imagesRouter.post("/", checkRole(['EO']),async (req, res) => {
 });
 
 // PUT /images/:id
-imagesRouter.put("/:id", async (req, res) => {
+imagesRouter.put("/:id", checkRole(['EO']), async (req, res) => {
   try {
     await imagesController.updateImage(req, res);
   } catch (error) {

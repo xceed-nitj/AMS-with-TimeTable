@@ -5,10 +5,11 @@ const {
     updateDefaultTemplate,
     postDefaultTemplate
 } = require('../controller/defaultTemplate');
+const { checkRole } = require('../../checkRole.middleware');
 
 // Routes for Default Templates
 router.get('/template', getDefaultTemplate);
-router.patch('/template', updateDefaultTemplate);
-router.post('/templates',postDefaultTemplate);
+router.patch('/template', checkRole(['admin']), updateDefaultTemplate);
+router.post('/templates', checkRole(['admin']), postDefaultTemplate);
 
 module.exports = router;

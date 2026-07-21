@@ -37,7 +37,7 @@ router.get('/count', checkRole(['admin', 'dm-admin']), getDoctorCount)
 router.get('/me', checkRole(['doctor']), getDoctorOwnData)
 
 // Route to add a new patient
-router.post('/add', addDoctor) // POST /api/v1/diabeticsmodule/patient
+router.post('/add', checkRole(['admin']), addDoctor) // POST /api/v1/diabeticsmodule/patient
 router.get('/all', checkRole(['admin', 'dm-admin']), getAllDoctors)
 router.get('/:id', checkRole(['admin', 'dm-admin']), getDoctorById)
 router.patch('/:id', checkRole(['admin', 'dm-admin', 'doctor']), updateDoctor)

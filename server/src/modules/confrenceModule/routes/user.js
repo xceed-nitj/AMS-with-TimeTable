@@ -2,10 +2,11 @@ const express = require("express");
 const User = require("../crud/user");
 
 const userController = new User();
+const { checkRole } = require("../../checkRole.middleware");
 
 const router = express.Router();
 
-router.post("/", async (req, res) => {
+router.post("/", checkRole(['EO']), async (req, res) => {
   try {
     await userController.createUser(req, res);
   } catch (e) {
@@ -27,7 +28,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.post("/bulk", async (req, res) => {
+router.post("/bulk", checkRole(['EO']), async (req, res) => {
   try {
     await userController.addUsersInBulk(req, res);
   } catch (e) {
@@ -38,7 +39,7 @@ router.post("/bulk", async (req, res) => {
   }
 });
 
-router.delete("/bulk", async (req, res) => {
+router.delete("/bulk", checkRole(['EO']), async (req, res) => {
   try {
     await userController.deleteAllUsers(req, res);
   } catch (e) {
@@ -93,7 +94,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-router.put("/:id", async (req, res) => {
+router.put("/:id", checkRole(['EO']), async (req, res) => {
   try {
     await userController.updateUser(req, res);
   } catch (e) {
@@ -104,7 +105,7 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", checkRole(['EO']), async (req, res) => {
   try {
     await userController.deleteUser(req, res);
   } catch (e) {

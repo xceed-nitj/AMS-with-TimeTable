@@ -46,7 +46,7 @@ awardsRouter.post("/",checkRole(['EO']), async (req, res) => {
 });
 
 // PUT /awards/:id
-awardsRouter.put("/:id", async (req, res) => {
+awardsRouter.put("/:id", checkRole(['EO']), async (req, res) => {
   try {
     await awardsController.updateAward(req, res);
   } catch (error) {

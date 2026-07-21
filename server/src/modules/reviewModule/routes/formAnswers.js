@@ -8,9 +8,10 @@ const {
   deleteFormAnswerById,
   getFormAnswerByEventUserFormId
 } = require('../controller/formAnswers');
+const { checkRole } = require('../../checkRole.middleware');
 
 // Create a new form answer
-router.post('/', createFormAnswer);
+router.post('/', checkRole(['admin']), createFormAnswer);
 
 // Get all form answers
 router.get('/', getFormAnswers);
@@ -19,10 +20,10 @@ router.get('/get/:eventId/:formId/:userId',getFormAnswerByEventUserFormId);
 router.get('/:id', getFormAnswerById);
 
 // Update a form answer by ID
-router.patch('/:id', updateFormAnswerById);
+router.patch('/:id', checkRole(['admin']), updateFormAnswerById);
 
 // Delete a form answer by ID
-router.delete('/:id', deleteFormAnswerById);
+router.delete('/:id', checkRole(['admin']), deleteFormAnswerById);
 
 module.exports = router;
 

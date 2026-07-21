@@ -56,7 +56,7 @@ router.post("/",checkRole(['EO']), async (req, res) => {
   }
 });
 
-router.put("/:id", async (req, res) => {
+router.put("/:id", checkRole(['EO']), async (req, res) => {
   try {
     const updatedHome = req.body;
     await homeController.updateHome(updatedHome, req.params.id);

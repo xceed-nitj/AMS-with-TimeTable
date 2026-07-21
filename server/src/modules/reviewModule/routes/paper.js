@@ -3,6 +3,7 @@ const { findAllPapers,updateDecision,addAuthorbyId ,addReviewer, findEventPaper,
 const fileUploadMiddleware = require("../controller/uploadFileMiddleWare");
 const uploadPaper = require("../controller/uploadFile");
 const privateroute = require("../../usermanagement/privateroute");
+const { checkRole } = require("../../checkRole.middleware");
 const reupload = require("../controller/reupload");
 const router = express.Router();
 const path = require('path');
@@ -27,15 +28,15 @@ router.get("/author/:id", findPaperByAuthor);//to find paper using UserID
 router.get("/trackcount/:id",PaperCountByTrack);
 router.get("/trackreviews/:id",ReviewsStatusCount);
 router.get("/status/:id",PaperStatusCount); //to count status of paper
-router.post("/addpaper/:id", fileUploadMiddleware, uploadPaper); // upload paper
-router.post("/downloadPaper",download);
-router.post('/addReviewer/:id', addReviewer);
-router.patch('/addAuthor/:paperId/:authorId', addAuthorbyId);
-router.post('/addAuthor', addAuthor);
-router.post('/removeReviewer/:id', removeReviewer);
-router.post("/reuploadPaper/:id", fileUploadMiddleware, reupload);
-router.patch("/:id", updatePaper); // By _id
-router.patch('/updateDecision/:eventId/:paperId', updateDecision);
+router.post("/addpaper/:id", checkRole(['admin']), fileUploadMiddleware, uploadPaper); // upload paper
+router.post("/downloadPaper", checkRole(['admin']), download);
+router.post('/addReviewer/:id', checkRole(['admin']), addReviewer);
+router.patch('/addAuthor/:paperId/:authorId', checkRole(['admin']), addAuthorbyId);
+router.post('/addAuthor', checkRole(['admin']), addAuthor);
+router.post('/removeReviewer/:id', checkRole(['admin']), removeReviewer);
+router.post("/reuploadPaper/:id", checkRole(['admin']), fileUploadMiddleware, reupload);
+router.patch("/:id", checkRole(['admin']), updatePaper); // By _id
+router.patch('/updateDecision/:eventId/:paperId', checkRole(['admin']), updateDecision);
 
 
 module.exports = router;
