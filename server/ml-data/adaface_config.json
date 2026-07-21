@@ -1,5 +1,0 @@
-{
-  "enabled": true,
-  "recog_threshold": 0.3,
-  "top_k": 3
-}
