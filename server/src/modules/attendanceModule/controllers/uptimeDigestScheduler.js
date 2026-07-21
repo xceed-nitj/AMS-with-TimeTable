@@ -20,11 +20,8 @@ const alertNotifier = require("./alertNotifier");
 const { erpConfigured, ERP_API_URL } = require("./erpSyncController");
 const Allotment = require("../../../models/allotment");
 
-// Deploy-specific probe targets. The Node server URL is probed over its
-// public address (not a self-check) so DNS/proxy/tunnel failures count as
-// down even though this process is the one running the probe.
-const CLIENT_HEALTH_URL = process.env.CLIENT_HEALTH_URL;
-const SERVER_HEALTH_URL = process.env.SERVER_HEALTH_URL;
+const CLIENT_HEALTH_URL = 'https://nitjtt.onrender.com';
+const SERVER_HEALTH_URL = 'https://xceed.nitj.ac.in' ;
 
 const PROBE_TIMEOUT_MS = 8000;
 
