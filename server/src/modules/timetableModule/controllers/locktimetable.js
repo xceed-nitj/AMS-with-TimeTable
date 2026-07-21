@@ -23,6 +23,11 @@ const Faculty = require("../../../models/faculty");
 const getEnvironmentURL = require("../../../getEnvironmentURL");
 const TimetableChangeLog = require("../../../models/timetableChangeLogs");
 const TimeTable = require("../../../models/timetable");
+const {
+  renderTimetableEmail,
+  emailButton,
+  emailSection,
+} = require("../helper/emailLayout");
 
 function indexBySubjectAndSem(entries) {
   const map = {};
@@ -156,65 +161,99 @@ function detectChangesForFaculty(oldEntries, newEntries) {
 }
 
 function generateEmail(faculty, changes, timetableLink) {
-  let body = `
-<p>Dear ${faculty},</p>
-<p>This email is to notify you of updates to your teaching timetable. Please review the changes below:</p>
-`;
+  const listStyle =
+    "margin:6px 0 0;padding-left:18px;font-size:14px;color:#444;line-height:1.7;";
+
+  let bodyHtml = `
+      <p style="margin:0 0 8px;font-size:14px;color:#444;line-height:1.6;">Dear ${faculty},</p>
+      <p style="margin:0 0 20px;font-size:14px;color:#444;line-height:1.6;">
+        This email is to notify you of updates to your teaching timetable.
+        Please review the changes below:
+      </p>`;
 
   /* 🟢 ADDED SUBJECTS */
   if (changes.addedSubjects.length > 0) {
-    body += `<p><strong>New Subjects Assigned:</strong></p><ul>`;
+    let inner = `<ul style="${listStyle}">`;
     changes.addedSubjects.forEach((s) => {
-      body += `<li><strong>${s.subject} (${s.sem})</strong><ul>`;
+      inner += `<li><strong>${s.subject} (${s.sem})</strong><ul style="${listStyle}">`;
       s.entries.forEach((e) => {
-        body += `<li>${e.day}, ${e.slot} | Room: ${e.room}</li>`;
+        inner += `<li>${e.day}, ${e.slot} | Room: ${e.room}</li>`;
       });
-      body += `</ul></li>`;
+      inner += `</ul></li>`;
     });
-    body += `</ul>`;
+    inner += `</ul>`;
+    bodyHtml += emailSection({
+      heading: "🟢 New Subjects Assigned",
+      bg: "#effaf3",
+      border: "#c7ecd4",
+      headingColor: "#16a34a",
+      contentHtml: inner,
+    });
   }
 
   /* 🔴 REMOVED SUBJECTS */
   if (changes.removedSubjects.length > 0) {
-    body += `<p><strong>Subjects Removed:</strong></p><ul>`;
+    let inner = `<ul style="${listStyle}">`;
     changes.removedSubjects.forEach((s) => {
-      body += `<li><strong>${s.subject} (${s.sem})</strong></li>`;
+      inner += `<li><strong>${s.subject} (${s.sem})</strong></li>`;
     });
-    body += `</ul>`;
+    inner += `</ul>`;
+    bodyHtml += emailSection({
+      heading: "🔴 Subjects Removed",
+      bg: "#fef2f2",
+      border: "#f6cccc",
+      headingColor: "#dc2626",
+      contentHtml: inner,
+    });
   }
 
   /* 🟡 UPDATED SUBJECTS */
   if (changes.updatedSubjects.length > 0) {
-    body += `<p><strong>Subject Updates:</strong></p><ul>`;
+    let inner = `<ul style="${listStyle}">`;
     changes.updatedSubjects.forEach((u) => {
-      body += `<li><strong>${u.subject} (${u.sem})</strong><ul>`;
+      inner += `<li><strong>${u.subject} (${u.sem})</strong><ul style="${listStyle}">`;
       if (u.changes.room) {
-        body += `<li>Room Changed: From ${u.changes.room.from.join(
+        inner += `<li>Room Changed: From ${u.changes.room.from.join(
           ", "
         )} to ${u.changes.room.to.join(", ")}</li>`;
       }
       if (u.changes.slots) {
-        body += `<li>Slot Changes:<ul>`;
+        inner += `<li>Slot Changes:<ul style="${listStyle}">`;
         if (u.changes.slots.added.length > 0) {
-          body += `<li>Added: ${u.changes.slots.added.join(", ")}</li>`;
+          inner += `<li>Added: ${u.changes.slots.added.join(", ")}</li>`;
         }
         if (u.changes.slots.removed.length > 0) {
-          body += `<li>Removed: ${u.changes.slots.removed.join(", ")}</li>`;
+          inner += `<li>Removed: ${u.changes.slots.removed.join(", ")}</li>`;
         }
-        body += `</ul></li>`;
+        inner += `</ul></li>`;
       }
-      body += `</ul></li>`;
+      inner += `</ul></li>`;
     });
-    body += `</ul>`;
+    inner += `</ul>`;
+    bodyHtml += emailSection({
+      heading: "🟡 Subject Updates",
+      bg: "#fffbeb",
+      border: "#f5e6b3",
+      headingColor: "#d97706",
+      contentHtml: inner,
+    });
   }
 
-  body += `
-<p>Please review your complete updated timetable here: <a href="${timetableLink}" target="_blank">${timetableLink}</a></p>
-<p>This is auto-generated email. If you have any questions, please contact the department timetable coordinator.</p>
-<p>Regards,<br><strong>Team XCEED</strong></p>
-`;
+  bodyHtml += emailButton(timetableLink, "View Updated Timetable");
+  bodyHtml += `
+      <p style="margin:0 0 16px;font-size:12px;color:#888;line-height:1.6;">
+        This is an auto-generated email. If you have any questions, please contact
+        the department timetable coordinator.
+      </p>
+      <p style="margin:0;font-size:14px;color:#444;line-height:1.6;">
+        Regards,<br />
+        <strong style="color:#0e7490;">Team XCEED</strong>
+      </p>`;
 
-  return body;
+  return renderTimetableEmail({
+    title: "Timetable Update Notification",
+    bodyHtml,
+  });
 }
 
 function generateFacultyChangeEmails(oldData, newData) {
