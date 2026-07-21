@@ -69,7 +69,7 @@ committeesRouter.post("/", checkRole(['EO']), async (req, res) => {
 });
 
 // PUT /committees/:id
-committeesRouter.put("/:id", async (req, res) => {
+committeesRouter.put("/:id", checkRole(['EO']), async (req, res) => {
   try {
     const id = req.params.id;
     const updatedCommittee = req.body;

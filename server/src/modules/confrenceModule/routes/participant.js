@@ -58,7 +58,7 @@ router.post("/",checkRole(['EO']), async (req, res) => {
 });
 
 
-router.put("/:id", async (req, res) => {
+router.put("/:id", checkRole(['EO']), async (req, res) => {
   try {
     await participantController.updateParticipant(req, res);
   } catch (error) {

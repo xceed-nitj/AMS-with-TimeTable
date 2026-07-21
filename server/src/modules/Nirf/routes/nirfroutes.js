@@ -3,11 +3,12 @@ const express = require('express');
 // const protectRoute =require("../../usermanagement/privateroute")
 // const superAdminRoute=require("../../usermanagement/superadminroute")
 const {getAllRanking, addRanking}=require('../controller/nirfcontroller');
+const { checkRole } = require('../../checkRole.middleware');
 
 
 const router = express.Router();
 
 router.get('/getranking', getAllRanking);
-router.post('/addranking/:year/:category',addRanking);
+router.post('/addranking/:year/:category', checkRole(['admin']), addRanking);
 
 module.exports = router;

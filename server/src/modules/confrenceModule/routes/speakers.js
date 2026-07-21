@@ -46,7 +46,7 @@ speakersRouter.post("/",checkRole(['EO']), async (req, res) => {
 });
 
 // PUT /speakers/:id
-speakersRouter.put("/:id", async (req, res) => {
+speakersRouter.put("/:id", checkRole(['EO']), async (req, res) => {
   try {
     await speakersController.updateSpeaker(req, res);
   } catch (error) {

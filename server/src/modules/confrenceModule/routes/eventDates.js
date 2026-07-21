@@ -59,7 +59,7 @@ eventDateRouter.post("/", checkRole(['EO']), async (req, res) => {
 });
 
 
-eventDateRouter.put("/:id", async (req, res) => {
+eventDateRouter.put("/:id", checkRole(['EO']), async (req, res) => {
   try {
     await eventDateController.updateEventDate(req, res);
   } catch (error) {

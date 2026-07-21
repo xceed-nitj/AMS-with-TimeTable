@@ -14,39 +14,37 @@ const addFaculty = require("../../../models/addfaculty");
 const facultyControllerInstance = new FacultyController();
 const MasterRoomProfile = new masterroomprofile();
 const mailSender = require("../../mailsender");
+const { renderTimetableEmail, emailButton } = require("../helper/emailLayout");
 
 function getTimetableEmailContent({ facultyName, departmentName, sessionName, timetableUrl }) {
-  return {
-    subject: "Timetable Published for the Upcoming Session",
-    body: `
-      <p>Dear ${facultyName},</p>
-
-      <p>
+  const bodyHtml = `
+      <p style="margin:0 0 8px;font-size:14px;color:#444;line-height:1.6;">Dear ${facultyName},</p>
+      <p style="margin:0 0 16px;font-size:14px;color:#444;line-height:1.6;">
         We are pleased to inform you that the timetable for the
-        <strong>${departmentName}</strong> department for the upcoming academic
-        session <strong>${sessionName}</strong> has been published.
+        <strong style="color:#0e7490;">${departmentName}</strong> department for the upcoming academic
+        session <strong style="color:#0e7490;">${sessionName}</strong> has been published.
       </p>
-
-      <p>
-        You may access your timetable using the link below:
-      </p>
-
-      <p>
-        <a href="${timetableUrl}" target="_blank">
-          View Timetable
-        </a>
-      </p>
-
-      <p>
+      <div style="background:#f0f9ff;border:1px solid #cfe9f5;border-left:4px solid #0e7490;border-radius:10px;padding:14px 18px;margin:0 0 8px;">
+        <p style="margin:0;font-size:14px;color:#444;line-height:1.6;">
+          Your personalised timetable is now ready. Tap the button below to view it.
+        </p>
+      </div>
+      ${emailButton(timetableUrl, "View Timetable")}
+      <p style="margin:0 0 16px;font-size:12px;color:#888;line-height:1.6;">
         This is an auto-generated email. For any clarifications, kindly contact the
         timetable coordinator.
       </p>
-
-      <p>
+      <p style="margin:0;font-size:14px;color:#444;line-height:1.6;">
         Regards,<br />
-        <strong>Team XCEED</strong>
-      </p>
-    `,
+        <strong style="color:#0e7490;">Team XCEED</strong>
+      </p>`;
+
+  return {
+    subject: "Timetable Published for the Upcoming Session",
+    body: renderTimetableEmail({
+      title: "Timetable Published",
+      bodyHtml,
+    }),
   };
 }
 

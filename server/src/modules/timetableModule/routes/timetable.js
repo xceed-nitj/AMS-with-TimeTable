@@ -145,7 +145,7 @@ TableRouter.delete("/deletebycode/:code", deleteAccess, async (req, res) => {
   }
 });
 
-TableRouter.post("/set-current-session", async (req, res) => {
+TableRouter.post("/set-current-session", checkRole(['admin', 'ITTC']), async (req, res) => {
   try {
     await tableController.setCurrentSession(req, res);
   } catch (e) {

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const superAdminRoute=require("../../usermanagement/superadminroute")
+const { checkRole } = require('../../checkRole.middleware');
 const {
     addDefaultQuestion,
     getDefaultQuestions,
@@ -11,10 +12,10 @@ const {
 
 
 // Routes for DefaultQuestions
-router.post('/add', addDefaultQuestion);
+router.post('/add', checkRole(['admin']), addDefaultQuestion);
 router.get('/all',  getDefaultQuestions);
 router.get('/:id', getDefaultQuestionById);
-router.patch('/:id', updateDefaultQuestion);
-router.delete('/:id', deleteDefaultQuestion);
+router.patch('/:id', checkRole(['admin']), updateDefaultQuestion);
+router.delete('/:id', checkRole(['admin']), deleteDefaultQuestion);
 
 module.exports = router;

@@ -63,7 +63,7 @@ commontemplatesRouter.post("/",checkRole(['EO']), async (req, res) => {
 });
 
 // PUT /commontemplates/:id
-commontemplatesRouter.put("/:id", async (req, res) => {
+commontemplatesRouter.put("/:id", checkRole(['EO']), async (req, res) => {
   try {
     await commontemplatesController.updateCommonTemplate(req, res);
   } catch (error) {
