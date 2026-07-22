@@ -53,8 +53,8 @@ const ROLE_OPTIONS = [
   { value: 'doctor', label: 'Doctor' },
   { value: 'patient', label: 'Patient' },
   { value: 'dm-admin', label: 'Diabetics Module Admin' },
-  { value: 'iams-admin', label: 'IAMS Admin' },
-  { value: 'iams-dept-admin', label: 'IAMS Department Admin' },
+  { value: 'iams-admin', label: 'iLEED Admin' },
+  { value: 'iams-dept-admin', label: 'iLEED Department Admin' },
 ];
 
 const userEmails = (user) =>

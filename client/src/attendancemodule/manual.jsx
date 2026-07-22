@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { theme, cssReset } from './config';
 import getEnvironment from '../getenvironment';
 import DEV_CYCLE from './devCycleData';
+import ILeed from './BrandName';
 
 const T = theme;
 
@@ -108,10 +109,10 @@ function TabOverview({ setTab }) {
                 borderRadius: 12, padding: '28px 32px', marginBottom: 28, color: '#fff',
             }}>
                 <div style={{ fontSize: 22, fontWeight: 800, marginBottom: 8 }}>
-                    AI Attendance Management System
+                    <ILeed style={{ color: '#fff' }} /> — Intelligent Learning Engagement and Entity Detection
                 </div>
                 <div style={{ fontSize: 14, opacity: 0.9, lineHeight: 1.75, maxWidth: 640 }}>
-                    AMS automates attendance using face recognition from existing CCTV / RTSP cameras.
+                    iLEED automates attendance using face recognition from existing CCTV / RTSP cameras.
                     Ground truth is captured in the <strong>same physical environment</strong> where attendance runs —
                     same cameras, same angles, same lighting — producing significantly better recognition accuracy
                     than using generic studio photos.
@@ -923,7 +924,7 @@ function TabDevCycle() {
         <div>
             <SectionTitle>Development Cycle</SectionTitle>
             <Note type="info">
-                What changed in the <strong>Attendance Management System</strong>, week by week (newest first) —
+                What changed in <strong>iLEED</strong>, week by week (newest first) —
                 features merged to the main branch from
                 March {DEV_CYCLE.length ? DEV_CYCLE[DEV_CYCLE.length - 1].week.slice(-4) : ''} to date, written in
                 plain language ({totalItems} features across {DEV_CYCLE.length} weeks; internal
@@ -1011,7 +1012,7 @@ export default function Manual({ standalone = false }) {
                             fontSize: 15,
                         }}>📖</div>
                         <span style={{ fontSize: 14, fontWeight: 700, color: '#e0e7ff' }}>
-                            AMS — Help & Manual
+                            iLEED — Help & Manual
                         </span>
                     </div>
                     {isAuthenticated && (
@@ -1043,7 +1044,7 @@ export default function Manual({ standalone = false }) {
                     <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 20, fontWeight: 800, color: T.text }}>Help & User Manual</div>
                         <div style={{ fontSize: 13, color: T.textMuted, marginTop: 2 }}>
-                            Step-by-step guide for the AI Attendance Management System
+                            Step-by-step guide for iLEED — Intelligent Learning Engagement and Entity Detection
                         </div>
                     </div>
                     <button

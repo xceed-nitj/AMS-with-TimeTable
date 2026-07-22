@@ -7,6 +7,7 @@ import NotificationSettingsTab from './NotificationSettingsTab';
 import FrameCleanupSettingsTab from './FrameCleanupSettingsTab';
 import OtherControlsSettingsTab from './OtherControlsSettingsTab';
 import { theme as T, cssReset } from './config';
+import BackButton from './BackButton';
 import DeptMenuConfig from './DeptMenuConfig';
 import DegreeManagement from './DegreeManagement';
 import ErpSyncSettingsTab from './ErpSyncSettingsTab';
@@ -846,12 +847,13 @@ export default function EditSessionDates() {
                 color: T.text,
               }}
             >
-              iams-master-settings
+              ileed-master-settings
             </div>
             <div style={{ fontSize: 12, color: T.textMuted }}>
               Configure session dates, non-working days, and batch identifiers
             </div>
           </div>
+          <BackButton />
         </div>
 
         {/* Tabs */}

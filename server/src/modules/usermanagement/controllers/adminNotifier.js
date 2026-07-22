@@ -3,6 +3,7 @@
 // never block or fail the request that triggered the notification.
 
 const mailSender = require("../../mailsender");
+const { renderTimetableEmail } = require("../../timetableModule/helper/emailLayout");
 
 const ADMIN_NOTIFY_EMAIL = process.env.ADMIN_NOTIFY_EMAIL || "xceed@nitj.ac.in";
 
@@ -23,14 +24,16 @@ const detailRow = (label, value) =>
   `<td style="padding:4px 0;font-weight:600;">${escapeHtml(value) || "—"}</td></tr>`;
 
 function sendAdminNotification(subject, heading, rows) {
-  const html = `
-    <div style="font-family:Arial,sans-serif;font-size:14px;color:#222;">
-      <h2 style="font-size:16px;">${escapeHtml(heading)}</h2>
-      <table style="border-collapse:collapse;">${rows.join("")}</table>
-      <p style="color:#888;font-size:12px;margin-top:16px;">
-        Automated notification from the XCEED platform.
-      </p>
-    </div>`;
+  // Same tinted key/value card style the other modules use for details.
+  const bodyHtml = `
+      <div style="background:#f7f9fc;border:1px solid #e4e8f5;border-left:4px solid #0e7490;border-radius:10px;padding:8px 18px;margin:0 0 4px;">
+        <table style="border-collapse:collapse;width:100%;font-size:14px;color:#1a1f3c;">${rows.join("")}</table>
+      </div>`;
+  const html = renderTimetableEmail({
+    title: escapeHtml(heading),
+    bodyHtml,
+    accent: "#0e7490",
+  });
   Promise.resolve(mailSender(ADMIN_NOTIFY_EMAIL, subject, html)).catch((err) =>
     console.error("[adminNotifier] Failed to send notification:", err.message),
   );

@@ -22,7 +22,8 @@ import {
   useColorModeValue,
   useToast,
 } from '@chakra-ui/react';
-import { FiShield, FiTrash2, FiUserPlus } from 'react-icons/fi';
+import { FiArrowLeft, FiShield, FiTrash2, FiUserPlus } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
 import getEnvironment from '../getenvironment';
 
 const apiUrl = getEnvironment();
@@ -36,6 +37,11 @@ const DeptAdminAssignPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [removing, setRemoving] = useState(null);
   const toast = useToast();
+  const navigate = useNavigate();
+  const goBack = () => {
+    if (window.history.length > 1) navigate(-1);
+    else navigate('/attendance');
+  };
 
   const cardBg = useColorModeValue('white', 'gray.800');
   const border = useColorModeValue('gray.200', 'gray.700');
@@ -94,7 +100,7 @@ const DeptAdminAssignPage = () => {
       if (!res.ok) throw new Error(data.error || data.message || 'Failed to assign role');
       toast({
         title: data.created ? 'User created and role assigned' : 'Role assigned',
-        description: `${email.trim()} is now IAMS Department Admin for ${data.user?.dept || dept}.`,
+        description: `${email.trim()} is now iLEED Department Admin for ${data.user?.dept || dept}.`,
         status: 'success',
         duration: 5000,
         isClosable: true,
@@ -132,18 +138,27 @@ const DeptAdminAssignPage = () => {
   return (
     <Box bg={pageBg} minH="100vh" py={{ base: 8, md: 14 }}>
       <Container maxW="4xl">
-        <Flex align="center" gap={4} mb={{ base: 6, md: 10 }}>
+        <Flex align="center" gap={4} mb={{ base: 6, md: 10 }} flexWrap="wrap">
           <Flex align="center" justify="center" boxSize={12} borderRadius="lg" bg={iconBg} color={iconColor}>
             <Icon as={FiShield} boxSize={6} />
           </Flex>
           <Box>
             <Heading as="h1" size="lg">
-              IAMS Department Admins
+              iLEED Department Admins
             </Heading>
             <Text color={subColor}>
               Assign the department admin role by email — the account is created automatically if it doesn't exist.
             </Text>
           </Box>
+          <Button
+            leftIcon={<FiArrowLeft />}
+            variant="outline"
+            size="sm"
+            ml="auto"
+            onClick={goBack}
+          >
+            Back
+          </Button>
         </Flex>
 
         <Box as="form" onSubmit={handleAssign} bg={cardBg} borderWidth="1px" borderColor={border} borderRadius="xl" p={6} mb={8}>
@@ -189,7 +204,7 @@ const DeptAdminAssignPage = () => {
               <Spinner />
             </Flex>
           ) : admins.length === 0 ? (
-            <Text color={subColor}>No IAMS Department Admins assigned yet.</Text>
+            <Text color={subColor}>No iLEED Department Admins assigned yet.</Text>
           ) : (
             <Box overflowX="auto">
               <Table size="md" variant="simple">

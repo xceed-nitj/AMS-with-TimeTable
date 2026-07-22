@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { theme, styles, cssReset } from './config';
+import BackButton from './BackButton';
 import getEnvironment from '../getenvironment';
 
 const apiUrl = getEnvironment();
@@ -1435,31 +1436,34 @@ export default function SchedulerPage() {
               Manage attendance acquisition timing, rooms, and extra classes.
             </div>
           </div>
-          {/* Global on/off */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              padding: '10px 20px',
-              borderRadius: 10,
-              background: config?.active ? theme.successDim : theme.dangerDim,
-              border: `1px solid ${config?.active ? theme.success : theme.danger}`,
-            }}
-          >
-            <Toggle
-              value={config?.active || false}
-              onChange={(v) => patchGlobal({ active: v })}
-            />
-            <span
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            {/* Global on/off */}
+            <div
               style={{
-                fontSize: 13,
-                fontWeight: 700,
-                color: config?.active ? theme.success : theme.danger,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                padding: '10px 20px',
+                borderRadius: 10,
+                background: config?.active ? theme.successDim : theme.dangerDim,
+                border: `1px solid ${config?.active ? theme.success : theme.danger}`,
               }}
             >
-              {config?.active ? 'Acquisition ACTIVE' : 'Acquisition STOPPED'}
-            </span>
+              <Toggle
+                value={config?.active || false}
+                onChange={(v) => patchGlobal({ active: v })}
+              />
+              <span
+                style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: config?.active ? theme.success : theme.danger,
+                }}
+              >
+                {config?.active ? 'Acquisition ACTIVE' : 'Acquisition STOPPED'}
+              </span>
+            </div>
+            <BackButton />
           </div>
         </div>
       </div>

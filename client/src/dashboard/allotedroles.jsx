@@ -105,14 +105,14 @@ const ROLE_META = {
     accent: 'pink',
   },
   'iams-admin': {
-    name: 'IAMS Admin',
+    name: 'iLEED Admin',
     link: '/iams-admin',
     description: 'Manage face recognition attendance system',
     icon: FiUserCheck,
     accent: 'cyan',
   },
   'iams-dept-admin': {
-    name: 'IAMS Department Admin',
+    name: 'iLEED Department Admin',
     link: '/dept-admin/dashboard',
     description: 'Department-level attendance management',
     icon: FiUserCheck,
