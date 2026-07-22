@@ -199,4 +199,41 @@ router.get('/ground-truth-photo-by-roll/:rollNo', async (req, res) => {
     }
 });
 
+// INTENTIONALLY LEFT UNAUTHENTICATED: called by the Python ML service itself
+// (clustering_service.py's _reject_uploader), not a browser session. Receives
+// liveness-rejected face crops as base64 and stores them in this server's
+// ml-data/liveness_rejected/ — the ML service keeps no local copy (it may run
+// on a separate machine). Write-only, strict filename whitelist, capped dir.
+const LIVENESS_REJECTED_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'liveness_rejected');
+const LIVENESS_REJECTED_MAX = 2000;   // keep newest N crops; prune the rest
+
+router.post('/liveness-rejected', async (req, res) => {
+    try {
+        const { filename, image } = req.body || {};
+        // {ts_ms}_{DEPT?}_{method}{score}_det{score}.jpg — no separators/dots
+        // beyond the extension, so a hostile filename can't escape the dir.
+        if (typeof filename !== 'string' || !/^[0-9]{10,17}[A-Za-z0-9_.\-]*\.jpg$/.test(filename)
+            || filename.includes('..') || !image || typeof image !== 'string') {
+            return res.status(400).json({ error: 'bad filename or image' });
+        }
+        await fs.promises.mkdir(LIVENESS_REJECTED_DIR, { recursive: true });
+        await fs.promises.writeFile(
+            path.join(LIVENESS_REJECTED_DIR, filename),
+            Buffer.from(image, 'base64'),
+        );
+
+        // Retention: ms-timestamp filename prefix sorts chronologically, so
+        // dropping the lexicographically smallest removes the oldest crops.
+        const files = (await fs.promises.readdir(LIVENESS_REJECTED_DIR))
+            .filter((f) => f.endsWith('.jpg')).sort();
+        if (files.length > LIVENESS_REJECTED_MAX) {
+            await Promise.all(files.slice(0, files.length - LIVENESS_REJECTED_MAX)
+                .map((f) => fs.promises.unlink(path.join(LIVENESS_REJECTED_DIR, f)).catch(() => {})));
+        }
+        res.json({ saved: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;

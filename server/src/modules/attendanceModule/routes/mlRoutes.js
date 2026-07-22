@@ -523,18 +523,52 @@ router.post('/detector-config', async (req, res) => {
     }
 });
 
+// Served from THIS server's ml-data/liveness_rejected/ — the ML service
+// uploads crops here (POST /attendancemodule/liveness-rejected) and keeps
+// no local copy, so no proxy to the (possibly remote) ML machine is needed.
+// (Not derived from ML_DATA_DIR below — that const is declared later in
+// this file and would be in its temporal dead zone here.)
+const LIVENESS_REJECTED_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data', 'liveness_rejected');
+
+// Filename: {ts_ms}_{DEPT?}_{method}{score}_det{score}.jpg — dept absent in
+// old-format files, whose second token starts with the method name instead.
+function parseDeptFromRejectedFilename(fname) {
+    const parts = fname.replace(/\.jpg$/i, '').split('_');
+    if (parts.length < 2) return '';
+    if (parts[1].startsWith('heur') || parts[1].startsWith('onnx')) return '';
+    return parts[1];
+}
+
 router.get('/liveness-rejected-samples', async (req, res) => {
     try {
         const limit = Number.parseInt(req.query.limit, 10) || 50;
-        const result = await axios.get(`${ML_URL}/liveness-rejected-samples`, {
-            timeout: 10000,
-            params: { limit },
-        });
-        res.json(result.data);
+        const dept  = String(req.query.dept || '');
+        if (!fs.existsSync(LIVENESS_REJECTED_DIR)) {
+            return res.json({ samples: [], total: 0, depts: [] });
+        }
+        const allFiles = (await fs.promises.readdir(LIVENESS_REJECTED_DIR))
+            .filter((f) => f.toLowerCase().endsWith('.jpg'))
+            .sort().reverse();   // ms-timestamp prefix → newest first
+
+        const depts = [...new Set(allFiles.map(parseDeptFromRejectedFilename).filter(Boolean))].sort();
+        const files = dept ? allFiles.filter((f) => parseDeptFromRejectedFilename(f) === dept) : allFiles;
+
+        const samples = [];
+        for (const fname of files.slice(0, limit)) {
+            try {
+                const bytes = await fs.promises.readFile(path.join(LIVENESS_REJECTED_DIR, fname));
+                samples.push({
+                    filename: fname,
+                    image: `data:image/jpeg;base64,${bytes.toString('base64')}`,
+                    dept: parseDeptFromRejectedFilename(fname),
+                });
+            } catch (_) { /* file pruned mid-read — skip */ }
+        }
+        res.json({ samples, total: files.length, depts });
     } catch (e) {
         res.status(503).json({
             samples: [], total: 0,
-            error: e.response?.data?.error || e.message || 'Rejected samples unavailable',
+            error: e.message || 'Rejected samples unavailable',
         });
     }
 });
@@ -818,7 +852,10 @@ router.get('/rolllists', (req, res) => {
 });
 
 // ─── Build Embeddings DB (streamed) ───────────────────────────
-const ML_DATA_DIR = path.join(__dirname, '..', '..', '..', 'ml-data');
+// Four levels up from routes/ → server/ml-data (NOT server/src/ml-data —
+// a previous 3-level version of this path silently created a stray empty
+// server/src/ml-data folder).
+const ML_DATA_DIR = path.join(__dirname, '..', '..', '..', '..', 'ml-data');
 if (!fs.existsSync(ML_DATA_DIR)) fs.mkdirSync(ML_DATA_DIR, { recursive: true });
 const EMBEDDINGS_DB_PATH = path.join(ML_DATA_DIR, 'embeddings_db.pkl');
 

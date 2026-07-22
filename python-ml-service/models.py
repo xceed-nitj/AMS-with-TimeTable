@@ -5,10 +5,10 @@ import os
 from pydantic import BaseModel
 from typing import List, Optional
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, ".."))
-DB_PATH  = os.path.join(ROOT_DIR, "server", "ml-data", "embeddings_db.pkl")
-CLIENT_GROUND_TRUTH = os.path.join(ROOT_DIR, "server", "ml-data", "ground_truth")
+from paths import BASE_DIR, ROOT_DIR, data_path
+
+DB_PATH  = data_path("embeddings_db.pkl")
+CLIENT_GROUND_TRUTH = data_path("ground_truth")
 
 
 class VideoRequest(BaseModel):

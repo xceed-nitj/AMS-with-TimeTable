@@ -106,12 +106,15 @@ sys.stdout = _TeeStream(sys.stdout, "STDOUT")
 sys.stderr = _TeeStream(sys.stderr, "STDERR")
 logger = logging.getLogger("ml_service")
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, ".."))
-DB_PATH  = os.path.join(ROOT_DIR, "server", "ml-data", "embeddings_db.pkl")
-CLIENT_GROUND_TRUTH = os.path.join(ROOT_DIR, "server", "ml-data", "ground_truth")
+# All local-data paths go through paths.py (ML_DATA_DIR env override) — the
+# Node server may run on a different machine, so nothing may assume its
+# filesystem. These are THIS machine's private data locations.
+from paths import BASE_DIR, ROOT_DIR, ML_DATA_DIR, data_path
 
-logger.info(f"ROOT_DIR: {ROOT_DIR}")
+DB_PATH  = data_path("embeddings_db.pkl")
+CLIENT_GROUND_TRUTH = data_path("ground_truth")
+
+logger.info(f"ML_DATA_DIR: {ML_DATA_DIR}")
 logger.info(f"DB_PATH:  {DB_PATH}")
 logger.info(f"CLIENT_GROUND_TRUTH: {CLIENT_GROUND_TRUTH}")
 
@@ -194,7 +197,7 @@ def load_embeddings():
     )
     _migrate_folder(
         os.path.join(ROOT_DIR, "server", "erp_photos"),
-        os.path.join(ROOT_DIR, "server", "ml-data", "erp_photos"),
+        data_path("erp_photos"),
         "erp_photos"
     )
 
@@ -222,8 +225,8 @@ def load_embeddings():
                 logger.warning(f"Failed to load {label} gallery from {gallery_path}: {e}")
 
 # ADDED — FAISS index loader for tracked_routes.py.
-FAISS_INDEX_PATH = os.path.join(ROOT_DIR, "server", "ml-data", "embeddings", "faiss.index")
-FAISS_DB_PATH    = os.path.join(ROOT_DIR, "server", "ml-data", "embeddings", "metadata.db")
+FAISS_INDEX_PATH = data_path("embeddings", "faiss.index")
+FAISS_DB_PATH    = data_path("embeddings", "metadata.db")
 
 
 def load_faiss_index():
@@ -259,6 +262,8 @@ async def lifespan(app: FastAPI):
     load_liveness_config()
     from faiss_config_store import load_faiss_config
     load_faiss_config()
+    from gt_config_store import load_gt_config
+    load_gt_config()
     from max_k_config_store import load_max_k_config
     load_max_k_config()
     from adaface_utils import load_adaface_model

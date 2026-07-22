@@ -12,9 +12,9 @@ import state
 
 logger = logging.getLogger("ml_service.adaface_config")
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, ".."))
-CONFIG_PATH = os.path.join(ROOT_DIR, "server", "ml-data", "adaface_config.json")
+from paths import data_path
+
+CONFIG_PATH = data_path("adaface_config.json")
 
 DEFAULTS = {
     "enabled":         False,

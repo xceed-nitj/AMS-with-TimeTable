@@ -212,6 +212,14 @@ function consumeEvent(job, event) {
             broadcast(job, event);
             break;
 
+        case 'gt_config_seeded':
+            // Python filled omitted knobs from the ML Fine Tuning GT config —
+            // log it (amber) so it lands in snapshots, and forward it so the
+            // page can show a notification.
+            if (event.message) pushLog(job, event.message, '#f0c040');
+            broadcast(job, event);
+            break;
+
         case 'error':
             if (event.message) pushLog(job, event.message, '#ef4444');
             broadcast(job, event);

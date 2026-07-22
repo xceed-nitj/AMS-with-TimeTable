@@ -36,16 +36,16 @@ import adaface_utils
 logger = logging.getLogger("ml_service.ground_truth_routes")
 router = APIRouter()
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, ".."))
-DB_PATH  = os.path.join(ROOT_DIR, "server", "ml-data", "embeddings_db.pkl")
-CLIENT_GROUND_TRUTH = os.path.join(ROOT_DIR, "server", "ml-data", "ground_truth")
+from paths import BASE_DIR, ROOT_DIR, data_path
+
+DB_PATH  = data_path("embeddings_db.pkl")
+CLIENT_GROUND_TRUTH = data_path("ground_truth")
 
 # Institute-wide sibling galleries to embeddings_db.pkl — local to THIS
 # machine, same accumulation pattern. Feed the multi-model scoring on the
 # Institute Identification page (see state.py / institute_identification_routes.py).
-TOPK_DB_PATH    = os.path.join(ROOT_DIR, "server", "ml-data", "embeddings_db_topk.pkl")
-ADAFACE_DB_PATH = os.path.join(ROOT_DIR, "server", "ml-data", "embeddings_db_adaface.pkl")
+TOPK_DB_PATH    = data_path("embeddings_db_topk.pkl")
+ADAFACE_DB_PATH = data_path("embeddings_db_adaface.pkl")
 
 
 def _persist_institute_galleries():
@@ -66,8 +66,8 @@ def _persist_institute_galleries():
     
 
 # ─── Automated FAISS Rebuild ──────────────────────────────────────────────────
-FAISS_INDEX_PATH = os.path.join(ROOT_DIR, "server", "ml-data", "embeddings", "faiss.index")
-FAISS_DB_PATH    = os.path.join(ROOT_DIR, "server", "ml-data", "embeddings", "metadata.db")
+FAISS_INDEX_PATH = data_path("embeddings", "faiss.index")
+FAISS_DB_PATH    = data_path("embeddings", "metadata.db")
 
 def rebuild_faiss_index_async():
     """Rebuilds the FAISS index and metadata.db completely from state.topk_embeddings_db."""

@@ -16,9 +16,9 @@ import state
 
 logger = logging.getLogger("ml_service.pipeline_config")
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, ".."))
-CONFIG_PATH = os.path.join(ROOT_DIR, "server", "ml-data", "pipeline_config.json")
+from paths import data_path
+
+CONFIG_PATH = data_path("pipeline_config.json")
 
 PRIMARY_CHOICES = ("mean", "max_k", "faiss", "adaface")
 

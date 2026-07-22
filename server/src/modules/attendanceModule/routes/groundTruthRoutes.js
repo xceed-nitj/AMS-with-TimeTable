@@ -309,12 +309,15 @@ router.post('/gt-acquisition/start', async (req, res) => {
         mode,
         batch,
         cameras,
+        // Omitted values stay undefined (dropped from the JSON body) so the
+        // ML service seeds them from the GT Acquisition config (ML Fine
+        // Tuning page) and reports the fallback via a gt_config_seeded event.
         params: {
-            detSize:             Number(detSize)             || 320,
-            frameSkip:           Number(frameSkip)           || 10,
-            targetImgsPerPerson: Number(targetImgsPerPerson) || 10,
-            minSamples:          Number(minSamples)          || 3,
-            clusterThreshold:    Number(clusterThreshold)    || 0.45,
+            detSize:             Number(detSize)             || undefined,
+            frameSkip:           Number(frameSkip)           || undefined,
+            targetImgsPerPerson: Number(targetImgsPerPerson) || undefined,
+            minSamples:          Number(minSamples)          || undefined,
+            clusterThreshold:    Number(clusterThreshold)    || undefined,
         },
         startedByName: await resolveStartedByName(req),
         department:    req.attendanceDepartment,
