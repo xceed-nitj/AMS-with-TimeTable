@@ -46,11 +46,18 @@ function normalizeRoom(value = '') {
 }
 
 // Checks for online status of streams | same stuff as ffprobe command
-function probeRtsp(rtspUrl, timeoutMs = 5000) {
+// Resolves true (stream ok), false (unreachable / no stream), or null when
+// ffprobe itself is not installed on this host (caller should fall back to a
+// TCP reachability check instead of reporting every camera offline).
+function probeRtsp(rtspUrl, timeoutMs = 12000) {
     return new Promise((resolve) => {
         const ffprobe = spawn("ffprobe", [
             "-v", "error",
             "-rtsp_transport", "tcp",
+            // RTSP socket I/O timeout in microseconds — without this, a dropped
+            // packet or unreachable host makes ffprobe hang far past any sane
+            // window and the outer kill timer marks an online camera offline.
+            "-timeout", "8000000",
             "-show_entries", "stream=codec_type",
             "-of", "default=noprint_wrappers=1:nokey=1",
             rtspUrl,
@@ -73,11 +80,12 @@ function probeRtsp(rtspUrl, timeoutMs = 5000) {
             resolve(code === 0);
         });
 
-        ffprobe.on("error", () => {
+        ffprobe.on("error", (err) => {
             if (finished) return;
             finished = true;
             clearTimeout(timer);
-            resolve(false);
+            // ENOENT = ffprobe binary missing on this host, not a camera fault
+            resolve(err && err.code === 'ENOENT' ? null : false);
         });
     });
 }
@@ -172,11 +180,17 @@ class CameraController {
             const checkedAt = new Date().toISOString();
             const evaluated = await Promise.all(
                 cameras.map(async (camera) => {
-                    const online = await probeRtsp(camera.streamUrl);
+                    let online = await probeRtsp(camera.streamUrl);
+                    if (online === null) {
+                        // ffprobe is not installed on this host — fall back to a
+                        // plain TCP reachability check rather than marking every
+                        // camera offline.
+                        online = await probeTcpReachability(camera.ipAddress, camera.port);
+                    }
                     return {
                         ...camera,
                         status: online ? 'online' : 'offline',
-                        isActive: online,
+                        isActive: Boolean(online),
                         availabilityCheckedAt: checkedAt,
                     };
                 })

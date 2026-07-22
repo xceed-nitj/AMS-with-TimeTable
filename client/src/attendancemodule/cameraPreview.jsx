@@ -63,6 +63,7 @@ function FeedPanel({ camera, quality, scale, refreshKey, onError }) {
   const [feedKey, setFeedKey] = useState(0);
   const [starting, setStarting] = useState(true);
   const [failed, setFailed] = useState(false);
+  const [failReason, setFailReason] = useState('');
   const [streamUrl, setStreamUrl] = useState(null);
   // Each panel tracks its own preview job so the two feeds never share a slot.
   const jobIdRef = useRef(null);
@@ -78,16 +79,11 @@ function FeedPanel({ camera, quality, scale, refreshKey, onError }) {
   const startFeed = useCallback(() => {
     if (!camera?._id) return;
 
-    // Don't attempt connection for offline cameras
-    if (camera?.status === 'offline') {
-      setStarting(false);
-      setFailed(false);
-      setStreamUrl(null);
-      return;
-    }
-
+    // Always attempt the connection — the offline status comes from a periodic
+    // probe that can be stale or wrong; the preview start below is the real test.
     setStarting(true);
     setFailed(false);
+    setFailReason('');
     setStreamUrl(null);
 
     fetch(`${CAMERA_API}/${camera._id}/preview/start`, {
@@ -95,7 +91,13 @@ function FeedPanel({ camera, quality, scale, refreshKey, onError }) {
       headers: { 'Content-Type': 'application/json' },
       body: '{}',
     })
-      .then((res) => res.json())
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data?.error || `Preview start failed (${res.status})`);
+        }
+        return data;
+      })
       .then((data) => {
         jobIdRef.current = data?.jobId || null;
         setStreamUrl(buildStreamUrl());
@@ -105,6 +107,7 @@ function FeedPanel({ camera, quality, scale, refreshKey, onError }) {
       .catch((err) => {
         setStarting(false);
         setFailed(true);
+        setFailReason(err.message);
         onError?.(
           `Could not start feed for ${camera.cameraId}: ${err.message}`,
         );
@@ -203,26 +206,7 @@ function FeedPanel({ camera, quality, scale, refreshKey, onError }) {
           justifyContent: 'center',
         }}
       >
-        {camera?.status === 'offline' ? (
-          <div style={{ textAlign: 'center', padding: 24 }}>
-            <div style={{ fontSize: 32, marginBottom: 10 }}>📵</div>
-            <div
-              style={{
-                fontSize: 14,
-                fontWeight: 700,
-                color: theme.textMuted,
-                marginBottom: 6,
-              }}
-            >
-              Camera Offline
-            </div>
-            <div
-              style={{ color: theme.textMuted, fontSize: 12, lineHeight: 1.6 }}
-            >
-              This camera is currently unreachable.
-            </div>
-          </div>
-        ) : starting ? (
+        {starting ? (
           <div style={{ textAlign: 'center', padding: 24 }}>
             <div
               style={{
@@ -262,7 +246,7 @@ function FeedPanel({ camera, quality, scale, refreshKey, onError }) {
                 lineHeight: 1.6,
               }}
             >
-              Timed out waiting for first frame from RTSP stream.
+              {failReason || 'Timed out waiting for first frame from RTSP stream.'}
             </div>
             <button
               type="button"
