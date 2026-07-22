@@ -26,6 +26,7 @@ import state
 import clustering_service
 import liveness_config_store
 import faiss_config_store
+import gt_config_store
 import max_k_config_store
 import adaface_config_store
 import pipeline_config_store
@@ -42,9 +43,9 @@ from faiss_utils import _recognize_face
 logger = logging.getLogger("ml_service.rtsp_routes")
 router = APIRouter()
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, ".."))
-CLIENT_GROUND_TRUTH = os.path.join(ROOT_DIR, "server", "ml-data", "ground_truth")
+from paths import BASE_DIR, ROOT_DIR, data_path
+
+CLIENT_GROUND_TRUTH = data_path("ground_truth")
 
 SNAP_EVERY_SEC = 15   # save raw + annotated frame snapshot every N seconds during attendance
 
@@ -195,11 +196,13 @@ def _make_preview_cb(job: dict):
 class RTSPRequest(BaseModel):
     rtspUrl:             str
     batch:               str
-    detSize:             int   = 320
-    frameSkip:           int   = 10
-    targetImgsPerPerson: int   = 10
-    minSamples:          int   = 3
-    clusterThreshold:    float = 0.45
+    # None → seeded from state.gt_config (ML Fine Tuning page) at request
+    # time, so callers that omit a knob follow the centrally tuned value.
+    detSize:             Optional[int]   = None
+    frameSkip:           Optional[int]   = None
+    targetImgsPerPerson: Optional[int]   = None
+    minSamples:          Optional[int]   = None
+    clusterThreshold:    Optional[float] = None
     jobId:               str   = ""
     # Server-persistent acquisition (GT acquisition job manager, Node side):
     # when True, the run never auto-stops on "all detected persons reached
@@ -330,6 +333,24 @@ def extract_rtsp_stream(req: RTSPRequest):
     if state.face_app is None:
         raise HTTPException(status_code=503, detail="Face model not loaded")
 
+    # Seed omitted per-session knobs from the GT Acquisition config
+    # (ML Fine Tuning page) so its saved values actually drive acquisitions.
+    # `seeded` records what was filled in — reported to the frontend via a
+    # gt_config_seeded SSE event so the fallback is visible to the user.
+    with state.gt_config_lock:
+        _gt = dict(state.gt_config)
+    seeded = {}
+    if req.detSize is None:
+        req.detSize = seeded["detSize"] = _gt.get("det_size", 320)
+    if req.frameSkip is None:
+        req.frameSkip = seeded["frameSkip"] = _gt.get("frame_skip", 10)
+    if req.targetImgsPerPerson is None:
+        req.targetImgsPerPerson = seeded["targetImgsPerPerson"] = _gt.get("target_imgs_per_person", 10)
+    if req.minSamples is None:
+        req.minSamples = seeded["minSamples"] = _gt.get("min_samples", 3)
+    if req.clusterThreshold is None:
+        req.clusterThreshold = seeded["clusterThreshold"] = _gt.get("cluster_threshold", 0.45)
+
     if req.detSize != state.current_det_size and state.load_model_fn:
         state.load_model_fn(det_size=req.detSize)
 
@@ -348,6 +369,10 @@ def extract_rtsp_stream(req: RTSPRequest):
         def sse(obj):
             return f"data: {json.dumps(obj)}\n\n"
         yield sse({"type": "job_id", "jobId": job_id})
+        if seeded:
+            pretty = ", ".join(f"{k}={v}" for k, v in seeded.items())
+            yield sse({"type": "gt_config_seeded", "seeded": seeded,
+                       "message": f"Using ML Fine Tuning GT config for omitted settings: {pretty}"})
         print("🟢 GENERATOR STARTED", flush=True)
 
         batch_dir = os.path.join(CLIENT_GROUND_TRUTH, req.batch)
@@ -2361,10 +2386,7 @@ def update_gt_config_ep(req: GTConfigUpdate):
         return JSONResponse(status_code=400,
             content={"error": f"embed_n ({new_embed_n}) cannot exceed top_n ({new_top_n})"})
 
-    with state.gt_config_lock:
-        state.gt_config.update(updates)
-        cfg = dict(state.gt_config)
-
+    cfg = gt_config_store.update_gt_config(updates)
     logger.info(f"[GTConfig] Updated: {updates} → {cfg}")
     return cfg
 
@@ -2592,60 +2614,8 @@ def update_detector_config_ep(req: DetectorConfigUpdate):
     }
 
 
-def _parse_dept_from_filename(fname: str) -> str:
-    """
-    Extract the dept tag from a rejected-crop filename.
-    New format:  {ts_ms}_{DEPT}_{method}{score}_det{score}.jpg
-    Old format:  {ts_ms}_{method}{score}_det{score}.jpg  (no dept)
-    """
-    stem = fname.rsplit(".", 1)[0]          # strip .jpg
-    parts = stem.split("_")
-    if len(parts) < 2:
-        return ""
-    # If parts[1] starts with a known method prefix it's the old format
-    if parts[1].startswith(("heur", "onnx")):
-        return ""
-    return parts[1]
-
-
-@router.get("/liveness-rejected-samples")
-def list_liveness_rejected_samples(limit: int = 50, dept: str = ""):
-    """
-    Recent rejected-crop filenames (and a base64 thumbnail of each) for the
-    ML Fine Tuning page's accuracy-review panel.  Optionally filtered by
-    the dept tag encoded in the filename (pass dept= query param).
-    Also returns the full list of depts seen across all saved files.
-    """
-    rejected_dir = clustering_service.LIVENESS_REJECTED_DIR
-    if not os.path.isdir(rejected_dir):
-        return {"samples": [], "total": 0, "depts": []}
-
-    all_files = sorted(
-        (f for f in os.listdir(rejected_dir) if f.lower().endswith(".jpg")),
-        reverse=True,  # ms-timestamp prefix → newest first
-    )
-
-    # Collect unique dept tags for the filter dropdown
-    depts = sorted({d for d in (_parse_dept_from_filename(f) for f in all_files) if d})
-
-    # Apply dept filter when requested
-    if dept:
-        files = [f for f in all_files if _parse_dept_from_filename(f) == dept]
-    else:
-        files = all_files
-
-    total = len(files)
-    samples = []
-    for fname in files[:limit]:
-        try:
-            with open(os.path.join(rejected_dir, fname), "rb") as fh:
-                b64 = base64.b64encode(fh.read()).decode("ascii")
-            samples.append({
-                "filename": fname,
-                "image": f"data:image/jpeg;base64,{b64}",
-                "dept": _parse_dept_from_filename(fname),
-            })
-        except Exception:
-            continue
-
-    return {"samples": samples, "total": total, "depts": depts}
+# NOTE: /liveness-rejected-samples used to live here, reading a local
+# liveness_rejected/ folder. Rejected crops are now POSTed to the Node
+# server (clustering_service._reject_uploader) and stored/served entirely
+# on the Node side (mlRoutes.js GET /liveness-rejected-samples) — this
+# machine keeps no copy.

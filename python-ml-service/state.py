@@ -55,7 +55,7 @@ liveness_config = {
     "enabled":               True,
     "heuristic_threshold":   0.15,
     "onnx_threshold":        0.50,
-    "save_rejected_crops":   True,   # write rejected crops to ml-data/liveness_rejected/
+    "save_rejected_crops":   True,   # upload rejected crops to Node's ml-data/liveness_rejected/
 }
 liveness_config_lock = threading.Lock()  # guards reads/writes to the dict above
 
@@ -63,6 +63,11 @@ liveness_config_lock = threading.Lock()  # guards reads/writes to the dict above
 # Editable at runtime via GET/POST /gt-config (mlRoutes.js → rtsp_routes.py).
 # Python functions read directly from this dict so a change on the ML Fine
 # Tuning page takes effect on the next acquisition run — no restart needed.
+# Persisted to <ML_DATA_DIR>/gt_config.json (paths.py) via gt_config_store.py
+# so the values survive an ML service restart. Per-session knobs (frame_skip,
+# target_imgs_per_person, cluster_threshold, min_samples, det_size) also act
+# as defaults for RTSPRequest fields omitted by the caller (extract_rtsp_stream
+# seeds them and reports the fallback via a gt_config_seeded SSE event).
 gt_config = {
     # --- Per-session parameters (defaults for RTSPRequest fields) ---
     "frame_skip":              10,    # process 1 in N frames

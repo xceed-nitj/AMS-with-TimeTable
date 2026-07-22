@@ -58,8 +58,9 @@ log.addHandler(_sh)
 # =============================
 def _ground_truth_candidates(root_dir: str) -> list:
     """Return the candidate ground-truth directories, preferred path first."""
+    from paths import data_path
     return [
-        os.path.join(root_dir, "server", "ml-data", "ground_truth"),
+        data_path("ground_truth"),
         os.path.join(root_dir, "server", "ground_truth"),
     ]
 
@@ -77,13 +78,13 @@ def _resolve_ground_truth_dir(root_dir: str) -> str:
 # =============================
 # CONFIG  (all overridable via CLI)
 # =============================
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+from paths import ROOT_DIR, data_path
 _GROUND_TRUTH_DIR = _resolve_ground_truth_dir(ROOT_DIR)
 
 DEFAULTS = dict(
     dataset_path           = _GROUND_TRUTH_DIR,
-    faiss_index_path       = os.path.join(ROOT_DIR, "server", "ml-data", "embeddings", "faiss.index"),
-    db_path                = os.path.join(ROOT_DIR, "server", "ml-data", "embeddings", "metadata.db"),
+    faiss_index_path       = data_path("embeddings", "faiss.index"),
+    db_path                = data_path("embeddings", "metadata.db"),
     min_images_required    = 1,
     max_images_per_student = 20,
     top_k_per_student      = 3,

@@ -44,15 +44,37 @@ MIN_SHARPNESS = 10.0     # Laplacian variance
 # constants here — see _check_liveness() below, which reads from it on
 # every call so a change takes effect on the very next detection.
 #
-# Rejected crops are saved to LIVENESS_REJECTED_DIR (when
-# state.liveness_config["save_rejected_crops"] is True) so accuracy can be
-# audited later — separate from the existing debug-only rejected_dir used
-# for blur/size rejects, since this folder is meant to be checked routinely,
-# not just during debugging.
-LIVENESS_REJECTED_DIR = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "..",
-    "server", "ml-data", "liveness_rejected",
-)
+# Rejected crops (when state.liveness_config["save_rejected_crops"] is True)
+# are NOT stored on this machine — they are POSTed to the Node server, which
+# saves them in its ml-data/liveness_rejected/ beside its other data folders
+# (this service may run on a separate machine, e.g. the H100 box). Upload is
+# fire-and-forget through a bounded queue + daemon worker so the frame loop
+# never blocks on the network; dropped uploads are acceptable — this is an
+# accuracy-audit trail, not a system of record.
+import base64 as _b64
+import queue as _queue
+import threading as _threading
+import requests as _requests
+
+NODE_SERVER_URL = os.environ.get("NODE_SERVER_URL", "http://localhost:8010")
+
+_reject_upload_q: "_queue.Queue" = _queue.Queue(maxsize=500)
+
+
+def _reject_uploader():
+    while True:
+        payload = _reject_upload_q.get()
+        try:
+            _requests.post(
+                f"{NODE_SERVER_URL}/api/v1/attendancemodule/liveness-rejected",
+                json=payload, timeout=5,
+            )
+        except Exception:
+            pass  # best-effort; never disturb the capture pipeline
+
+
+_threading.Thread(target=_reject_uploader, daemon=True,
+                  name="liveness-reject-uploader").start()
 
 # Module-level counter, not thread-local — multiple attendance runs across
 # different rooms can run concurrently (see state.face_lock comment), so a
@@ -576,21 +598,26 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
                 global _liveness_rejection_count
                 _liveness_rejection_count += 1
 
-                # Always save rejected crops here (when the setting is on) —
+                # Ship rejected crops to Node (when the setting is on) —
                 # this is a routine accuracy-audit trail, not a debug-only
                 # artifact, so it doesn't depend on the _debug flag the
-                # blur/size rejects above use.
+                # blur/size rejects above use. Node owns the storage; see
+                # _reject_uploader above.
                 if save_rejected:
                     try:
-                        os.makedirs(LIVENESS_REJECTED_DIR, exist_ok=True)
                         ts_ms = int(time.time() * 1000)
                         dept_prefix = f"{dept}_" if dept else ""
                         fname = (f"{ts_ms}_{dept_prefix}{live_method}{live_score:.2f}_"
                                  f"det{det_score:.2f}.jpg")
-                        cv2.imwrite(os.path.join(LIVENESS_REJECTED_DIR, fname), crop,
-                                    [cv2.IMWRITE_JPEG_QUALITY, 90])
+                        ok, buf = cv2.imencode(".jpg", crop,
+                                               [cv2.IMWRITE_JPEG_QUALITY, 90])
+                        if ok:
+                            _reject_upload_q.put_nowait({
+                                "filename": fname,
+                                "image":    _b64.b64encode(buf.tobytes()).decode("ascii"),
+                            })
                     except Exception:
-                        pass
+                        pass  # queue full or encode failure — drop silently
 
                 # Debug-mode copy alongside the existing blur/size rejects,
                 # for when you're actively investigating one capture session.

@@ -17,6 +17,7 @@ const _apiUrl    = getEnvironment();
 const CAMERA_API = `${_apiUrl}/attendancemodule/cameras`;
 const CAMERA_ROOMS_API = `${CAMERA_API}/rooms`;
 const OTHER_CONTROLS_API = `${_apiUrl}/attendancemodule/settings/other-controls`;
+const GT_CONFIG_API = `${_apiUrl}/api/v1/ml/gt-config`;   // ML Fine Tuning — GT Acquisition
 
 // Current minutes-of-day (0–1439) in Asia/Kolkata, independent of the
 // browser timezone — mirrors the server-side timeWindowGuard.
@@ -328,6 +329,27 @@ export default function GroundTruthRTSP({ fixedDepartment = '' }) {
         }, 40);
     }, []);
 
+    // ── Seed tuning dropdowns from the ML Fine Tuning GT config ──────────────
+    // The saved gt-config values become this page's defaults; the user can
+    // still override per run. If the config can't be loaded we fall back to
+    // the built-in defaults above — and say so, per the fallback-visibility
+    // rule.
+    useEffect(() => {
+        fetch(GT_CONFIG_API)
+            .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+            .then(cfg => {
+                if (cfg.det_size)               setDetSize(cfg.det_size);
+                if (cfg.frame_skip)             setFrameSkip(cfg.frame_skip);
+                if (cfg.target_imgs_per_person) setTargetImgs(cfg.target_imgs_per_person);
+                if (cfg.min_samples)            setMinSamples(cfg.min_samples);
+                if (cfg.cluster_threshold)      setClusterThr(cfg.cluster_threshold);
+            })
+            .catch(() => {
+                setToast({ msg: 'ML Fine Tuning GT config unavailable — using built-in defaults', type: 'error' });
+                setTimeout(() => setToast(null), 5000);
+            });
+    }, []);
+
     // ── LOAD ONLY ROOMS THAT HAVE CAMERAS IN THE REGISTRY ────────────
     useEffect(() => {
         const run = async () => {
@@ -463,6 +485,12 @@ export default function GroundTruthRTSP({ fixedDepartment = '' }) {
                             break;
                         case 'error':
                             addLog(`❌ ${ev.message}`, theme.danger);
+                            break;
+                        case 'gt_config_seeded':
+                            // ML service filled omitted knobs from the saved
+                            // GT config — surface the fallback to the user.
+                            addLog(`⚙ ${ev.message}`, '#f0c040');
+                            showToast(ev.message, 'success');
                             break;
                         case 'done':
                             setStatus('done');
