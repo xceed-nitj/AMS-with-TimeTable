@@ -10,6 +10,7 @@
 import { Fragment, useEffect, useState, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { theme, styles, cssReset } from './config';
+import BackButton from './BackButton';
 import getEnvironment from '../getenvironment';
 
 const apiUrl = getEnvironment();
@@ -175,13 +176,16 @@ export default function ErpOverrides() {
     <>
       <style>{cssReset}</style>
       <div style={{ minHeight: '100vh', background: theme.bg, color: theme.text, fontFamily: theme.fontBody, padding: 'clamp(16px,3vw,32px)' }}>
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ fontWeight: 700, fontSize: 'clamp(17px,2.5vw,22px)', letterSpacing: '-0.03em', marginBottom: 3 }}>
-            ERP Overrides
+        <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 'clamp(17px,2.5vw,22px)', letterSpacing: '-0.03em', marginBottom: 3 }}>
+              ERP Overrides
+            </div>
+            <div style={{ fontSize: 12, color: theme.textMuted }}>
+              Attendance sessions where a student&rsquo;s final status was manually changed from the model&rsquo;s original decision.
+            </div>
           </div>
-          <div style={{ fontSize: 12, color: theme.textMuted }}>
-            Attendance sessions where a student&rsquo;s final status was manually changed from the model&rsquo;s original decision.
-          </div>
+          <BackButton />
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 20 }}>

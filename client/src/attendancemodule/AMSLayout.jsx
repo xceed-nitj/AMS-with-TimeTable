@@ -5,12 +5,35 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { theme } from './config';
 import getEnvironment from '../getenvironment';
 import { HealthProvider } from './HealthContext';
+import ILeed from './BrandName';
 
 const T = theme;
 const apiUrl = getEnvironment();
 
+// Small home glyph for the iLEED Home nav item (expanded + collapsed states).
+function HomeIcon({ size = 14 }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ flexShrink: 0 }}
+    >
+      <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <polyline points="9 22 9 12 15 12 15 22" />
+    </svg>
+  );
+}
+
 const NAV = [
-  { id: 'dashboard', route: '/attendance', label: 'Dashboard', exact: true },
+  // label is the plain-text fallback (tooltip, collapsed initial); the
+  // expanded sidebar renders the styled iLEED wordmark instead.
+  { id: 'dashboard', route: '/attendance', label: 'iLEED', exact: true },
   { id: 'rtsp', route: '/attendance/groundtruth/rtsp', label: 'Ground Truth Capture' },
   {
     id: 'assign',
@@ -209,16 +232,20 @@ export default function AMSLayout() {
                     />
                   )}
                   {collapsed ? (
-                    <span
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 800,
-                        fontFamily: "'IBM Plex Mono', monospace",
-                        color: active ? color : T.textMuted,
-                      }}
-                    >
-                      {item.label[0]}
-                    </span>
+                    item.id === 'dashboard' ? (
+                      <HomeIcon />
+                    ) : (
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 800,
+                          fontFamily: "'IBM Plex Mono', monospace",
+                          color: active ? color : T.textMuted,
+                        }}
+                      >
+                        {item.label[0]}
+                      </span>
+                    )
                   ) : (
                     <span
                       style={{
@@ -230,7 +257,14 @@ export default function AMSLayout() {
                         flex: 1,
                       }}
                     >
-                      {item.label}
+                      {item.id === 'dashboard'
+                        ? (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, verticalAlign: 'middle' }}>
+                            <HomeIcon />
+                            <ILeed style={{ lineHeight: 1, display: 'inline-block' }} />
+                          </span>
+                        )
+                        : item.label}
                     </span>
                   )}
                   {!collapsed && !item.newTab && (

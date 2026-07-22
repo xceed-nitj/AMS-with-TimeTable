@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { theme, styles, cssReset } from './config';
+import BackButton from './BackButton';
 import getEnvironment from '../getenvironment';
 
 const apiUrl = getEnvironment();
@@ -551,6 +552,7 @@ export default function MLFineTuning() {
         return (
             <div style={styles.page}>
                 <style>{cssReset}</style>
+                <BackButton />
                 <div style={{ ...styles.subheading, padding: 40, textAlign: 'center' }}>Loading configuration…</div>
             </div>
         );
@@ -560,6 +562,7 @@ export default function MLFineTuning() {
         return (
             <div style={styles.page}>
                 <style>{cssReset}</style>
+                <BackButton />
                 <div style={{ padding: 40, textAlign: 'center', color: theme.danger }}>
                     Could not reach the ML service. Make sure python-ml-service is running.
                 </div>
@@ -586,17 +589,20 @@ export default function MLFineTuning() {
                     <div style={styles.heading}>ML Fine Tuning</div>
                     <div style={styles.subheading}>Tune model behaviour for attendance detection — no restart required, changes apply to the next face check.</div>
                 </div>
-                <button
-                    onClick={restartMlService}
-                    disabled={restarting}
-                    style={{
-                        ...styles.btnPrimary,
-                        background: restarting ? theme.textMuted : theme.danger,
-                        whiteSpace: 'nowrap', flexShrink: 0,
-                    }}
-                >
-                    {restarting ? 'Restarting… waiting for service' : 'Restart ML Service'}
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                    <button
+                        onClick={restartMlService}
+                        disabled={restarting}
+                        style={{
+                            ...styles.btnPrimary,
+                            background: restarting ? theme.textMuted : theme.danger,
+                            whiteSpace: 'nowrap', flexShrink: 0,
+                        }}
+                    >
+                        {restarting ? 'Restarting… waiting for service' : 'Restart ML Service'}
+                    </button>
+                    <BackButton />
+                </div>
             </div>
 
             {/* ── Model Pipeline — primary decision-maker + middle-run shadows ── */}

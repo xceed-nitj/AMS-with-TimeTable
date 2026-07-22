@@ -9,6 +9,7 @@ import {
 import getEnvironment from '../getenvironment';
 import HealthDashboard from './HealthDashboard';
 import DashboardProgress from './DashboardProgress';
+import ILeed, { ILEED_FULL_FORM } from './BrandName';
 import PendingActionsCard from './PendingActionsCard';
 import DeptOverridesChart from './DeptOverridesChart';
 import { MLDataFolder } from './MLDataFolder';
@@ -528,7 +529,7 @@ export default function AMSDashboard() {
             {/* Row 1: title + status chips + icon buttons */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
               <div style={{ fontWeight: 700, fontSize: 'clamp(17px,2.5vw,22px)', letterSpacing: '-0.03em', color: T.text }}>
-                Attendance Management
+                Welcome to <ILeed />
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 {/* Acquisition status chip */}
@@ -612,7 +613,8 @@ export default function AMSDashboard() {
             {/* Row 2: subtitle + badge buttons */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
               <div style={{ fontSize: 12, color: T.textMuted }}>
-                {userRoles.length > 0 ? userRoles.join(' · ') : 'Attendance Management System'}
+                {ILEED_FULL_FORM}
+                {userRoles.length > 0 ? ` · ${userRoles.join(' · ')}` : ''}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <HealthDashboard />

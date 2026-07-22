@@ -31,8 +31,8 @@ const MODULES = [
     accent: 'blue',
   },
   {
-    title: 'Attendance Management Admin',
-    description: 'Face-recognition attendance: cameras, ground truth and reports.',
+    title: 'iLEED Admin',
+    description: 'Intelligent learning engagement and entity detection: cameras, ground truth and reports.',
     to: '/attendance',
     icon: FiUserCheck,
     accent: 'cyan',

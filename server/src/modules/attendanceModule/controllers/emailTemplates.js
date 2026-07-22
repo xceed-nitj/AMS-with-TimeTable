@@ -1,9 +1,10 @@
 // emailTemplates.js
-// All HTML email templates for iAMS alert notifications.
+// All HTML email templates for iLEED alert notifications.
 //
 // Every template is wrapped in a shared colorful card layout (banner + body +
-// footer) that mirrors the OTP email, so all iAMS notifications share one
-// consistent look. Accent colour is chosen per template by severity:
+// footer) that mirrors the OTP email and the other XCEED modules
+// (timetableModule/helper/emailLayout.js), so all iLEED notifications share
+// one consistent look. Accent colour is chosen per template by severity:
 //   red  #dc2626  → outages / bunks / critical alerts
 //   amber #d97706 → warnings needing attention
 //   green #16a34a → recoveries / healthy
@@ -17,8 +18,16 @@ const TH =
 const TD =
   "padding:8px 12px;border-bottom:1px solid #eef1f7;font-size:13px;color:#1a1f3c;";
 
+// The iLEED wordmark, email-safe: serif italic "i" + bold "LEED" (Georgia /
+// Times fall back to the same style family as the frontend's STIX wordmark —
+// web fonts are unreliable in email clients, so we use the stack every
+// client ships with).
+const ILEED_MARK =
+  `<span style="font-family:Georgia,'Times New Roman',serif;"><i>i</i><b>LEED</b></span>`;
+const ILEED_FULL_FORM = "Intelligent Learning Engagement and Entity Detection";
+
 /**
- * Wrap inner HTML in the colorful iAMS email card.
+ * Wrap inner HTML in the colorful iLEED email card.
  * @param {string} title    Heading shown at the top of the card body.
  * @param {string} accent   Banner / accent colour.
  * @param {string} bodyHtml Inner HTML for the message body.
@@ -29,13 +38,13 @@ function renderAlert({ title, accent = "#0e7490", bodyHtml }) {
   <div style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:12px;border:1px solid #e4e8f5;overflow:hidden;">
     <div style="background:${accent};padding:22px 28px;">
       <div style="color:#ffffff;font-size:20px;font-weight:700;letter-spacing:.02em;">${title}</div>
-      <div style="color:rgba(255,255,255,.85);font-size:12px;margin-top:4px;">iAMS — NIT Jalandhar</div>
+      <div style="color:rgba(255,255,255,.85);font-size:12px;margin-top:4px;">${ILEED_MARK} — ${ILEED_FULL_FORM} · NIT Jalandhar</div>
     </div>
     <div style="padding:28px;">
       ${bodyHtml}
     </div>
     <div style="padding:14px 28px;border-top:1px solid #e4e8f5;background:#fafbfe;">
-      <span style="font-size:11px;color:#999;">This is an automated alert from iAMS. Do not reply to this email.</span>
+      <span style="font-size:11px;color:#999;">This is an automated alert from ${ILEED_MARK} on the XCEED platform — please do not reply.</span>
     </div>
   </div>
 </div>`;

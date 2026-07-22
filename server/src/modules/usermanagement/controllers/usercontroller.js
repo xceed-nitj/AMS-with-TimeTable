@@ -51,14 +51,14 @@ exports.register = async (req, res, next) => {
       }
       if (!resolvedDepartment) {
         return res.status(400).json({
-          message: "Department is required for an IAMS Department Admin",
+          message: "Department is required for an iLEED Department Admin",
         });
       }
 
       const existingCoordinator = await findDepartmentCoordinator(resolvedDepartment);
       if (existingCoordinator) {
         return res.status(409).json({
-          message: `${resolvedDepartment} already has an IAMS Department Admin`,
+          message: `${resolvedDepartment} already has an iLEED Department Admin`,
         });
       }
     }

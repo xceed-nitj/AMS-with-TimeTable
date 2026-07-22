@@ -45,10 +45,10 @@ const ROLE_GROUPS = [
     ],
   },
   {
-    group: 'Attendance (IAMS)',
+    group: 'Attendance (iLEED)',
     roles: [
-      { value: 'iams-admin', label: 'IAMS Admin' },
-      { value: 'iams-dept-admin', label: 'IAMS Department Admin' },
+      { value: 'iams-admin', label: 'iLEED Admin' },
+      { value: 'iams-dept-admin', label: 'iLEED Department Admin' },
     ],
   },
   {
@@ -149,7 +149,7 @@ const RegistrationForm = () => {
       return;
     }
     if (formData.roles.includes('iams-dept-admin') && !formData.dept) {
-      setError('Department is required for an IAMS Department Admin.');
+      setError('Department is required for an iLEED Department Admin.');
       return;
     }
 
@@ -291,7 +291,7 @@ const RegistrationForm = () => {
               </Select>
               <FormHelperText>
                 {departmentError ||
-                  'Optional — required only for the IAMS Department Admin role.'}
+                  'Optional — required only for the iLEED Department Admin role.'}
               </FormHelperText>
             </FormControl>
 

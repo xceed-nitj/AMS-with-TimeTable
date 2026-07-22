@@ -109,7 +109,7 @@ class UserController {
           || await getFacultyDepartmentByEmail(user.email);
         if (!department) {
           return res.status(400).json({
-            error: "Assign a department to this user before adding the IAMS Department Admin role",
+            error: "Assign a department to this user before adding the iLEED Department Admin role",
           });
         }
 
@@ -119,7 +119,7 @@ class UserController {
         );
         if (existingCoordinator) {
           return res.status(409).json({
-            error: `${department} already has an IAMS Department Admin`,
+            error: `${department} already has an iLEED Department Admin`,
           });
         }
       }
@@ -164,7 +164,7 @@ class UserController {
       let department = dept.trim();
       if (!department && user.role.includes("iams-dept-admin")) {
         return res.status(400).json({
-          error: "Department is required for an IAMS Department Admin",
+          error: "Department is required for an iLEED Department Admin",
         });
       }
 
@@ -185,7 +185,7 @@ class UserController {
         );
         if (existingCoordinator) {
           return res.status(409).json({
-            error: `${department} already has an IAMS Department Admin`,
+            error: `${department} already has an iLEED Department Admin`,
           });
         }
       }
@@ -234,7 +234,7 @@ class UserController {
       );
       if (existingCoordinator) {
         return res.status(409).json({
-          error: `${department} already has an IAMS Department Admin`,
+          error: `${department} already has an iLEED Department Admin`,
         });
       }
 
@@ -271,8 +271,9 @@ class UserController {
         sendWelcomeEmail({
           email,
           frontendBase: resolveFrontendBase(req),
-          heading: "You are now an IAMS Department Admin",
-          intro: `<p>You have been assigned as the <strong>IAMS Department Admin</strong> for
+          heading: "You are now an iLEED Department Admin",
+          intro: `<p>You have been assigned as the <strong>iLEED Department Admin</strong>
+                    (Intelligent Learning Engagement and Entity Detection) for
                     <strong>${department}</strong> on the XCEED platform (NIT Jalandhar).</p>` +
                  (created
                    ? "<p>An account has been created for this email address.</p>"
@@ -285,8 +286,8 @@ class UserController {
       delete userResponse.password;
       res.status(created ? 201 : 200).json({
         message: created
-          ? "User created and IAMS Department Admin role assigned"
-          : "IAMS Department Admin role assigned",
+          ? "User created and iLEED Department Admin role assigned"
+          : "iLEED Department Admin role assigned",
         created,
         user: userResponse,
       });

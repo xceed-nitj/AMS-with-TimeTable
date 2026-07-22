@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import getEnvironment from '../getenvironment';
 import { theme, styles, cssReset } from './config';
+import BackButton from './BackButton';
 import { useDepartments } from './useDepartments';
 
 const apiUrl = getEnvironment();
@@ -194,7 +195,10 @@ export default function ModelAnalytics() {
 
       <Toast toast={toast} />
 
-      <div style={styles.heading}>Model Analytics</div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
+        <div style={styles.heading}>Model Analytics</div>
+        <BackButton />
+      </div>
       <div style={styles.subheading}>
         Recognition accuracy — how often the model&apos;s automatic call agreed with a teacher&apos;s later confirmation/correction
       </div>
