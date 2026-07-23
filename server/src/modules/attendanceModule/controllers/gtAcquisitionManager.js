@@ -455,11 +455,18 @@ function listJobs({ department, fullAccess } = {}) {
     return out.sort((a, b) => b.startedAt - a.startedAt);
 }
 
+// Direct job lookup — used by the /gt-acquisition/preview MJPEG relay to
+// follow job.pythonJobId across camera sub-runs.
+function getJob(acquisitionId) {
+    return jobs.get(acquisitionId);
+}
+
 module.exports = {
     startAcquisition,
     attachStream,
     stopAcquisition,
     listJobs,
+    getJob,
     // exported so the legacy /extract-rtsp-stream route can share the writer
     handleGroundTruthEvent,
     GT_INTERNAL,

@@ -58,7 +58,7 @@ _jobs_lock  = threading.Lock()
 
 def _new_job() -> tuple:
     job_id = str(uuid.uuid4())
-    job    = {"stop": threading.Event(), "frame": None, "lock": threading.Lock()}
+    job    = {"stop": threading.Event(), "frame": None, "frame_seq": 0, "lock": threading.Lock()}
     with _jobs_lock:
         _jobs[job_id] = job
     return job_id, job
@@ -165,7 +165,12 @@ def _open_capture(rtsp_url: str) -> cv2.VideoCapture:
 
 
 def _make_preview_cb(job: dict):
-    """Return a frame-annotation callback that writes into the given job's frame buffer."""
+    """Return a frame-annotation callback that writes into the given job's frame buffer.
+
+    Called once per processed frame with the full zoom-box list (see
+    _detect_faces_tiled) — every box is drawn with a constant style so the
+    preview stays steady instead of strobing a per-pass highlight.
+    """
     colors = [
         (0, 255, 0), (255, 0, 0), (0, 0, 255), (255, 255, 0),
         (0, 255, 255), (255, 0, 255), (0, 128, 255),
@@ -174,20 +179,14 @@ def _make_preview_cb(job: dict):
         vis = frame.copy()
         for idx, box in enumerate(zoom_boxes):
             x1, y1, x2, y2 = box
-            color     = colors[idx % len(colors)]
-            thickness = 4 if idx == current_pass else 2
-            cv2.rectangle(vis, (x1, y1), (x2, y2), color, thickness)
-            if idx == current_pass:
-                label = f"SCANNING Z{idx + 1}"
-                (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.8, 2)
-                cv2.rectangle(vis, (x1, y1), (x1 + tw + 10, y1 + th + 10), color, -1)
-                cv2.putText(vis, label, (x1 + 5, y1 + th + 4), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 0), 2)
-            else:
-                cv2.putText(vis, f"Z{idx + 1}", (x1 + 5, y1 + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
+            color = colors[idx % len(colors)]
+            cv2.rectangle(vis, (x1, y1), (x2, y2), color, 2)
+            cv2.putText(vis, f"Z{idx + 1}", (x1 + 5, y1 + 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
         prev = cv2.resize(vis, (960, 540))
-        _, buf = cv2.imencode('.jpg', prev, [cv2.IMWRITE_JPEG_QUALITY, 95])
+        _, buf = cv2.imencode('.jpg', prev, [cv2.IMWRITE_JPEG_QUALITY, 80])
         with job["lock"]:
             job["frame"] = buf.tobytes()
+            job["frame_seq"] = job.get("frame_seq", 0) + 1
     return cb
 
 
@@ -283,23 +282,37 @@ class RTSPAttendanceRequest(BaseModel):
 
 
 # ── Preview endpoint ──────────────────────────────────────────────────────────
+# NOTE: deliberately NOT /rtsp-preview — ground_truth_routes.py also defines
+# /rtsp-preview (the camera-preview page's `_previews` streams) and its router
+# is registered first in ml_service.py, so a same-path route here would be
+# shadowed and unreachable. This one serves the `_jobs` registry (GT
+# acquisition / attendance runs) and is consumed by the Node relay
+# /gt-acquisition/preview in groundTruthRoutes.js.
 
-@router.get("/rtsp-preview")
-def rtsp_preview(jobId: str = ""):
+@router.get("/gt-job-preview")
+def gt_job_preview(jobId: str = ""):
     with _jobs_lock:
         job = _jobs.get(jobId) if jobId else None
     if not job:
         raise HTTPException(status_code=404, detail="Job not found or already finished")
     def generate():
+        # Send a frame only when the buffer actually changed (frame_seq) —
+        # re-sending the identical JPEG at 30fps just burned bandwidth and
+        # made the browser preview jitter. A 2s keepalive resend covers
+        # proxies that drop idle multipart streams.
+        last_seq  = -1
+        last_sent = 0.0
         try:
             while not job["stop"].is_set():
                 with job["lock"]:
                     frame = job["frame"]
-                if frame:
+                    seq   = job.get("frame_seq", 0)
+                now = time.time()
+                if frame and (seq != last_seq or now - last_sent >= 2.0):
+                    last_seq  = seq
+                    last_sent = now
                     yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-                    time.sleep(0.033)
-                else:
-                    time.sleep(0.05)
+                time.sleep(0.05)
         except GeneratorExit:
             pass
     return StreamingResponse(
@@ -497,13 +510,10 @@ def extract_rtsp_stream(req: RTSPRequest):
                 frame_count       += 1
                 ts = round(time.time() - start, 2)
 
-                try:
-                    prev_raw = cv2.resize(frame, (960, 540))
-                    _, raw_buf = cv2.imencode('.jpg', prev_raw, [cv2.IMWRITE_JPEG_QUALITY, 95])
-                    with job["lock"]:
-                        job["frame"] = raw_buf.tobytes()
-                except Exception:
-                    pass
+                # NOTE: no raw-frame preview write here — preview_cb (called
+                # once per frame inside _detect_faces_tiled) owns the buffer.
+                # Writing the unannotated frame first made the MJPEG preview
+                # flicker between raw and annotated versions of each frame.
 
                 t_detect = time.time()
                 try:
@@ -1189,6 +1199,7 @@ def _attendance_pipeline(req: RTSPAttendanceRequest, job: dict):
                 _, prev_buf = cv2.imencode('.jpg', prev, [cv2.IMWRITE_JPEG_QUALITY, 70])
                 with job["lock"]:
                     job["frame"] = prev_buf.tobytes()
+                    job["frame_seq"] = job.get("frame_seq", 0) + 1
             except Exception:
                 pass
  
@@ -1858,6 +1869,7 @@ def start_preview(req: PreviewRequest):
     _, buf = cv2.imencode('.jpg', placeholder, [cv2.IMWRITE_JPEG_QUALITY, 70])
     with job["lock"]:
         job["frame"] = buf.tobytes()
+        job["frame_seq"] = job.get("frame_seq", 0) + 1
     return {"status": "ok", "jobId": job_id}
 
 

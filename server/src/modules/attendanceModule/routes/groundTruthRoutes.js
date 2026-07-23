@@ -352,6 +352,66 @@ router.get('/gt-acquisition/stream', (req, res) => {
     gtManager.attachStream(acquisitionId, res);
 });
 
+// Live MJPEG preview for one acquisition. Unlike /rtsp-preview (bound to a
+// single Python sub-run jobId that dies on every camera switch), this follows
+// job.pythonJobId across sub-runs: when a camera's stream ends, it silently
+// reconnects to the next camera's Python job and keeps piping into the SAME
+// response — the browser <img> never breaks, so no flicker on switches and
+// the preview always shows the camera currently acquiring.
+router.get('/gt-acquisition/preview', async (req, res) => {
+    const { acquisitionId } = req.query;
+    if (!acquisitionId) return res.status(400).json({ error: 'acquisitionId is required' });
+    if (!gtManager.getJob(acquisitionId))
+        return res.status(404).json({ error: 'Acquisition not found or expired' });
+
+    res.setHeader('Content-Type', 'multipart/x-mixed-replace; boundary=frame');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('X-Accel-Buffering', 'no');
+
+    let closed   = false;
+    let upstream = null;
+    req.on('close', () => {
+        closed = true;
+        if (upstream) upstream.destroy();
+    });
+
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+    while (!closed) {
+        const job = gtManager.getJob(acquisitionId);
+        if (!job || (job.status !== 'running' && job.status !== 'stopping')) break;
+
+        // Between sub-runs there is no Python job yet — wait for the next one.
+        const pyJobId = job.pythonJobId;
+        if (!pyJobId) { await sleep(500); continue; }
+
+        try {
+            // /gt-job-preview, NOT /rtsp-preview: the latter resolves to
+            // ground_truth_routes.py's camera-preview streams (its router is
+            // registered first) and knows nothing about acquisition jobIds.
+            const result = await axios.get(`${ML_SERVICE_URL}/gt-job-preview`, {
+                params:       { jobId: pyJobId },
+                responseType: 'stream',
+                timeout:      0,
+            });
+            upstream = result.data;
+            await new Promise((resolve) => {
+                upstream.on('data',  (chunk) => { if (!closed) res.write(chunk); });
+                upstream.on('end',   resolve);
+                upstream.on('error', resolve);
+            });
+            upstream = null;
+            // Sub-run ended (camera switch) — brief pause so we don't hammer
+            // the ML service while the next sub-run's jobId is being set up.
+            await sleep(300);
+        } catch (_) {
+            // Sub-run not up yet / ML service hiccup — retry while the job lives.
+            await sleep(1000);
+        }
+    }
+    if (!res.writableEnded) res.end();
+});
+
 router.post('/gt-acquisition/stop', async (req, res) => {
     const { acquisitionId } = req.body || {};
     if (!acquisitionId) return res.status(400).json({ error: 'acquisitionId is required' });

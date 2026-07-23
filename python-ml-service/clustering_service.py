@@ -406,10 +406,7 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
             cy_frac=pass_cfg["cy"],
         )
         zoom_boxes.append(bbox)
- 
-        if preview_cb:
-            preview_cb(frame, zoom_boxes, pass_idx)
- 
+
         enhanced = _apply_clahe(zoomed)
  
         try:
@@ -483,6 +480,12 @@ def _detect_faces_tiled(face_app, frame: np.ndarray,
                 getattr(face, "kps", None),
             ))
  
+    # One preview update per frame, with the complete box list — updating
+    # inside the pass loop redrew the buffer once per pass (~11×/frame with a
+    # growing box list), which made the live MJPEG preview strobe.
+    if preview_cb:
+        preview_cb(frame, zoom_boxes, len(ZOOM_PASSES) - 1)
+
     if not raw:
         if _debug:
             logger.info("[debug] Frame %d: 0 faces across all %d zoom passes",

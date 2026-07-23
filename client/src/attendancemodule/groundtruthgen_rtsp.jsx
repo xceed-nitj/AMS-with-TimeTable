@@ -112,17 +112,20 @@ const PersonCard = ({ id, count, target }) => {
 };
 
 // ─── Live Preview Component ───────────────────────────────────────────────────
-const LivePreview = ({ apiBase, isRunning, jobId }) => {
+// Streams /gt-acquisition/preview (keyed by acquisitionId, NOT the per-camera
+// Python jobId): the server relays the MJPEG of whichever camera is currently
+// acquiring and survives camera switches, so the <img> never remounts
+// mid-acquisition — this is what stopped the preview flickering.
+const LivePreview = ({ apiBase, isRunning, acquisitionId, cameraLabel }) => {
     const [showPreview, setShowPreview] = useState(true);
     const [loaded, setLoaded]           = useState(false);
     const [sessionKey, setSessionKey]   = useState(0);
     const prevKey     = useRef(null);
     const retryTimer  = useRef(null);
 
-    // Restart the <img> whenever the active Python job changes (camera switch)
-    // or acquisition (re)starts.
+    // Restart the <img> only when a different acquisition starts.
     useEffect(() => {
-        if (isRunning && jobId && jobId !== prevKey.current) {
+        if (isRunning && acquisitionId && acquisitionId !== prevKey.current) {
             setLoaded(false);
             setSessionKey(k => k + 1);
         }
@@ -130,8 +133,8 @@ const LivePreview = ({ apiBase, isRunning, jobId }) => {
             setLoaded(false);
             clearTimeout(retryTimer.current);
         }
-        prevKey.current = jobId;
-    }, [isRunning, jobId]);
+        prevKey.current = acquisitionId;
+    }, [isRunning, acquisitionId]);
 
     useEffect(() => () => clearTimeout(retryTimer.current), []);
 
@@ -190,15 +193,31 @@ const LivePreview = ({ apiBase, isRunning, jobId }) => {
                         </div>
                     )}
 
-                    {isRunning && jobId && (
+                    {isRunning && acquisitionId && (
                         <img
                             key={sessionKey}
-                            src={`${apiBase}/rtsp-preview?jobId=${encodeURIComponent(jobId)}`}
+                            src={`${apiBase}/gt-acquisition/preview?acquisitionId=${encodeURIComponent(acquisitionId)}`}
                             alt="Live RTSP Preview"
                             style={{ width: '100%', display: 'block' }}
                             onLoad={handleImgLoad}
                             onError={handleImgError}
                         />
+                    )}
+
+                    {isRunning && loaded && cameraLabel && (
+                        <div style={{
+                            position: 'absolute', top: 8, left: 8, zIndex: 3,
+                            padding: '3px 10px', borderRadius: 4,
+                            background: 'rgba(0,0,0,0.65)', color: '#fff',
+                            fontSize: '11px', fontWeight: 600,
+                            display: 'flex', alignItems: 'center', gap: 6,
+                        }}>
+                            <span style={{
+                                width: 7, height: 7, borderRadius: '50%',
+                                background: '#ef4444', display: 'inline-block',
+                            }} />
+                            {cameraLabel}
+                        </div>
                     )}
                 </div>
             )}
@@ -247,7 +266,6 @@ export default function GroundTruthRTSP({ fixedDepartment = '' }) {
     const [acquisitionId,   setAcquisitionId]   = useState(null);
     const [status,          setStatus]          = useState('idle');  // idle | running | stopping | done
     const [mode,            setMode]            = useState(null);     // single | combined | room
-    const [pythonJobId,     setPythonJobId]     = useState(null);
     const [activeCameraLabel, setActiveCameraLabel] = useState('');
     const [startedAt,       setStartedAt]       = useState(null);
     const [elapsedSec,      setElapsedSec]      = useState(0);
@@ -455,12 +473,8 @@ export default function GroundTruthRTSP({ fixedDepartment = '' }) {
                             setStartedAt(ev.startedAt || null);
                             setJobTarget(ev.target || targetImgs);
                             setActiveCameraLabel(ev.activeCameraLabel || '');
-                            setPythonJobId(ev.pythonJobId || null);
                             setSummary(ev.summary || null);
                             setLog((ev.log || []).map(l => ({ time: l.time, msg: l.msg, color: l.color })));
-                            break;
-                        case 'job_id':
-                            if (ev.jobId) setPythonJobId(ev.jobId);
                             break;
                         case 'camera_switch':
                             setActiveCameraLabel(ev.activeCameraLabel || '');
@@ -932,7 +946,12 @@ export default function GroundTruthRTSP({ fixedDepartment = '' }) {
                 )}
             </div>
 
-            <LivePreview apiBase={API_BASE} isRunning={isRunning} jobId={pythonJobId} />
+            <LivePreview
+                apiBase={API_BASE}
+                isRunning={isRunning}
+                acquisitionId={acquisitionId}
+                cameraLabel={activeCameraLabel}
+            />
 
             {!windowOpen && (
                 <div style={{
