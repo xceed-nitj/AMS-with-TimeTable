@@ -283,9 +283,14 @@ class RTSPAttendanceRequest(BaseModel):
 
 
 # ── Preview endpoint ──────────────────────────────────────────────────────────
+# Named distinctly from ground_truth_routes.py's own "/rtsp-preview" (a totally
+# separate preview system, keyed off its own _previews dict for the Camera
+# Live Preview feature) — gt_router is registered before rtsp_router in
+# ml_service.py, so a shared path here would silently always resolve to that
+# other handler and 503/404 against this module's _jobs registry instead.
 
-@router.get("/rtsp-preview")
-def rtsp_preview(jobId: str = ""):
+@router.get("/gt-acquisition-preview")
+def gt_acquisition_preview(jobId: str = ""):
     with _jobs_lock:
         job = _jobs.get(jobId) if jobId else None
     if not job:

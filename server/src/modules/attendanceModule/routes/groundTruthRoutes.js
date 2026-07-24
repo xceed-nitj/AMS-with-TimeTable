@@ -248,7 +248,13 @@ router.post('/stop-rtsp-stream', async (req, res) => {
 router.get('/rtsp-preview', async (req, res) => {
     const jobId = req.query.jobId;
     try {
-        const result = await axios.get(`${ML_SERVICE_URL}/rtsp-preview`, {
+        // Must hit the ML service's /gt-acquisition-preview, not /rtsp-preview —
+        // that path is a *different* preview system (Camera Live Preview,
+        // ground_truth_routes.py's own _previews dict) which happens to shadow
+        // this module's route since it's registered first in ml_service.py.
+        // This jobId only exists in rtsp_routes.py's _jobs registry, so hitting
+        // the shadowed /rtsp-preview always 404/503'd against the wrong dict.
+        const result = await axios.get(`${ML_SERVICE_URL}/gt-acquisition-preview`, {
             params: jobId ? { jobId } : undefined,
             responseType: 'stream',
             timeout: 0,   // long-lived MJPEG stream
