@@ -58,6 +58,12 @@ function StatusBadge({ status }) {
   );
 }
 
+// RTSP connection setup is genuinely flaky under concurrent load (two cameras
+// opening large streams at once) — a manual Retry click reliably recovers it,
+// so automate that same recovery before ever surfacing the error to the user.
+const MAX_AUTO_RETRIES = 2;
+const AUTO_RETRY_DELAY_MS = 3000;
+
 // Single camera feed panel
 function FeedPanel({ camera, quality, scale, refreshKey, onError }) {
   const [feedKey, setFeedKey] = useState(0);
@@ -65,8 +71,11 @@ function FeedPanel({ camera, quality, scale, refreshKey, onError }) {
   const [failed, setFailed] = useState(false);
   const [failReason, setFailReason] = useState('');
   const [streamUrl, setStreamUrl] = useState(null);
+  const [retryAttempt, setRetryAttempt] = useState(0);
   // Each panel tracks its own preview job so the two feeds never share a slot.
   const jobIdRef = useRef(null);
+  const retryCountRef = useRef(0);
+  const retryTimerRef = useRef(null);
 
   const buildStreamUrl = useCallback(
     () =>
@@ -99,12 +108,20 @@ function FeedPanel({ camera, quality, scale, refreshKey, onError }) {
         return data;
       })
       .then((data) => {
+        retryCountRef.current = 0;
+        setRetryAttempt(0);
         jobIdRef.current = data?.jobId || null;
         setStreamUrl(buildStreamUrl());
         setFeedKey((k) => k + 1);
         setStarting(false);
       })
       .catch((err) => {
+        if (retryCountRef.current < MAX_AUTO_RETRIES) {
+          retryCountRef.current += 1;
+          setRetryAttempt(retryCountRef.current);
+          retryTimerRef.current = setTimeout(startFeed, AUTO_RETRY_DELAY_MS);
+          return;
+        }
         setStarting(false);
         setFailed(true);
         setFailReason(err.message);
@@ -117,6 +134,12 @@ function FeedPanel({ camera, quality, scale, refreshKey, onError }) {
   useEffect(() => {
     startFeed();
     return () => {
+        if (retryTimerRef.current) {
+          clearTimeout(retryTimerRef.current);
+          retryTimerRef.current = null;
+        }
+        retryCountRef.current = 0;
+        setRetryAttempt(0);
         const jobId = jobIdRef.current;
         fetch(`${CAMERA_API}/preview/stop`, {
             method: 'POST',
@@ -188,7 +211,9 @@ function FeedPanel({ camera, quality, scale, refreshKey, onError }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {starting && (
             <span style={{ fontSize: 11, color: theme.textMuted }}>
-              Connecting...
+              {retryAttempt > 0
+                ? `Retrying (${retryAttempt}/${MAX_AUTO_RETRIES})...`
+                : 'Connecting...'}
             </span>
           )}
           <StatusBadge status={camera?.status} />
@@ -250,7 +275,13 @@ function FeedPanel({ camera, quality, scale, refreshKey, onError }) {
             </div>
             <button
               type="button"
-              onClick={startFeed}
+              onClick={() => {
+                // Manual retry gets its own fresh quota of automatic retries,
+                // not whatever was left over from the last exhausted attempt.
+                retryCountRef.current = 0;
+                setRetryAttempt(0);
+                startFeed();
+              }}
               style={{ ...styles.btnGhost, fontSize: 12, padding: '8px 20px' }}
             >
               Retry
@@ -263,6 +294,14 @@ function FeedPanel({ camera, quality, scale, refreshKey, onError }) {
             alt={`${camera?.cameraId} live feed`}
             style={{ width: '100%', display: 'block', objectFit: 'contain' }}
             onError={() => {
+              if (retryCountRef.current < MAX_AUTO_RETRIES) {
+                retryCountRef.current += 1;
+                setRetryAttempt(retryCountRef.current);
+                setStarting(true);
+                setStreamUrl(null);
+                retryTimerRef.current = setTimeout(startFeed, AUTO_RETRY_DELAY_MS);
+                return;
+              }
               setFailed(true);
               onError?.(`Stream error on ${camera?.cameraId}. Check RTSP URL.`);
             }}
@@ -320,7 +359,12 @@ export default function CameraPreview() {
   const toastTimer = useRef(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
+    // Re-fetch camera docs from the DB first — refreshKey alone only restarts
+    // the existing feed panels with whatever camera data is already in memory,
+    // so an edited streamUrl (e.g. switching to a sub-stream) never took effect
+    // until a full page reload.
+    await fetchCameras();
     setRefreshKey(prev => prev + 1);
 };
 
